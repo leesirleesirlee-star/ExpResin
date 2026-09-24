@@ -1,0 +1,53 @@
+# ELECTROCHEMICAL EXPERIMENT
+
+## A. Experiment Information
+
+| Field                 | Value |
+| --------------------- | ----- |
+| Experiment ID         |       |
+| Date                  |       |
+| Researcher            |       |
+| Technique             |       |
+| Working electrode     |       |
+| Reference electrode   |       |
+| Counter electrode     |       |
+| Electrolyte           |       |
+| Target substance      |       |
+| Initial concentration |       |
+| Temperature           |       |
+| Cell configuration    |       |
+
+---
+
+## B. Experimental Data
+
+| Time (s) | Potential / Voltage (V) | Current (A) | Concentration (mg/L) | pH |
+| -------: | ----------------------: | ----------: | -------------------: | -: |
+|        0 |                         |             |                      |    |
+|          |                         |             |                      |    |
+|          |                         |             |                      |    |
+|          |                         |             |                      |    |
+|          |                         |             |                      |    |
+
+### Data Entry Rules
+
+* One row represents one measurement/time point.
+* `Time` = elapsed experimental time.
+* `Potential / Voltage` = measured electrochemical potential or cell voltage, depending on the cell configuration.
+* `Current` = measured current.
+* `Concentration` = measured concentration of the target substance.
+* `pH` = measured pH.
+* Concentration and pH may be left as `NA` at time points where they were not measured.
+* Do not manually calculate derived quantities in the raw-data table.
+
+---
+
+## C. Optional Results
+
+| Parameter           | Value | Unit  |
+| ------------------- | ----: | ----- |
+| Current density     |       | A/cm² |
+| Final concentration |       | mg/L  |
+| Removal efficiency  |       | %     |
+| Charge passed       |       | C     |
+| Energy consumption  |       |       |

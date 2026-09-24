@@ -1,0 +1,62 @@
+{
+  "template_id": "batch_template_v1",
+  "experiment_type": "batch",
+  "title": "BATCH TEST",
+  "version": "1.0",
+  "source": "Batch_Test.txt（指导老师提供草稿，2026-09-23 转录）",
+  "description": "批次（Batch）吸附实验标准模板。A 区实验信息、B 区逐行测量数据、C 区派生结果。",
+  "data_policy": {
+    "concentration": "engine_first",
+    "concentration_note": "浓度优先取引擎复算值（canonical.computed），缺失时回退原始表记录值（reported），并在导出中标注口径"
+  },
+  "sections": [
+    {
+      "id": "A",
+      "label": "Experiment Information",
+      "kind": "fields",
+      "note": "Units: Use a separate unit field or specify the unit in the column header.",
+      "fields": [
+        { "key": "experiment_id", "label": "Experiment ID", "type": "string", "from": ["meta.experiment_id"] },
+        { "key": "date", "label": "Date", "type": "string", "from": ["meta.date_start", "meta.date"] },
+        { "key": "researcher", "label": "Researcher", "type": "string", "from": ["meta.operator", "meta.researcher"] },
+        { "key": "adsorbent", "label": "Adsorbent / Material", "type": "string", "from": ["meta.resin_type", "meta.adsorbent"] },
+        { "key": "adsorbate", "label": "Adsorbate / Target substance", "type": "string", "from": ["meta.target_analyte", "meta.adsorbate"] },
+        { "key": "initial_concentration", "label": "Initial concentration, C₀", "type": "number", "unit": "mg/L", "from": ["meta.initial_concentration"] },
+        { "key": "solution_volume", "label": "Solution volume", "type": "number", "unit": "mL", "from": ["meta.solution_volume"] },
+        { "key": "adsorbent_mass", "label": "Adsorbent mass", "type": "number", "unit": "mg", "from": ["meta.resin_mass", "meta.adsorbent_mass"] },
+        { "key": "temperature", "label": "Temperature", "type": "number", "unit": "degC", "from": ["meta.temperature"] },
+        { "key": "objective", "label": "Experiment objective", "type": "string", "from": ["meta.objective"] }
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Experimental Data",
+      "kind": "series",
+      "columns": [
+        { "key": "time", "label": "Time", "unit": "min", "role": "time", "from": ["series.contact_time", "series.time", "series.run_time"] },
+        { "key": "concentration", "label": "Concentration", "unit": "mg/L", "role": "concentration", "from": ["series.concentration_mg_l", "series.concentration_ppm"] },
+        { "key": "ph", "label": "pH", "unit": "", "role": "ph", "from": ["series.ph"] }
+      ]
+    },
+    {
+      "id": "C",
+      "label": "Optional Results",
+      "kind": "derived",
+      "fields": [
+        { "key": "equilibrium_concentration", "label": "Equilibrium concentration, Cₑ", "unit": "mg/L", "derive": "equilibrium_concentration" },
+        { "key": "removal_efficiency", "label": "Removal efficiency", "unit": "%", "derive": "removal_efficiency" },
+        { "key": "adsorption_capacity", "label": "Adsorption capacity, qₑ", "unit": "mg/g", "derive": "adsorption_capacity" },
+        { "key": "equilibrium_time", "label": "Equilibrium time", "unit": "min", "derive": "equilibrium_time" }
+      ]
+    }
+  ],
+  "rules": [
+    "One row represents one measurement.",
+    "`Time` = elapsed experimental time.",
+    "`Concentration` = measured concentration at that time.",
+    "`pH` = measured pH at that time.",
+    "Do not put units inside individual cells.",
+    "Use `NA` when a parameter is not applicable.",
+    "Use `ND` when the concentration is below the detection limit."
+  ]
+}

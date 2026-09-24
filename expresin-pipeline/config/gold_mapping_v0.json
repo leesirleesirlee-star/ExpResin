@@ -1,0 +1,28 @@
+{
+  "version": "0.1.0",
+  "scope": "20250528 DHT Cl SO4.xlsx (7 sheets / 27 blocks / 135 columns)",
+  "method": "领域专家依据列名、单位、数值范围与游离的样品语义逐列判定，作为列级 gold 参照（弱标注）。",
+  "limitation": "本 gold 只覆盖该数据集已出现的标准化表头；未列入的表头（如邻接系数列）不计入分母，避免用未知项污染准确率。",
+  "rules": [
+    { "block_kind": "calibration", "header": "so4", "target": null, "note": "离子标签列，不应映射为数据字段" },
+    { "block_kind": "calibration", "header": "cl", "target": null, "note": "离子标签列" },
+    { "block_kind": "calibration", "header": "nh4+", "target": null, "note": "离子标签列" },
+    { "block_kind": "calibration", "header": "li+", "target": null, "note": "离子标签列" },
+    { "block_kind": "calibration", "header": "area", "target": "signal_area", "note": "仪器信号峰面积" },
+    { "block_kind": "calibration", "header": "ppm", "target": "concentration_standard", "note": "标定用标准浓度" },
+
+    { "block_kind": "sample_measurement", "header": "bv", "target": "bed_volume" },
+    { "block_kind": "sample_measurement", "header": "v", "target": "volume", "note": "单字母 V 为体积(mL)，非伏特" },
+    { "block_kind": "sample_measurement", "header": "v,ml", "target": "volume" },
+    { "block_kind": "sample_measurement", "header": "time/h", "target": "contact_time" },
+    { "block_kind": "sample_measurement", "header": "number", "target": "sample_number" },
+    { "block_kind": "sample_measurement", "header": "area", "target": "signal_area" },
+    { "block_kind": "sample_measurement", "header": "修正后area", "target": "corrected_area" },
+    { "block_kind": "sample_measurement", "header": "calculated ppm", "target": "concentration_ppm" },
+    { "block_kind": "sample_measurement", "header": "稀释2倍(mol/l)", "target": "concentration_mol" },
+    { "block_kind": "sample_measurement", "header": "稀释10倍(mol/l)", "target": "concentration_mol" },
+    { "block_kind": "sample_measurement", "header": "稀释20倍(mol/l)", "target": "concentration_mol" },
+    { "block_kind": "sample_measurement", "header": "稀释100倍(mol/l)", "target": "concentration_mol" },
+    { "block_kind": "sample_measurement", "header": "mg/l", "target": "concentration_mg_l" }
+  ]
+}

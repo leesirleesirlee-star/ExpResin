@@ -1,0 +1,67 @@
+{
+  "template_id": "electrochemical_template_v1",
+  "experiment_type": "electrochemical",
+  "title": "ELECTROCHEMICAL EXPERIMENT",
+  "version": "1.0",
+  "source": "Electrochemical_Experiment.txt（指导老师提供草稿，2026-09-23 转录）",
+  "description": "电化学实验标准模板。A 区实验信息、B 区逐行时序测量数据、C 区派生结果。",
+  "data_policy": {
+    "concentration": "engine_first",
+    "concentration_note": "浓度优先取引擎复算值，缺失时回退原始表记录值，并在导出中标注口径"
+  },
+  "sections": [
+    {
+      "id": "A",
+      "label": "Experiment Information",
+      "kind": "fields",
+      "fields": [
+        { "key": "experiment_id", "label": "Experiment ID", "type": "string", "from": ["meta.experiment_id"] },
+        { "key": "date", "label": "Date", "type": "string", "from": ["meta.date_start", "meta.date"] },
+        { "key": "researcher", "label": "Researcher", "type": "string", "from": ["meta.operator", "meta.researcher"] },
+        { "key": "technique", "label": "Technique", "type": "string", "from": ["meta.technique"] },
+        { "key": "working_electrode", "label": "Working electrode", "type": "string", "from": ["meta.working_electrode"] },
+        { "key": "reference_electrode", "label": "Reference electrode", "type": "string", "from": ["meta.reference_electrode"] },
+        { "key": "counter_electrode", "label": "Counter electrode", "type": "string", "from": ["meta.counter_electrode"] },
+        { "key": "electrolyte", "label": "Electrolyte", "type": "string", "from": ["meta.electrolyte", "meta.matrix"] },
+        { "key": "target", "label": "Target substance", "type": "string", "from": ["meta.target_analyte", "meta.adsorbate"] },
+        { "key": "initial_concentration", "label": "Initial concentration", "type": "number", "unit": "mg/L", "from": ["meta.initial_concentration"] },
+        { "key": "temperature", "label": "Temperature", "type": "number", "unit": "degC", "from": ["meta.temperature"] },
+        { "key": "cell_configuration", "label": "Cell configuration", "type": "string", "from": ["meta.cell_configuration"] }
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Experimental Data",
+      "kind": "series",
+      "columns": [
+        { "key": "time", "label": "Time", "unit": "s", "role": "time", "from": ["series.contact_time", "series.time", "series.run_time"] },
+        { "key": "potential", "label": "Potential / Voltage", "unit": "V", "role": "potential", "from": ["series.potential_v", "series.voltage_v"] },
+        { "key": "current", "label": "Current", "unit": "A", "role": "current", "from": ["series.current_a"] },
+        { "key": "concentration", "label": "Concentration", "unit": "mg/L", "role": "concentration", "from": ["series.concentration_mg_l", "series.concentration_ppm"] },
+        { "key": "ph", "label": "pH", "unit": "", "role": "ph", "from": ["series.ph"] }
+      ]
+    },
+    {
+      "id": "C",
+      "label": "Optional Results",
+      "kind": "derived",
+      "fields": [
+        { "key": "current_density", "label": "Current density", "unit": "A/cm²", "derive": "current_density" },
+        { "key": "final_concentration", "label": "Final concentration", "unit": "mg/L", "derive": "final_concentration" },
+        { "key": "removal_efficiency", "label": "Removal efficiency", "unit": "%", "derive": "removal_efficiency" },
+        { "key": "charge_passed", "label": "Charge passed", "unit": "C", "derive": "charge_passed" },
+        { "key": "energy_consumption", "label": "Energy consumption", "unit": "", "derive": "energy_consumption" }
+      ]
+    }
+  ],
+  "rules": [
+    "One row represents one measurement/time point.",
+    "`Time` = elapsed experimental time.",
+    "`Potential / Voltage` = measured electrochemical potential or cell voltage, depending on the cell configuration.",
+    "`Current` = measured current.",
+    "`Concentration` = measured concentration of the target substance.",
+    "`pH` = measured pH.",
+    "Concentration and pH may be left as `NA` at time points where they were not measured.",
+    "Do not manually calculate derived quantities in the raw-data table."
+  ]
+}

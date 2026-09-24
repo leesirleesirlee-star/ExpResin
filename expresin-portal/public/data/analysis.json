@@ -1,0 +1,2743 @@
+{
+  "generatedAt": "2026-09-19T22:05:18",
+  "source": {
+    "file": "20250528 DHT Cl SO4.xlsx",
+    "sheets": [
+      "0305-600",
+      "0121",
+      "0212",
+      "0312-600",
+      "0326-C104",
+      "0512-C104",
+      "0528-C104"
+    ],
+    "pipeline": "L1 结构解析 → L3/L4 LLM 语义映射 → L5 规则校验"
+  },
+  "experiments": [
+    {
+      "id": "DHT-0305-600",
+      "project": "DHT 动态离子交换",
+      "sourceFile": "20250528 DHT Cl SO4.xlsx",
+      "sheet": "0305-600",
+      "status": "reviewing",
+      "lastSaved": "尚未保存",
+      "regions": [
+        {
+          "id": "0305-600#R2-2",
+          "title": "Same 40 mL A600 using 4L 5000mg/L SO4-(Na2SO4)",
+          "kind": "calibration",
+          "kindLabel": "标定曲线",
+          "headerRows": [
+            2
+          ],
+          "rowCount": 6,
+          "blocks": [
+            {
+              "id": "0305-600#R2-2/B1",
+              "kind": "calibration",
+              "analyte": "SO4",
+              "confidence": 0.96,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "SO4",
+                  "target": null,
+                  "field": "离子标签列",
+                  "value": "",
+                  "samples": [],
+                  "conf": 0.2,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名为SO4但填充率0，无数据，无法作为数据列对应calibration字段"
+                },
+                {
+                  "col": "B",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1.24079",
+                    "2.50526",
+                    "3.78972"
+                  ],
+                  "conf": 0.98,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名area，数值范围0~6.59，符合仪器信号面积特征"
+                },
+                {
+                  "col": "C",
+                  "raw": "ppm",
+                  "target": "concentration_standard",
+                  "field": "标准浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "5",
+                    "10",
+                    "15"
+                  ],
+                  "conf": 0.97,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名ppm，单位ppm，数值范围0~25，符合标准浓度特征"
+                }
+              ]
+            },
+            {
+              "id": "0305-600#R2-2/B2",
+              "kind": "calibration",
+              "analyte": "SO4",
+              "confidence": 0.95,
+              "columns": [
+                {
+                  "col": "E",
+                  "raw": "Cl",
+                  "target": null,
+                  "field": "离子标签列",
+                  "value": "",
+                  "samples": [],
+                  "conf": 0.1,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名'Cl'但填充率0且类型empty，无有效数据，无法对应标准字段"
+                },
+                {
+                  "col": "F",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0.31217",
+                    "1.74478",
+                    "3.7358"
+                  ],
+                  "conf": 0.97,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名'area'，数值范围0~42.4183，符合仪器信号面积特征"
+                },
+                {
+                  "col": "G",
+                  "raw": "ppm",
+                  "target": "concentration_standard",
+                  "field": "标准浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1",
+                    "5",
+                    "10"
+                  ],
+                  "conf": 0.95,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名'ppm'，单位ppm，数值0~100，符合标准浓度"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "0305-600#R13-13",
+          "title": "SO4",
+          "kind": "sample_measurement",
+          "kindLabel": "样品测量",
+          "headerRows": [
+            13
+          ],
+          "rowCount": 22,
+          "blocks": [
+            {
+              "id": "0305-600#R13-13/B1",
+              "kind": "sample_measurement",
+              "analyte": "SO4",
+              "confidence": 0.96,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "BV",
+                  "target": "bed_volume",
+                  "field": "床体积倍数",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0",
+                    "5",
+                    "10"
+                  ],
+                  "conf": 0.97,
+                  "unit": "BV",
+                  "unitStd": "BV",
+                  "evidence": "列名 BV，单位 BV，数值范围 0-100，符合床体积倍数"
+                },
+                {
+                  "col": "B",
+                  "raw": "V",
+                  "target": "volume",
+                  "field": "通过体积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0",
+                    "200",
+                    "400"
+                  ],
+                  "conf": 0.85,
+                  "unit": null,
+                  "unitStd": "mL",
+                  "evidence": "列名 V，数值范围 0-4000，与通过体积特征一致，单位未识别"
+                },
+                {
+                  "col": "C",
+                  "raw": "number",
+                  "target": "sample_number",
+                  "field": "样品序号",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1",
+                    "2",
+                    "3"
+                  ],
+                  "conf": 0.95,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 number，整数序列 0-21，符合样品序号"
+                },
+                {
+                  "col": "D",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "12.0099",
+                  "samples": [
+                    "12.0099",
+                    "0.011896",
+                    "2.88797",
+                    "9.85633"
+                  ],
+                  "conf": 0.97,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 area，数值范围 0.011896-13.5836，符合仪器信号面积特征"
+                },
+                {
+                  "col": "E",
+                  "raw": "calculated  ppm",
+                  "target": "concentration_ppm",
+                  "field": "计算浓度(ppm)",
+                  "value": "46.2741",
+                  "samples": [
+                    "46.2741",
+                    "0.0458353",
+                    "11.1274",
+                    "37.9764"
+                  ],
+                  "conf": 0.98,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名 calculated ppm，单位 ppm，直接对应浓度(ppm)"
+                },
+                {
+                  "col": "F",
+                  "raw": "稀释100倍(mol/L)",
+                  "target": "concentration_mol",
+                  "field": "摩尔浓度",
+                  "value": "0.0482022",
+                  "samples": [
+                    "0.0482022",
+                    "4.77451e-05",
+                    "0.011591",
+                    "0.0395588"
+                  ],
+                  "conf": 0.97,
+                  "unit": "mol/L",
+                  "unitStd": "mol/L",
+                  "evidence": "列名包含 mol/L，单位 mol/L，数值量级符合摩尔浓度"
+                },
+                {
+                  "col": "G",
+                  "raw": "mg/L",
+                  "target": "concentration_mg_l",
+                  "field": "质量浓度",
+                  "value": "4627.41",
+                  "samples": [
+                    "4627.41",
+                    "4.58353",
+                    "1112.74",
+                    "3797.64"
+                  ],
+                  "conf": 0.98,
+                  "unit": "mg/L",
+                  "unitStd": "mg/L",
+                  "evidence": "列名 mg/L，单位 mg/L，直接对应质量浓度"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "0305-600#R44-44",
+          "title": "Cl",
+          "kind": "sample_measurement",
+          "kindLabel": "样品测量",
+          "headerRows": [
+            44
+          ],
+          "rowCount": 22,
+          "blocks": [
+            {
+              "id": "0305-600#R44-44/B1",
+              "kind": "sample_measurement",
+              "analyte": "Cl",
+              "confidence": 0.97,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "BV",
+                  "target": "bed_volume",
+                  "field": "床体积倍数",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0",
+                    "5",
+                    "10"
+                  ],
+                  "conf": 0.98,
+                  "unit": "BV",
+                  "unitStd": "BV",
+                  "evidence": "列名 BV 为床体积倍数，数值范围 0~100，符合 bed_volume 定义"
+                },
+                {
+                  "col": "B",
+                  "raw": "V",
+                  "target": "volume",
+                  "field": "通过体积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0",
+                    "200",
+                    "400"
+                  ],
+                  "conf": 0.9,
+                  "unit": null,
+                  "unitStd": "mL",
+                  "evidence": "列名 V 为体积缩写，数值范围 0~4000，符合通过体积 volume"
+                },
+                {
+                  "col": "C",
+                  "raw": "number",
+                  "target": "sample_number",
+                  "field": "样品序号",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1",
+                    "2",
+                    "3"
+                  ],
+                  "conf": 0.9,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 number，数值 0,1,2,3 为样品序号"
+                },
+                {
+                  "col": "D",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "3.69725",
+                    "9.51153",
+                    "2.77815"
+                  ],
+                  "conf": 0.97,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 area，数值范围 0~9.5，符合仪器信号面积"
+                },
+                {
+                  "col": "E",
+                  "raw": "calculated  ppm",
+                  "target": "concentration_ppm",
+                  "field": "计算浓度(ppm)",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "8.7451",
+                    "22.4976",
+                    "6.57117"
+                  ],
+                  "conf": 0.98,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名 calculated ppm，单位 ppm，数值范围 0~22.5"
+                },
+                {
+                  "col": "F",
+                  "raw": "稀释100倍(mol/L)",
+                  "target": "concentration_mol",
+                  "field": "摩尔浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0.0246341",
+                    "0.0633736",
+                    "0.0185103"
+                  ],
+                  "conf": 0.65,
+                  "unit": "mol/L",
+                  "unitStd": "mol/L",
+                  "evidence": "表头包含 mol/L，数值范围 0~0.063，可能为摩尔浓度；但注明稀释100倍，存在不确定性"
+                },
+                {
+                  "col": "G",
+                  "raw": "",
+                  "target": null,
+                  "field": null,
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "874.51",
+                    "2249.76",
+                    "657.117"
+                  ],
+                  "conf": 0.2,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "表头为空，数值为 E 列的 100 倍，不能确定对应标准字段"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DHT-0121",
+      "project": "DHT 动态离子交换",
+      "sourceFile": "20250528 DHT Cl SO4.xlsx",
+      "sheet": "0121",
+      "status": "reviewing",
+      "lastSaved": "尚未保存",
+      "regions": [
+        {
+          "id": "0121#R3-3",
+          "title": "40 mL A600, pass 100 mg/L SO4 using Na2SO4",
+          "kind": "calibration",
+          "kindLabel": "标定曲线",
+          "headerRows": [
+            3
+          ],
+          "rowCount": 6,
+          "blocks": [
+            {
+              "id": "0121#R3-3/B1",
+              "kind": "calibration",
+              "analyte": "SO4",
+              "confidence": 0.97,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "SO4",
+                  "target": null,
+                  "field": "离子标签列",
+                  "value": "",
+                  "samples": [],
+                  "conf": 0.1,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名为 SO4，但类型为空，填充率0，无数据，可能是分析物标签列，不对应 calibration 下的数值字段"
+                },
+                {
+                  "col": "B",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0.247692",
+                    "1.17404",
+                    "2.41391"
+                  ],
+                  "conf": 0.98,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 area，数值范围 0~29.07，符合仪器信号面积特征"
+                },
+                {
+                  "col": "C",
+                  "raw": "ppm",
+                  "target": "concentration_standard",
+                  "field": "标准浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1",
+                    "5",
+                    "10"
+                  ],
+                  "conf": 0.98,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名 ppm，单位 ppm，数值范围 0~100，符合标准浓度特征"
+                }
+              ]
+            },
+            {
+              "id": "0121#R3-3/B2",
+              "kind": "calibration",
+              "analyte": "SO4",
+              "confidence": 0.96,
+              "columns": [
+                {
+                  "col": "E",
+                  "raw": "Cl",
+                  "target": null,
+                  "field": "离子标签列",
+                  "value": "",
+                  "samples": [],
+                  "conf": 0.05,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列E表头为'Cl'但填充率为0，无任何数据，无法对应校准曲线中的有效字段"
+                },
+                {
+                  "col": "F",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0.331588",
+                    "1.71832",
+                    "3.67516"
+                  ],
+                  "conf": 0.95,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名'area'，数值范围0~41.8454，样本呈递增趋势，符合仪器信号面积特征"
+                },
+                {
+                  "col": "G",
+                  "raw": "ppm",
+                  "target": "concentration_standard",
+                  "field": "标准浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1",
+                    "5",
+                    "10"
+                  ],
+                  "conf": 0.97,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名'ppm'，单位ppm，数值0,1,5,10为标准浓度梯度，与校准曲线标准浓度字段匹配"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "0121#R15-15",
+          "title": "SO4",
+          "kind": "sample_measurement",
+          "kindLabel": "样品测量",
+          "headerRows": [
+            15
+          ],
+          "rowCount": 14,
+          "blocks": [
+            {
+              "id": "0121#R15-15/B1",
+              "kind": "sample_measurement",
+              "analyte": "SO4",
+              "confidence": 0.98,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "BV",
+                  "target": "bed_volume",
+                  "field": "床体积倍数",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "2.5",
+                    "5",
+                    "7.5"
+                  ],
+                  "conf": 0.97,
+                  "unit": "BV",
+                  "unitStd": "BV",
+                  "evidence": "列名 BV，单位 BV，数值范围 0~25，符合床体积倍数特征"
+                },
+                {
+                  "col": "B",
+                  "raw": "time/h",
+                  "target": "contact_time",
+                  "field": "接触/运行时间",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1",
+                    "2",
+                    "3"
+                  ],
+                  "conf": 0.96,
+                  "unit": null,
+                  "unitStd": "h",
+                  "evidence": "列名 time/h，时间单位小时，数值范围 0~10，符合接触时间特征"
+                },
+                {
+                  "col": "C",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "13.283",
+                  "samples": [
+                    "13.283",
+                    "0.0249942",
+                    "0.0002682",
+                    "-0.0011368"
+                  ],
+                  "conf": 0.95,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 area，数值范围含负值但以小幅波动为主（如 13.283 至 -0.006），符合色谱/仪器信号面积特征"
+                },
+                {
+                  "col": "D",
+                  "raw": "calculated  ppm",
+                  "target": "concentration_ppm",
+                  "field": "计算浓度(ppm)",
+                  "value": "46.2034",
+                  "samples": [
+                    "46.2034",
+                    "0.0869398",
+                    "0.000932907",
+                    "-0.00395425"
+                  ],
+                  "conf": 0.99,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名 calculated ppm，单位 ppm，数值范围 -0.0219932~46.2034，明确为计算浓度(ppm)"
+                },
+                {
+                  "col": "E",
+                  "raw": "稀释2倍(mol/L)",
+                  "target": "concentration_mol",
+                  "field": "摩尔浓度",
+                  "value": "0.000962571",
+                  "samples": [
+                    "0.000962571",
+                    "1.81125e-06",
+                    "1.94356e-08",
+                    "-8.23801e-08"
+                  ],
+                  "conf": 0.96,
+                  "unit": "mol/L",
+                  "unitStd": "mol/L",
+                  "evidence": "列名 稀释2倍(mol/L)，单位 mol/L，数值范围 1e-7~0.00096，符合摩尔浓度特征"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "0121#R30-30",
+          "title": "Cl",
+          "kind": "sample_measurement",
+          "kindLabel": "样品测量",
+          "headerRows": [
+            30
+          ],
+          "rowCount": 12,
+          "blocks": [
+            {
+              "id": "0121#R30-30/B1",
+              "kind": "sample_measurement",
+              "analyte": "Cl",
+              "confidence": 0.96,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "BV",
+                  "target": "bed_volume",
+                  "field": "床体积倍数",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "2.5",
+                    "5",
+                    "7.5"
+                  ],
+                  "conf": 0.97,
+                  "unit": "BV",
+                  "unitStd": "BV",
+                  "evidence": "列名 BV，单位 BV，数值范围 0-25，样本 0,2.5,5,7.5，符合床体积倍数"
+                },
+                {
+                  "col": "B",
+                  "raw": "time/h",
+                  "target": "contact_time",
+                  "field": "接触/运行时间",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1",
+                    "2",
+                    "3"
+                  ],
+                  "conf": 0.96,
+                  "unit": null,
+                  "unitStd": "h",
+                  "evidence": "列名 time/h，数值范围 0-10，样本 0,1,2,3，符合接触/运行时间（小时）"
+                },
+                {
+                  "col": "C",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "15.5202",
+                    "16.3859",
+                    "15.9027"
+                  ],
+                  "conf": 0.97,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 area，数值范围 0-16.3859，符合仪器信号面积"
+                },
+                {
+                  "col": "D",
+                  "raw": "calculated  ppm",
+                  "target": "concentration_ppm",
+                  "field": "计算浓度(ppm)",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "37.2315",
+                    "39.308",
+                    "38.149"
+                  ],
+                  "conf": 0.97,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名 calculated ppm，单位 ppm，数值范围 0-39.308，符合计算浓度 ppm"
+                },
+                {
+                  "col": "E",
+                  "raw": "稀释2倍(mol/L)",
+                  "target": "concentration_mol",
+                  "field": "摩尔浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0.00209755",
+                    "0.00221454",
+                    "0.00214924"
+                  ],
+                  "conf": 0.92,
+                  "unit": "mol/L",
+                  "unitStd": "mol/L",
+                  "evidence": "列名含 mol/L，数值范围 0-0.00221454，符合摩尔浓度；前缀稀释2倍可能表示样品预处理，但仍是浓度"
+                },
+                {
+                  "col": "F",
+                  "raw": "",
+                  "target": null,
+                  "field": null,
+                  "value": "rw",
+                  "samples": [
+                    "rw"
+                  ],
+                  "conf": 0.05,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "表头为空，填充率仅 0.083，样本为文本 rw，无明确可映射字段"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DHT-0212",
+      "project": "DHT 动态离子交换",
+      "sourceFile": "20250528 DHT Cl SO4.xlsx",
+      "sheet": "0212",
+      "status": "reviewing",
+      "lastSaved": "尚未保存",
+      "regions": [
+        {
+          "id": "0212#R3-3",
+          "title": "Same 40 mL A600",
+          "kind": "calibration",
+          "kindLabel": "标定曲线",
+          "headerRows": [
+            3
+          ],
+          "rowCount": 6,
+          "blocks": [
+            {
+              "id": "0212#R3-3/B1",
+              "kind": "calibration",
+              "analyte": "SO4",
+              "confidence": 0.97,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "SO4",
+                  "target": null,
+                  "field": "离子标签列",
+                  "value": "",
+                  "samples": [],
+                  "conf": 0.1,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 SO4，但类型为空，填充率为 0.0，无数据，无法对应 calibration 下的任何字段"
+                },
+                {
+                  "col": "B",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1.2154",
+                    "2.42095",
+                    "3.73554"
+                  ],
+                  "conf": 0.96,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 area，数值范围 0~6.44138，符合仪器信号面积特征"
+                },
+                {
+                  "col": "C",
+                  "raw": "ppm",
+                  "target": "concentration_standard",
+                  "field": "标准浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "5",
+                    "10",
+                    "15"
+                  ],
+                  "conf": 0.97,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名 ppm，单位 ppm，数值范围 0~25，符合标准浓度特征"
+                }
+              ]
+            },
+            {
+              "id": "0212#R3-3/B2",
+              "kind": "calibration",
+              "analyte": "Cl",
+              "confidence": 0.95,
+              "columns": [
+                {
+                  "col": "E",
+                  "raw": "Cl",
+                  "target": null,
+                  "field": "离子标签列",
+                  "value": "",
+                  "samples": [],
+                  "conf": 0.2,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "表头为Cl但列内无数据，填充率0，无法确定为任何校准字段"
+                },
+                {
+                  "col": "F",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0.295089",
+                    "1.60294",
+                    "3.46053"
+                  ],
+                  "conf": 0.97,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名area，数值范围0~40.0131，符合仪器信号面积特征"
+                },
+                {
+                  "col": "G",
+                  "raw": "ppm",
+                  "target": "concentration_standard",
+                  "field": "标准浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1",
+                    "5",
+                    "10"
+                  ],
+                  "conf": 0.98,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名ppm，单位ppm，数值范围0~100，符合标准浓度特征"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "0212#R15-15",
+          "title": "SO4",
+          "kind": "sample_measurement",
+          "kindLabel": "样品测量",
+          "headerRows": [
+            15
+          ],
+          "rowCount": 14,
+          "blocks": [
+            {
+              "id": "0212#R15-15/B1",
+              "kind": "sample_measurement",
+              "analyte": "SO4",
+              "confidence": 0.95,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "BV",
+                  "target": "bed_volume",
+                  "field": "床体积倍数",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "2.5",
+                    "5",
+                    "7.5"
+                  ],
+                  "conf": 0.97,
+                  "unit": "BV",
+                  "unitStd": "BV",
+                  "evidence": "列名 BV，单位 BV，数值范围 0-25，符合床体积倍数特征"
+                },
+                {
+                  "col": "B",
+                  "raw": "V,mL",
+                  "target": "volume",
+                  "field": "通过体积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "100",
+                    "200",
+                    "300"
+                  ],
+                  "conf": 0.96,
+                  "unit": "mL",
+                  "unitStd": "mL",
+                  "evidence": "列名 V,mL，单位 mL，数值范围 0-1000，符合通过体积特征"
+                },
+                {
+                  "col": "C",
+                  "raw": "time/h",
+                  "target": "contact_time",
+                  "field": "接触/运行时间",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1",
+                    "2",
+                    "3"
+                  ],
+                  "conf": 0.95,
+                  "unit": null,
+                  "unitStd": "h",
+                  "evidence": "列名 time/h，单位为小时，数值范围 0-10，符合接触/运行时间特征"
+                },
+                {
+                  "col": "D",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "13.5328",
+                  "samples": [
+                    "13.5328",
+                    "0.067147",
+                    "0.070028",
+                    "0.075529"
+                  ],
+                  "conf": 0.94,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 area，数值范围 0.067-13.5328，符合仪器信号面积特征"
+                },
+                {
+                  "col": "E",
+                  "raw": "calculated  ppm",
+                  "target": "concentration_ppm",
+                  "field": "计算浓度(ppm)",
+                  "value": "53.3167",
+                  "samples": [
+                    "53.3167",
+                    "0.264546",
+                    "0.275896",
+                    "0.297569"
+                  ],
+                  "conf": 0.97,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名 calculated ppm，单位 ppm，数值范围 0.2645-53.3167，符合计算浓度(ppm)特征"
+                },
+                {
+                  "col": "F",
+                  "raw": "稀释2倍(mol/L)",
+                  "target": "concentration_mol",
+                  "field": "摩尔浓度",
+                  "value": "0.00111076",
+                  "samples": [
+                    "0.00111076",
+                    "5.51137e-06",
+                    "5.74784e-06",
+                    "6.19936e-06"
+                  ],
+                  "conf": 0.9,
+                  "unit": "mol/L",
+                  "unitStd": "mol/L",
+                  "evidence": "列名 稀释2倍(mol/L)，单位 mol/L，数值为摩尔浓度，符合 concentration_mol 字段"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "0212#R30-30",
+          "title": "Cl",
+          "kind": "sample_measurement",
+          "kindLabel": "样品测量",
+          "headerRows": [
+            30
+          ],
+          "rowCount": 12,
+          "blocks": [
+            {
+              "id": "0212#R30-30/B1",
+              "kind": "sample_measurement",
+              "analyte": "Cl",
+              "confidence": 0.97,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "BV",
+                  "target": "bed_volume",
+                  "field": "床体积倍数",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "2.5",
+                    "5",
+                    "7.5"
+                  ],
+                  "conf": 0.97,
+                  "unit": "BV",
+                  "unitStd": "BV",
+                  "evidence": "列名为 BV，单位为 BV，数值范围 0~25，符合床体积倍数特征"
+                },
+                {
+                  "col": "B",
+                  "raw": "time/h",
+                  "target": "contact_time",
+                  "field": "接触/运行时间",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1",
+                    "2",
+                    "3"
+                  ],
+                  "conf": 0.95,
+                  "unit": null,
+                  "unitStd": "h",
+                  "evidence": "列名为 time/h，表示时间小时，数值范围 0~10，符合接触/运行时间"
+                },
+                {
+                  "col": "C",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "14.2802",
+                    "14.7588",
+                    "14.6478"
+                  ],
+                  "conf": 0.95,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名为 area，数值范围 0~15.17，符合仪器信号面积特征"
+                },
+                {
+                  "col": "D",
+                  "raw": "calculated  ppm",
+                  "target": "concentration_ppm",
+                  "field": "计算浓度(ppm)",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "35.8362",
+                    "37.0373",
+                    "36.7586"
+                  ],
+                  "conf": 0.98,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名 calculated ppm，单位 ppm，数值 0~38.08，对应计算浓度(ppm)"
+                },
+                {
+                  "col": "E",
+                  "raw": "稀释2倍(mol/L)",
+                  "target": "concentration_mol",
+                  "field": "摩尔浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0.00201894",
+                    "0.00208661",
+                    "0.00207091"
+                  ],
+                  "conf": 0.85,
+                  "unit": "mol/L",
+                  "unitStd": "mol/L",
+                  "evidence": "列名含 mol/L，单位 mol/L，数值为摩尔浓度量级，虽含稀释2倍但浓度值本身为摩尔浓度"
+                },
+                {
+                  "col": "F",
+                  "raw": "mg/L",
+                  "target": "concentration_mg_l",
+                  "field": "质量浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "71.6724",
+                    "74.0746",
+                    "73.5171"
+                  ],
+                  "conf": 0.98,
+                  "unit": "mg/L",
+                  "unitStd": "mg/L",
+                  "evidence": "列名 mg/L，单位 mg/L，数值 0~76.15，对应质量浓度"
+                }
+              ]
+            },
+            {
+              "id": "0212#R30-30/B2",
+              "kind": "sample_measurement",
+              "analyte": "Cl",
+              "confidence": 0.5,
+              "columns": [
+                {
+                  "col": "H",
+                  "raw": "",
+                  "target": null,
+                  "field": null,
+                  "value": "rw",
+                  "samples": [
+                    "rw"
+                  ],
+                  "conf": 0.1,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "表头为空，类型为text，填充率仅0.083，样本值为'rw'，不符合任何数值字段特征"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DHT-0312-600",
+      "project": "DHT 动态离子交换",
+      "sourceFile": "20250528 DHT Cl SO4.xlsx",
+      "sheet": "0312-600",
+      "status": "reviewing",
+      "lastSaved": "尚未保存",
+      "regions": [
+        {
+          "id": "0312-600 #R1-2",
+          "title": "",
+          "kind": "calibration",
+          "kindLabel": "标定曲线",
+          "headerRows": [
+            1,
+            2
+          ],
+          "rowCount": 6,
+          "blocks": [
+            {
+              "id": "0312-600 #R1-2/B1",
+              "kind": "calibration",
+              "analyte": "SO4",
+              "confidence": 0.97,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "SO4",
+                  "target": null,
+                  "field": "离子标签列",
+                  "value": "",
+                  "samples": [],
+                  "conf": 0.1,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "表头为 SO4，但列内无数据，非数据字段，仅用于标识分析物"
+                },
+                {
+                  "col": "B",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1.1556",
+                    "2.44314",
+                    "3.82772"
+                  ],
+                  "conf": 0.97,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 area，数值范围 0~6.73682，符合仪器信号面积特征"
+                },
+                {
+                  "col": "C",
+                  "raw": "ppm",
+                  "target": "concentration_standard",
+                  "field": "标准浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "5",
+                    "10",
+                    "15"
+                  ],
+                  "conf": 0.97,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名 ppm，单位 ppm，数值范围 0~25，符合标准浓度序列"
+                }
+              ]
+            },
+            {
+              "id": "0312-600 #R1-2/B2",
+              "kind": "calibration",
+              "analyte": "Cl",
+              "confidence": 0.95,
+              "columns": [
+                {
+                  "col": "E",
+                  "raw": "Cl",
+                  "target": null,
+                  "field": "离子标签列",
+                  "value": "",
+                  "samples": [],
+                  "conf": 0.2,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 Cl 提示分析物，但列填充率为 0，无数据值，无法映射为校准数据字段"
+                },
+                {
+                  "col": "F",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0.314173",
+                    "1.7872",
+                    "3.83733"
+                  ],
+                  "conf": 0.97,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 area，数值范围 0~43.0011，符合仪器信号面积特征"
+                },
+                {
+                  "col": "G",
+                  "raw": "ppm",
+                  "target": "concentration_standard",
+                  "field": "标准浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1",
+                    "5",
+                    "10"
+                  ],
+                  "conf": 0.97,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名 ppm，单位 ppm，数值为 0, 1, 5, 10，符合标准浓度特征"
+                },
+                {
+                  "col": "H",
+                  "raw": "0.150636",
+                  "target": null,
+                  "field": "未映射",
+                  "value": "",
+                  "samples": [],
+                  "conf": 0.1,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列类型 empty，填充率为 0，无有效数据，无法对应任何字段"
+                },
+                {
+                  "col": "I",
+                  "raw": "0.008688",
+                  "target": null,
+                  "field": "未映射",
+                  "value": "",
+                  "samples": [],
+                  "conf": 0.1,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列类型 empty，填充率为 0，无有效数据，无法对应任何字段"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "0312-600 #R13-13",
+          "title": "SO4",
+          "kind": "sample_measurement",
+          "kindLabel": "样品测量",
+          "headerRows": [
+            13
+          ],
+          "rowCount": 22,
+          "blocks": [
+            {
+              "id": "0312-600 #R13-13/B1",
+              "kind": "sample_measurement",
+              "analyte": "SO4",
+              "confidence": 0.97,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "BV",
+                  "target": "bed_volume",
+                  "field": "床体积倍数",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0",
+                    "5",
+                    "10"
+                  ],
+                  "conf": 0.97,
+                  "unit": "BV",
+                  "unitStd": "BV",
+                  "evidence": "列名 BV，单位 BV，数值范围 0~100，符合床体积倍数"
+                },
+                {
+                  "col": "B",
+                  "raw": "V",
+                  "target": "volume",
+                  "field": "通过体积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0",
+                    "200",
+                    "400"
+                  ],
+                  "conf": 0.85,
+                  "unit": null,
+                  "unitStd": "mL",
+                  "evidence": "列名 V，数值范围 0~4000，通常表示通过体积，但单位未识别"
+                },
+                {
+                  "col": "C",
+                  "raw": "number",
+                  "target": "sample_number",
+                  "field": "样品序号",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1",
+                    "2",
+                    "3"
+                  ],
+                  "conf": 0.95,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 number，数值范围 0~21，样本 0,1,2,3，符合样品序号"
+                },
+                {
+                  "col": "D",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "135.146",
+                    "39.4483",
+                    "39.098"
+                  ],
+                  "conf": 0.95,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 area，数值范围 0~135.146，符合仪器信号面积特征"
+                },
+                {
+                  "col": "E",
+                  "raw": "修正后area",
+                  "target": "corrected_area",
+                  "field": "修正后信号",
+                  "value": "-0.150636",
+                  "samples": [
+                    "-0.150636",
+                    "134.995",
+                    "39.2977",
+                    "38.9474"
+                  ],
+                  "conf": 0.95,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 修正后area，数值范围 -0.150636~134.995，对应修正后信号"
+                },
+                {
+                  "col": "F",
+                  "raw": "calculated  ppm",
+                  "target": "concentration_ppm",
+                  "field": "计算浓度(ppm)",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "513.864",
+                    "149.994",
+                    "148.662"
+                  ],
+                  "conf": 0.97,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名 calculated ppm，单位 ppm，数值范围 0~513.864，对应计算浓度(ppm)"
+                },
+                {
+                  "col": "G",
+                  "raw": "稀释10倍(mol/L)",
+                  "target": "concentration_mol",
+                  "field": "摩尔浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0.0535275",
+                    "0.0156244",
+                    "0.0154857"
+                  ],
+                  "conf": 0.9,
+                  "unit": "mol/L",
+                  "unitStd": "mol/L",
+                  "evidence": "列名 稀释10倍(mol/L)，单位 mol/L，数值为摩尔浓度，对应摩尔浓度字段"
+                },
+                {
+                  "col": "H",
+                  "raw": "mg/L",
+                  "target": "concentration_mg_l",
+                  "field": "质量浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "5138.64",
+                    "1499.94",
+                    "1486.62"
+                  ],
+                  "conf": 0.97,
+                  "unit": "mg/L",
+                  "unitStd": "mg/L",
+                  "evidence": "列名 mg/L，单位 mg/L，数值范围 0~5138.64，对应质量浓度"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "0312-600 #R44-44",
+          "title": "Cl",
+          "kind": "sample_measurement",
+          "kindLabel": "样品测量",
+          "headerRows": [
+            44
+          ],
+          "rowCount": 22,
+          "blocks": [
+            {
+              "id": "0312-600 #R44-44/B1",
+              "kind": "sample_measurement",
+              "analyte": "Cl",
+              "confidence": 0.97,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "BV",
+                  "target": "bed_volume",
+                  "field": "床体积倍数",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0",
+                    "5",
+                    "10"
+                  ],
+                  "conf": 0.98,
+                  "unit": "BV",
+                  "unitStd": "BV",
+                  "evidence": "列名 BV，单位 BV，数值范围 0-100，符合床体积倍数。"
+                },
+                {
+                  "col": "B",
+                  "raw": "V",
+                  "target": "volume",
+                  "field": "通过体积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0",
+                    "200",
+                    "400"
+                  ],
+                  "conf": 0.9,
+                  "unit": null,
+                  "unitStd": "mL",
+                  "evidence": "列名 V，数值范围 0-4000，推测为通过体积。"
+                },
+                {
+                  "col": "C",
+                  "raw": "number",
+                  "target": "sample_number",
+                  "field": "样品序号",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1",
+                    "2",
+                    "3"
+                  ],
+                  "conf": 0.9,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 number，样本 0,1,2,3，数值范围 0-21，符合样品序号。"
+                },
+                {
+                  "col": "D",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "42.3116",
+                  "samples": [
+                    "42.3116",
+                    "1.04697",
+                    "0.442056",
+                    "0.905702"
+                  ],
+                  "conf": 0.97,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 area，数值范围 0.44-42.31，符合仪器信号面积。"
+                },
+                {
+                  "col": "E",
+                  "raw": "修正后area",
+                  "target": "corrected_area",
+                  "field": "修正后信号",
+                  "value": "42.303",
+                  "samples": [
+                    "42.303",
+                    "1.03828",
+                    "0.433368",
+                    "0.897014"
+                  ],
+                  "conf": 0.98,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 修正后area，明确为修正后信号。"
+                },
+                {
+                  "col": "F",
+                  "raw": "calculated  ppm",
+                  "target": "concentration_ppm",
+                  "field": "计算浓度(ppm)",
+                  "value": "98.7055",
+                  "samples": [
+                    "98.7055",
+                    "2.42262",
+                    "1.01118",
+                    "2.093"
+                  ],
+                  "conf": 0.97,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名 calculated ppm，单位 ppm，数值范围 1.01-98.71，符合计算浓度(ppm)。"
+                },
+                {
+                  "col": "G",
+                  "raw": "稀释10倍(mol/L)",
+                  "target": "concentration_mol",
+                  "field": "摩尔浓度",
+                  "value": "0.0278044",
+                  "samples": [
+                    "0.0278044",
+                    "0.000682428",
+                    "0.000284839",
+                    "0.000589578"
+                  ],
+                  "conf": 0.85,
+                  "unit": "mol/L",
+                  "unitStd": "mol/L",
+                  "evidence": "表头含 mol/L，数值范围 0.000285-0.0278，符合摩尔浓度。"
+                },
+                {
+                  "col": "H",
+                  "raw": "",
+                  "target": null,
+                  "field": null,
+                  "value": "987.055",
+                  "samples": [
+                    "987.055",
+                    "24.2262",
+                    "10.1118",
+                    "20.93"
+                  ],
+                  "conf": 0.2,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "无表头/单位，数值范围 10.1-987.1，是 F 列值的10倍，无法确定对应字段。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DHT-0326-C104",
+      "project": "DHT 动态离子交换",
+      "sourceFile": "20250528 DHT Cl SO4.xlsx",
+      "sheet": "0326-C104",
+      "status": "reviewing",
+      "lastSaved": "尚未保存",
+      "regions": [
+        {
+          "id": "0326-C104#R2-2",
+          "title": "100ml C104 using 0.1mol NH4HCO3",
+          "kind": "calibration",
+          "kindLabel": "标定曲线",
+          "headerRows": [
+            2
+          ],
+          "rowCount": 6,
+          "blocks": [
+            {
+              "id": "0326-C104#R2-2/B1",
+              "kind": "calibration",
+              "analyte": "NH4+",
+              "confidence": 0.98,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "NH4+",
+                  "target": null,
+                  "field": "离子标签列",
+                  "value": "",
+                  "samples": [],
+                  "conf": 0.0,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列A表头为NH4+但整列为空（填充率0），无可用数据，无法映射到calibration数值字段；分析物已在块级analyte中标识"
+                },
+                {
+                  "col": "B",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1.8344",
+                    "3.5795",
+                    "8.5603"
+                  ],
+                  "conf": 0.98,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名area，数值范围0~36.1316，符合仪器信号面积特征"
+                },
+                {
+                  "col": "C",
+                  "raw": "ppm",
+                  "target": "concentration_standard",
+                  "field": "标准浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "5",
+                    "10",
+                    "25"
+                  ],
+                  "conf": 0.99,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名ppm，单位ppm，数值样本0、5、10、25、100，符合标准浓度梯度"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "0326-C104#R13-13",
+          "title": "36.1316",
+          "kind": "sample_measurement",
+          "kindLabel": "样品测量",
+          "headerRows": [
+            13
+          ],
+          "rowCount": 2,
+          "blocks": [
+            {
+              "id": "0326-C104#R13-13/B1",
+              "kind": "sample_measurement",
+              "analyte": null,
+              "confidence": 0.98,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "BV",
+                  "target": "bed_volume",
+                  "field": "床体积倍数",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "40"
+                  ],
+                  "conf": 0.97,
+                  "unit": "BV",
+                  "unitStd": "BV",
+                  "evidence": "列名 'BV' 通常为床体积倍数，数值范围 0-40 符合床体积倍数特征"
+                },
+                {
+                  "col": "B",
+                  "raw": "V",
+                  "target": "volume",
+                  "field": "通过体积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "4000"
+                  ],
+                  "conf": 0.92,
+                  "unit": null,
+                  "unitStd": "mL",
+                  "evidence": "列名 'V' 通常代表体积，数值范围 0-4000 符合通过体积量级，但单位未识别，把握稍低"
+                },
+                {
+                  "col": "C",
+                  "raw": "number",
+                  "target": "sample_number",
+                  "field": "样品序号",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1"
+                  ],
+                  "conf": 0.6,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 'number' 可能为样品序号，数值 0,1 符合两行样品编号，但缺少明确标签，把握中等"
+                },
+                {
+                  "col": "D",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "12.3387",
+                  "samples": [
+                    "12.3387",
+                    "8.8351"
+                  ],
+                  "conf": 0.98,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 'area' 直接对应仪器信号面积，数值 8-12 符合信号面积常见范围"
+                },
+                {
+                  "col": "E",
+                  "raw": "修正后area",
+                  "target": "corrected_area",
+                  "field": "修正后信号",
+                  "value": "12.3387",
+                  "samples": [
+                    "12.3387",
+                    "8.8351"
+                  ],
+                  "conf": 0.98,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 '修正后area' 明确为修正后信号面积，字段名 corrected_area 匹配"
+                },
+                {
+                  "col": "F",
+                  "raw": "calculated  ppm",
+                  "target": "concentration_ppm",
+                  "field": "计算浓度(ppm)",
+                  "value": "34.5089",
+                  "samples": [
+                    "34.5089",
+                    "24.71"
+                  ],
+                  "conf": 0.98,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名包含 'calculated ppm'，单位 ppm，直接对应浓度 ppm 字段"
+                },
+                {
+                  "col": "G",
+                  "raw": "稀释20倍(mol/L)",
+                  "target": "concentration_mol",
+                  "field": "摩尔浓度",
+                  "value": "0.095858",
+                  "samples": [
+                    "0.095858",
+                    "0.0686389"
+                  ],
+                  "conf": 0.95,
+                  "unit": "mol/L",
+                  "unitStd": "mol/L",
+                  "evidence": "列名 '稀释20倍(mol/L)' 包含 mol/L，对应摩尔浓度 concentration_mol，稀释20倍说明是计算后的摩尔浓度"
+                },
+                {
+                  "col": "H",
+                  "raw": "mg/L",
+                  "target": "concentration_mg_l",
+                  "field": "质量浓度",
+                  "value": "1725.44",
+                  "samples": [
+                    "1725.44",
+                    "1235.5"
+                  ],
+                  "conf": 0.98,
+                  "unit": "mg/L",
+                  "unitStd": "mg/L",
+                  "evidence": "列名 'mg/L' 直接对应质量浓度 concentration_mg_l，单位明确"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DHT-0512-C104",
+      "project": "DHT 动态离子交换",
+      "sourceFile": "20250528 DHT Cl SO4.xlsx",
+      "sheet": "0512-C104",
+      "status": "reviewing",
+      "lastSaved": "尚未保存",
+      "regions": [
+        {
+          "id": "0512-C104#R2-2",
+          "title": "100ml C104 using 0.1mol LiCl",
+          "kind": "calibration",
+          "kindLabel": "标定曲线",
+          "headerRows": [
+            2
+          ],
+          "rowCount": 6,
+          "blocks": [
+            {
+              "id": "0512-C104#R2-2/B1",
+              "kind": "calibration",
+              "analyte": "NH4+",
+              "confidence": 0.96,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "NH4+",
+                  "target": null,
+                  "field": "离子标签列",
+                  "value": "",
+                  "samples": [],
+                  "conf": 0.1,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列头为 NH4+，但该列无任何数值且填充率为0，无法对应数值列字段，可能仅作分析物标注。"
+                },
+                {
+                  "col": "B",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1.8458",
+                    "3.5048",
+                    "8.9469"
+                  ],
+                  "conf": 0.97,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名为 area，数值范围为 0~37.6208，样本非负，符合仪器信号面积特征。"
+                },
+                {
+                  "col": "C",
+                  "raw": "ppm",
+                  "target": "concentration_standard",
+                  "field": "标准浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "5",
+                    "10",
+                    "25"
+                  ],
+                  "conf": 0.97,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名为 ppm，单位为 ppm，数值范围 0~100，样本为 0,5,10,25，符合标准浓度梯度特征。"
+                }
+              ]
+            },
+            {
+              "id": "0512-C104#R2-2/B2",
+              "kind": "calibration",
+              "analyte": "Li+",
+              "confidence": 0.95,
+              "columns": [
+                {
+                  "col": "E",
+                  "raw": "Li+",
+                  "target": null,
+                  "field": "离子标签列",
+                  "value": "",
+                  "samples": [],
+                  "conf": 0.2,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 Li+，但填充率为0，无数据，可能为分析物标识而非数据列，且 calibration 无对应字段"
+                },
+                {
+                  "col": "F",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "6.4912",
+                    "16.7843",
+                    "30.1546"
+                  ],
+                  "conf": 0.97,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 area，数值范围 0~164.829，符合仪器信号面积特征"
+                },
+                {
+                  "col": "G",
+                  "raw": "ppm",
+                  "target": "concentration_standard",
+                  "field": "标准浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "5",
+                    "10",
+                    "25"
+                  ],
+                  "conf": 0.97,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名 ppm，单位 ppm，数值范围 0~100，符合标准浓度特征"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "0512-C104#R13-13",
+          "title": "NH4+",
+          "kind": "sample_measurement",
+          "kindLabel": "样品测量",
+          "headerRows": [
+            13
+          ],
+          "rowCount": 12,
+          "blocks": [
+            {
+              "id": "0512-C104#R13-13/B1",
+              "kind": "sample_measurement",
+              "analyte": "NH4+",
+              "confidence": 0.97,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "BV",
+                  "target": "bed_volume",
+                  "field": "床体积倍数",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "40",
+                    "200",
+                    "120"
+                  ],
+                  "conf": 0.96,
+                  "unit": "BV",
+                  "unitStd": "BV",
+                  "evidence": "表头 BV，单位 BV，数值范围 0~800，符合床体积倍数特征。"
+                },
+                {
+                  "col": "B",
+                  "raw": "V",
+                  "target": "volume",
+                  "field": "通过体积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "4000",
+                    "8000",
+                    "12000"
+                  ],
+                  "conf": 0.85,
+                  "unit": null,
+                  "unitStd": "mL",
+                  "evidence": "表头 V，通常表示体积，数值范围 0~32000，疑似通过体积。"
+                },
+                {
+                  "col": "C",
+                  "raw": "number",
+                  "target": "sample_number",
+                  "field": "样品序号",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1",
+                    "2",
+                    "3"
+                  ],
+                  "conf": 0.85,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "表头 number，整数小值 0~8，符合样品序号特征。"
+                },
+                {
+                  "col": "D",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "5.6549",
+                    "4.753",
+                    "2.8951"
+                  ],
+                  "conf": 0.97,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "表头 area，数值范围 0~5.65，符合仪器信号面积。"
+                },
+                {
+                  "col": "E",
+                  "raw": "修正后area",
+                  "target": "corrected_area",
+                  "field": "修正后信号",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "5.6549",
+                    "4.753",
+                    "2.8951"
+                  ],
+                  "conf": 0.97,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "表头 修正后area，数值与面积相近，符合修正后信号。"
+                },
+                {
+                  "col": "F",
+                  "raw": "calculated  ppm",
+                  "target": "concentration_ppm",
+                  "field": "计算浓度(ppm)",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "15.0358",
+                    "12.6378",
+                    "7.69778"
+                  ],
+                  "conf": 0.98,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "表头 calculated ppm，单位 ppm，数值范围 0~15.04。"
+                },
+                {
+                  "col": "G",
+                  "raw": "稀释100倍(mol/L)",
+                  "target": "concentration_mol",
+                  "field": "摩尔浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0.0835323",
+                    "0.0702097",
+                    "0.0427655"
+                  ],
+                  "conf": 0.8,
+                  "unit": "mol/L",
+                  "unitStd": "mol/L",
+                  "evidence": "表头 稀释100倍(mol/L)，单位 mol/L，数值为摩尔浓度。"
+                },
+                {
+                  "col": "H",
+                  "raw": "mg/L",
+                  "target": "concentration_mg_l",
+                  "field": "质量浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1503.58",
+                    "1263.78",
+                    "769.778"
+                  ],
+                  "conf": 0.98,
+                  "unit": "mg/L",
+                  "unitStd": "mg/L",
+                  "evidence": "表头 mg/L，单位为 mg/L，数值范围 0~1503.58，质量浓度。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "0512-C104#R26-26",
+          "title": "Li+",
+          "kind": "sample_measurement",
+          "kindLabel": "样品测量",
+          "headerRows": [
+            26
+          ],
+          "rowCount": 9,
+          "blocks": [
+            {
+              "id": "0512-C104#R26-26/B1",
+              "kind": "sample_measurement",
+              "analyte": "Li+",
+              "confidence": 0.98,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "BV",
+                  "target": "bed_volume",
+                  "field": "床体积倍数",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "40",
+                    "200",
+                    "120"
+                  ],
+                  "conf": 0.97,
+                  "unit": "BV",
+                  "unitStd": "BV",
+                  "evidence": "列名 'BV'，单位 BV，数值范围 0-800，典型床体积倍数，符合 sample_measurement 的 bed_volume 字段。"
+                },
+                {
+                  "col": "B",
+                  "raw": "V",
+                  "target": "volume",
+                  "field": "通过体积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "4000",
+                    "8000",
+                    "12000"
+                  ],
+                  "conf": 0.94,
+                  "unit": null,
+                  "unitStd": "mL",
+                  "evidence": "列名 'V'，数值范围 0-32000，单位未识别，但结合上下文为通过体积，对应 volume 字段。"
+                },
+                {
+                  "col": "C",
+                  "raw": "number",
+                  "target": "sample_number",
+                  "field": "样品序号",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1",
+                    "2",
+                    "3"
+                  ],
+                  "conf": 0.97,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 'number'，数值范围 0-8，样本值为 0,1,2,3，明显为样品序号，对应 sample_number。"
+                },
+                {
+                  "col": "D",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "7.8462",
+                  "samples": [
+                    "7.8462",
+                    "0.2458",
+                    "1.696",
+                    "3.4156"
+                  ],
+                  "conf": 0.95,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 'area'，数值范围 0.2458-7.8462，符合仪器信号面积特征，对应 signal_area。"
+                },
+                {
+                  "col": "E",
+                  "raw": "修正后area",
+                  "target": "corrected_area",
+                  "field": "修正后信号",
+                  "value": "7.8462",
+                  "samples": [
+                    "7.8462",
+                    "0.2458",
+                    "1.696",
+                    "3.4156"
+                  ],
+                  "conf": 0.97,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 '修正后area'，直接对应 corrected_area，数值与 area 列相同，符合修正信号。"
+                },
+                {
+                  "col": "F",
+                  "raw": "calculated  ppm",
+                  "target": "concentration_ppm",
+                  "field": "计算浓度(ppm)",
+                  "value": "5.01764",
+                  "samples": [
+                    "5.01764",
+                    "0.157189",
+                    "1.08459",
+                    "2.18428"
+                  ],
+                  "conf": 0.97,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名 'calculated  ppm'，单位 ppm，数值范围 0.157-5.018，为计算浓度，对应 concentration_ppm。"
+                },
+                {
+                  "col": "G",
+                  "raw": "稀释100倍(mol/L)",
+                  "target": "concentration_mol",
+                  "field": "摩尔浓度",
+                  "value": "0.0722899",
+                  "samples": [
+                    "0.0722899",
+                    "0.00226465",
+                    "0.0156259",
+                    "0.0314692"
+                  ],
+                  "conf": 0.93,
+                  "unit": "mol/L",
+                  "unitStd": "mol/L",
+                  "evidence": "列名 '稀释100倍(mol/L)'，单位 mol/L，数值范围 0.00226-0.0723，为摩尔浓度，对应 concentration_mol。"
+                },
+                {
+                  "col": "H",
+                  "raw": "mg/L",
+                  "target": "concentration_mg_l",
+                  "field": "质量浓度",
+                  "value": "1301.22",
+                  "samples": [
+                    "1301.22",
+                    "40.7636",
+                    "281.266",
+                    "566.445"
+                  ],
+                  "conf": 0.97,
+                  "unit": "mg/L",
+                  "unitStd": "mg/L",
+                  "evidence": "列名 'mg/L'，单位 mg/L，数值范围 40.76-1301.22，为质量浓度，对应 concentration_mg_l。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DHT-0528-C104",
+      "project": "DHT 动态离子交换",
+      "sourceFile": "20250528 DHT Cl SO4.xlsx",
+      "sheet": "0528-C104",
+      "status": "reviewing",
+      "lastSaved": "尚未保存",
+      "regions": [
+        {
+          "id": "0528-C104 #R2-2",
+          "title": "100ml C104 using 0.1mol LiCl",
+          "kind": "calibration",
+          "kindLabel": "标定曲线",
+          "headerRows": [
+            2
+          ],
+          "rowCount": 6,
+          "blocks": [
+            {
+              "id": "0528-C104 #R2-2/B1",
+              "kind": "calibration",
+              "analyte": "NH4+",
+              "confidence": 0.96,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "NH4+",
+                  "target": null,
+                  "field": "离子标签列",
+                  "value": "",
+                  "samples": [],
+                  "conf": 0.1,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列A表头为NH4+，但整列无数据，可能为分析物标签，不对应校准数据列"
+                },
+                {
+                  "col": "B",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1.8442",
+                    "3.8278",
+                    "9.3295"
+                  ],
+                  "conf": 0.97,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名area，数值范围0~37.5303，样本随浓度递增，符合仪器信号面积"
+                },
+                {
+                  "col": "C",
+                  "raw": "ppm",
+                  "target": "concentration_standard",
+                  "field": "标准浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "5",
+                    "10",
+                    "25"
+                  ],
+                  "conf": 0.98,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名ppm，单位ppm，数值范围0~100，样本0/5/10/25，为标准浓度"
+                }
+              ]
+            },
+            {
+              "id": "0528-C104 #R2-2/B2",
+              "kind": "calibration",
+              "analyte": "Li+",
+              "confidence": 0.95,
+              "columns": [
+                {
+                  "col": "E",
+                  "raw": "Li+",
+                  "target": null,
+                  "field": "离子标签列",
+                  "value": "",
+                  "samples": [],
+                  "conf": 0.1,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 Li+ 但填充率为 0，无数据，仅作为离子标识，无法映射到数据字段"
+                },
+                {
+                  "col": "F",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "6.0934",
+                    "11.4688",
+                    "28.7814"
+                  ],
+                  "conf": 0.98,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 area，数值范围 0~116.754，样本随浓度增大，符合仪器信号面积特征"
+                },
+                {
+                  "col": "G",
+                  "raw": "ppm",
+                  "target": "concentration_standard",
+                  "field": "标准浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "5",
+                    "10",
+                    "25"
+                  ],
+                  "conf": 0.98,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名 ppm，单位为 ppm，数值范围 0~100，样本 0/5/10/25，符合标准浓度"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "0528-C104 #R13-13",
+          "title": "NH4+",
+          "kind": "sample_measurement",
+          "kindLabel": "样品测量",
+          "headerRows": [
+            13
+          ],
+          "rowCount": 12,
+          "blocks": [
+            {
+              "id": "0528-C104 #R13-13/B1",
+              "kind": "sample_measurement",
+              "analyte": "NH4+",
+              "confidence": 0.96,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "BV",
+                  "target": "bed_volume",
+                  "field": "床体积倍数",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "10",
+                    "20",
+                    "30"
+                  ],
+                  "conf": 0.97,
+                  "unit": "BV",
+                  "unitStd": "BV",
+                  "evidence": "列名 BV，单位 BV，数值范围 0-120，符合床体积倍数"
+                },
+                {
+                  "col": "B",
+                  "raw": "V",
+                  "target": "volume",
+                  "field": "通过体积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1000",
+                    "2000",
+                    "3000"
+                  ],
+                  "conf": 0.93,
+                  "unit": null,
+                  "unitStd": "mL",
+                  "evidence": "列名 V，数值范围 0-12000，符合通过体积"
+                },
+                {
+                  "col": "C",
+                  "raw": "number",
+                  "target": "sample_number",
+                  "field": "样品序号",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1",
+                    "2",
+                    "3"
+                  ],
+                  "conf": 0.95,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 number，数值 0-9，符合样品序号"
+                },
+                {
+                  "col": "D",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "5.6549",
+                    "4.753",
+                    "2.8951"
+                  ],
+                  "conf": 0.97,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 area，数值范围 0-5.6549，符合仪器信号面积"
+                },
+                {
+                  "col": "E",
+                  "raw": "修正后area",
+                  "target": "corrected_area",
+                  "field": "修正后信号",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "5.6549",
+                    "4.753",
+                    "2.8951"
+                  ],
+                  "conf": 0.98,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名修正后area，与area列数值范围相同，符合修正后信号"
+                },
+                {
+                  "col": "F",
+                  "raw": "calculated  ppm",
+                  "target": "concentration_ppm",
+                  "field": "计算浓度(ppm)",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "15.0358",
+                    "12.6378",
+                    "7.69778"
+                  ],
+                  "conf": 0.97,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名 calculated ppm，单位 ppm，符合计算浓度"
+                },
+                {
+                  "col": "G",
+                  "raw": "稀释100倍(mol/L)",
+                  "target": "concentration_mol",
+                  "field": "摩尔浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0.0835323",
+                    "0.0702097",
+                    "0.0427655"
+                  ],
+                  "conf": 0.85,
+                  "unit": "mol/L",
+                  "unitStd": "mol/L",
+                  "evidence": "列名含 mol/L，单位 mol/L，数值 0-0.0835，符合摩尔浓度（但标签含稀释100倍，稍不确定）"
+                },
+                {
+                  "col": "H",
+                  "raw": "mg/L",
+                  "target": "concentration_mg_l",
+                  "field": "质量浓度",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "1503.58",
+                    "1263.78",
+                    "769.778"
+                  ],
+                  "conf": 0.97,
+                  "unit": "mg/L",
+                  "unitStd": "mg/L",
+                  "evidence": "列名 mg/L，单位 mg/L，质量浓度"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "0528-C104 #R26-26",
+          "title": "Li+",
+          "kind": "sample_measurement",
+          "kindLabel": "样品测量",
+          "headerRows": [
+            26
+          ],
+          "rowCount": 11,
+          "blocks": [
+            {
+              "id": "0528-C104 #R26-26/B1",
+              "kind": "sample_measurement",
+              "analyte": "Li+",
+              "confidence": 0.98,
+              "columns": [
+                {
+                  "col": "A",
+                  "raw": "BV",
+                  "target": "bed_volume",
+                  "field": "床体积倍数",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0",
+                    "10",
+                    "20"
+                  ],
+                  "conf": 0.97,
+                  "unit": "BV",
+                  "unitStd": "BV",
+                  "evidence": "列名 'BV'，单位 BV，数值范围 0~120，符合床体积倍数特征"
+                },
+                {
+                  "col": "B",
+                  "raw": "V",
+                  "target": "volume",
+                  "field": "通过体积",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0",
+                    "1000",
+                    "2000"
+                  ],
+                  "conf": 0.92,
+                  "unit": null,
+                  "unitStd": "mL",
+                  "evidence": "列名 'V'，数值范围 0~12000，符合通过体积的量级"
+                },
+                {
+                  "col": "C",
+                  "raw": "number",
+                  "target": "sample_number",
+                  "field": "样品序号",
+                  "value": "0",
+                  "samples": [
+                    "0",
+                    "0",
+                    "1",
+                    "2"
+                  ],
+                  "conf": 0.96,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 'number'，数值为整数 0~9，符合样品序号特征"
+                },
+                {
+                  "col": "D",
+                  "raw": "area",
+                  "target": "signal_area",
+                  "field": "仪器信号面积",
+                  "value": "7.8462",
+                  "samples": [
+                    "7.8462",
+                    "7.8496",
+                    "0.2458",
+                    "1.696"
+                  ],
+                  "conf": 0.97,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 'area'，数值范围 0.2458~7.8496，符合仪器信号面积"
+                },
+                {
+                  "col": "E",
+                  "raw": "修正后area",
+                  "target": "corrected_area",
+                  "field": "修正后信号",
+                  "value": "7.8462",
+                  "samples": [
+                    "7.8462",
+                    "7.8496",
+                    "0.2458",
+                    "1.696"
+                  ],
+                  "conf": 0.98,
+                  "unit": null,
+                  "unitStd": null,
+                  "evidence": "列名 '修正后area'，与 signal_area 对应，数值范围相同，表示修正后的信号面积"
+                },
+                {
+                  "col": "F",
+                  "raw": "calculated  ppm",
+                  "target": "concentration_ppm",
+                  "field": "计算浓度(ppm)",
+                  "value": "5.01764",
+                  "samples": [
+                    "5.01764",
+                    "5.01982",
+                    "0.157189",
+                    "1.08459"
+                  ],
+                  "conf": 0.97,
+                  "unit": "ppm",
+                  "unitStd": "ppm",
+                  "evidence": "列名 'calculated ppm'，单位 ppm，数值范围 0.157~5.02，符合 ppm 浓度"
+                },
+                {
+                  "col": "G",
+                  "raw": "稀释100倍(mol/L)",
+                  "target": "concentration_mol",
+                  "field": "摩尔浓度",
+                  "value": "0.0722899",
+                  "samples": [
+                    "0.0722899",
+                    "0.0723213",
+                    "0.00226465",
+                    "0.0156259"
+                  ],
+                  "conf": 0.88,
+                  "unit": "mol/L",
+                  "unitStd": "mol/L",
+                  "evidence": "列名 '稀释100倍(mol/L)'，单位 mol/L，数值范围 0.00226~0.0723，为摩尔浓度，但注明稀释100倍"
+                },
+                {
+                  "col": "H",
+                  "raw": "mg/L",
+                  "target": "concentration_mg_l",
+                  "field": "质量浓度",
+                  "value": "1301.22",
+                  "samples": [
+                    "1301.22",
+                    "1301.78",
+                    "40.7636",
+                    "281.266"
+                  ],
+                  "conf": 0.97,
+                  "unit": "mg/L",
+                  "unitStd": "mg/L",
+                  "evidence": "列名 'mg/L'，单位 mg/L，数值范围 40.76~1301.78，符合质量浓度量级"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

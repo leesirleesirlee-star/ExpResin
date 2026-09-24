@@ -1,0 +1,27 @@
+# ---- secrets ----
+.env
+.env.local
+
+# ---- python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# ---- node ----
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# ---- deepworks tooling & session scratch (kept local, not part of the repo) ----
+.deepworks/
+.opencode/
+opencode.jsonc
+
+# ---- editor / os ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

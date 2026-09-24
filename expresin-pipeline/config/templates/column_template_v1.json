@@ -1,0 +1,62 @@
+{
+  "template_id": "column_template_v1",
+  "experiment_type": "column",
+  "title": "COLUMN TEST",
+  "version": "1.0",
+  "source": "Column_Test.txt（指导老师提供草稿，2026-09-23 转录）",
+  "description": "柱（Column）穿透实验标准模板。A 区实验信息、B 区逐行出水测量数据、C 区自动计算数据。",
+  "data_policy": {
+    "concentration": "engine_first",
+    "concentration_note": "出水浓度优先取引擎复算值，缺失时回退原始表记录值，并在导出中标注口径"
+  },
+  "sections": [
+    {
+      "id": "A",
+      "label": "Experiment Information",
+      "kind": "fields",
+      "fields": [
+        { "key": "experiment_id", "label": "Experiment ID", "type": "string", "from": ["meta.experiment_id"] },
+        { "key": "date", "label": "Date", "type": "string", "from": ["meta.date_start", "meta.date"] },
+        { "key": "researcher", "label": "Researcher", "type": "string", "from": ["meta.operator", "meta.researcher"] },
+        { "key": "adsorbent", "label": "Adsorbent / Material", "type": "string", "from": ["meta.resin_type", "meta.adsorbent"] },
+        { "key": "target", "label": "Target substance", "type": "string", "from": ["meta.target_analyte", "meta.adsorbate"] },
+        { "key": "initial_concentration", "label": "Influent concentration, C₀", "type": "number", "unit": "mg/L", "from": ["meta.initial_concentration"] },
+        { "key": "bed_volume", "label": "Bed volume, BV", "type": "number", "unit": "mL", "from": ["meta.bed_volume", "meta.bed_volume_ml"] },
+        { "key": "adsorbent_mass", "label": "Adsorbent mass", "type": "number", "unit": "mg", "from": ["meta.resin_mass", "meta.adsorbent_mass"] },
+        { "key": "flow_rate", "label": "Flow rate", "type": "number", "unit": "mL/min", "from": ["meta.flow_rate"] },
+        { "key": "temperature", "label": "Temperature", "type": "number", "unit": "degC", "from": ["meta.temperature"] },
+        { "key": "flow_direction", "label": "Flow direction", "type": "string", "options": ["Upflow", "Downflow"], "from": ["meta.flow_direction"] }
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Experimental Data",
+      "kind": "series",
+      "columns": [
+        { "key": "time", "label": "Time", "unit": "min", "role": "time", "from": ["series.contact_time", "series.time", "series.run_time"] },
+        { "key": "effluent_concentration", "label": "Effluent Concentration, Cₜ", "unit": "mg/L", "role": "concentration", "from": ["series.concentration_mg_l", "series.concentration_ppm"] },
+        { "key": "effluent_ph", "label": "Effluent pH", "unit": "", "role": "ph", "from": ["series.ph", "series.effluent_ph"] }
+      ]
+    },
+    {
+      "id": "C",
+      "label": "Automatically Calculated Data",
+      "kind": "derived",
+      "fields": [
+        { "key": "treated_volume", "label": "Treated volume", "unit": "mL", "derive": "treated_volume" },
+        { "key": "bed_volumes_treated", "label": "Bed volumes treated", "unit": "BV", "derive": "bed_volumes_treated" },
+        { "key": "ct_c0", "label": "Cₜ/C₀", "unit": "—", "derive": "ct_c0" },
+        { "key": "breakthrough_time", "label": "Breakthrough time", "unit": "min", "derive": "breakthrough_time" },
+        { "key": "exhaustion_time", "label": "Exhaustion time", "unit": "min", "derive": "exhaustion_time" }
+      ]
+    }
+  ],
+  "rules": [
+    "One row represents one effluent sample.",
+    "`Time` = elapsed operating time.",
+    "`Effluent Concentration` = concentration measured at the column outlet.",
+    "`Effluent pH` = pH measured at the column outlet.",
+    "`Bed volume` is entered once in the experiment information section.",
+    "`Cₜ/C₀` should be calculated automatically rather than manually entered."
+  ]
+}
