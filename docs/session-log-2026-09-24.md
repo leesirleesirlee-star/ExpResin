@@ -79,13 +79,17 @@
 
 ## 3.5 版本控制启用（本日新增）
 
-- 此前项目**从未有 git 历史**（仅 09-19 备好的 `.gitignore`）。本日 `git init` + 首次提交并推送至
-  `https://github.com/leesirleesirlee-star/ExpResin`（branch `main`，初始 commit `6508fc7`，108 文件）。
-- 提交身份为仓库级 local config（`leesirleesirlee-star` + GitHub noreply 邮箱），未动全局配置。
+- 此前项目**从未有 git 历史**。本日 `git init` 并推送至
+  `https://github.com/leesirleesirlee-star/ExpResin`（branch `main`）。
+- **应用户要求，仓库不含任何 DeepWorks 工具链内容**：`.opencode/`、`opencode.jsonc`、
+  `.deepworks/` 均经 `.gitignore` 排除。初始历史曾误含 `.opencode/`，已通过重建初始提交
+  （orphan branch + force push）**彻底移除**，当前初始提交为 `6e0cfc3`。
+- 仓库根新增英文 `README.md`（随进度持续更新）；**此后所有 commit message 一律使用英文**。
+- 提交身份为仓库级 local config（GitHub noreply 邮箱），未动全局配置。
 - `.env`（含 DeepSeek key）经 `.gitignore` 排除，已核实未入库。
 - **注意**：`expresin-pipeline/data/`（expresin.db、raw/*.xlsx、识别缓存）已随库上传；
   若仓库为 Public 则数据公开可见，介意可在 GitHub 设置中转 Private。
-- **今后工作流**：每个任务卡完成并验证后提交一次，git 历史与 session log 互为印证。
+- **今后工作流**：每个任务卡完成并验证后提交一次（英文 message），git 历史与 session log 互为印证。
 
 ---
 
