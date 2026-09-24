@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>ExpResin · PortalJarvis</title>
+    <script>
+      // 提前应用主题，避免首屏闪烁
+      try {
+        var saved = localStorage.getItem('expresin-theme')
+        if (saved) document.documentElement.dataset.theme = saved
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

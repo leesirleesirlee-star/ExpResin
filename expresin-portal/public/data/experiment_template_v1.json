@@ -1,0 +1,179 @@
+{
+  "template_id": "expresin_template_v1",
+  "version": "1.0",
+  "description": "ExpResin 实验记录模板。对应 PRD 第 8 章 PortalJarvis 表单结构：实验前录入元数据与方法材料，实验后绑定原始数据。",
+  "stages": [
+    { "id": "pre", "label": "实验前", "description": "填写实验初始信息，形成实验记录草稿" },
+    { "id": "post", "label": "实验后", "description": "上传原始数据，系统识别并反向填充" },
+    { "id": "archive", "label": "归档", "description": "确认后生成规范文档并入库，供后续调用" }
+  ],
+  "sheets": [
+    {
+      "id": "01_Metadata",
+      "label": "实验元数据",
+      "stage": "pre",
+      "fields": [
+        {
+          "path": "01_Metadata.experiment_id",
+          "label": "实验编号",
+          "type": "string",
+          "required": true,
+          "auto": "experiment_id",
+          "hint": "系统按 RES-YYYYMMDD-NNN 规则自动生成建议，可修改"
+        },
+        {
+          "path": "01_Metadata.title",
+          "label": "实验标题",
+          "type": "string",
+          "required": true,
+          "placeholder": "例如：A600 树脂对 SO4 的动态吸附"
+        },
+        {
+          "path": "01_Metadata.experiment_type",
+          "label": "实验类型",
+          "type": "enum",
+          "options": ["batch", "column", "regeneration", "characterization"],
+          "option_labels": {
+            "batch": "批次实验",
+            "column": "柱实验",
+            "regeneration": "再生实验",
+            "characterization": "表征实验"
+          },
+          "required": true,
+          "default": "batch"
+        },
+        {
+          "path": "01_Metadata.operator",
+          "label": "实验员",
+          "type": "string",
+          "required": true
+        },
+        {
+          "path": "01_Metadata.date_start",
+          "label": "实验日期",
+          "type": "date",
+          "required": true
+        },
+        {
+          "path": "01_Metadata.objective",
+          "label": "实验目标",
+          "type": "text",
+          "required": false,
+          "placeholder": "本次实验要验证或测量什么"
+        },
+        {
+          "path": "01_Metadata.reviewer",
+          "label": "复核人",
+          "type": "string",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "02_Method_Materials",
+      "label": "方法与材料",
+      "stage": "pre",
+      "fields": [
+        {
+          "path": "02_Method_Materials.resin_type",
+          "label": "树脂型号",
+          "type": "string",
+          "required": true,
+          "aliases": ["a600", "a520", "c104", "wac", "haix", "sba", "sac", "host", "hpec"],
+          "value_labels": {
+            "a600": "树脂 A600",
+            "a520": "树脂 A520",
+            "c104": "树脂 C104",
+            "wac": "树脂 WAC",
+            "haix": "树脂 HAIX",
+            "sba": "树脂 SBA",
+            "sac": "树脂 SAC",
+            "host": "树脂 Host",
+            "hpec": "树脂 HPEC"
+          },
+          "hint": "展示时统一带“树脂”前缀，避免与离子/样品混淆"
+        },
+        {
+          "path": "02_Method_Materials.resin_batch",
+          "label": "树脂批次",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "02_Method_Materials.resin_mass",
+          "label": "树脂质量",
+          "type": "number",
+          "unit": "mg",
+          "required": true,
+          "canonical_unit": "mg"
+        },
+        {
+          "path": "02_Method_Materials.solution_volume",
+          "label": "溶液体积",
+          "type": "number",
+          "unit": "mL",
+          "required": true,
+          "canonical_unit": "mL"
+        },
+        {
+          "path": "02_Method_Materials.initial_concentration",
+          "label": "初始浓度",
+          "type": "number",
+          "unit": "mg/L",
+          "required": true,
+          "canonical_unit": "mg/L"
+        },
+        {
+          "path": "02_Method_Materials.target_analyte",
+          "label": "目标离子",
+          "type": "string",
+          "required": true,
+          "aliases": ["so4", "cl", "nh4+", "li+", "ca", "na", "hpo4", "po4", "no3", "f"]
+        },
+        {
+          "path": "02_Method_Materials.matrix",
+          "label": "基质 / 背景溶液",
+          "type": "string",
+          "required": false,
+          "aliases": ["na2so4", "nacl", "nh4hco3", "licl", "seawater", "naoh"]
+        },
+        {
+          "path": "02_Method_Materials.temperature",
+          "label": "温度",
+          "type": "number",
+          "unit": "degC",
+          "required": false,
+          "canonical_unit": "degC"
+        },
+        {
+          "path": "02_Method_Materials.method_sop",
+          "label": "实验方法 / SOP",
+          "type": "text",
+          "required": false,
+          "placeholder": "操作步骤、流速、取样间隔等"
+        }
+      ]
+    },
+    {
+      "id": "04_RawData",
+      "label": "原始数据与识别结果",
+      "stage": "post",
+      "fields": [
+        {
+          "path": "04_RawData.raw_file",
+          "label": "原始数据文件",
+          "type": "file",
+          "required": true,
+          "hint": "Raw 层只读保存，后续所有结果均可追溯到该文件"
+        },
+        {
+          "path": "04_RawData.recognized_blocks",
+          "label": "识别到的数据块",
+          "type": "derived",
+          "required": false,
+          "hint": "由 L1 结构解析 + L3/L4 语义映射自动产生，需人工逐列确认"
+        }
+      ]
+    }
+  ]
+}

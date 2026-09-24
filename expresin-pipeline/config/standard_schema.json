@@ -1,0 +1,235 @@
+{
+  "schema_version": "0.1.0",
+  "description": "ExpResin 标准科学数据 Schema。定义异构实验表格需要映射到的统一字段，供 L2 候选生成与 L3/L4 LLM 映射使用。",
+  "block_kinds": {
+    "calibration": {
+      "label": "标定曲线",
+      "description": "仪器信号(area)与标准浓度之间的关系，用于把样品信号换算为浓度。通常成对出现（每个待测离子一组 area/ppm）。",
+      "target_fields": [
+        {
+          "key": "analyte",
+          "label": "目标离子/组分",
+          "type": "string",
+          "required": true,
+          "aliases": ["so4", "cl", "nh4+", "li+", "ca", "na", "hpo4", "po4", "p", "no3", "f"]
+        },
+        {
+          "key": "signal_area",
+          "label": "仪器信号面积",
+          "type": "number",
+          "unit": null,
+          "required": true,
+          "aliases": ["area", "peak area", "峰面积", "signal", "响应值"]
+        },
+        {
+          "key": "concentration_standard",
+          "label": "标准浓度",
+          "type": "number",
+          "unit": "ppm",
+          "required": true,
+          "aliases": ["ppm", "concentration", "浓度", "standard", "mg/l"]
+        }
+      ]
+    },
+    "sample_measurement": {
+      "label": "样品测量数据",
+      "description": "一次实验中各取样点/床体积的仪器信号与换算浓度，是实验的核心结果数据。",
+      "target_fields": [
+        {
+          "key": "sample_number",
+          "label": "样品序号",
+          "type": "integer",
+          "required": false,
+          "aliases": ["number", "no", "index", "#", "序号", "编号"]
+        },
+        {
+          "key": "bed_volume",
+          "label": "床体积倍数",
+          "type": "number",
+          "unit": "BV",
+          "required": false,
+          "aliases": ["bv", "bed volume", "床体积", "床层体积"]
+        },
+        {
+          "key": "volume",
+          "label": "通过体积",
+          "type": "number",
+          "unit": "mL",
+          "required": false,
+          "aliases": ["v", "v,ml", "volume", "体积", "累积体积"]
+        },
+        {
+          "key": "contact_time",
+          "label": "接触/运行时间",
+          "type": "number",
+          "unit": "h",
+          "required": false,
+          "aliases": ["time", "time/h", "t", "时间", "运行时间"]
+        },
+        {
+          "key": "signal_area",
+          "label": "仪器信号面积",
+          "type": "number",
+          "required": true,
+          "aliases": ["area", "峰面积", "signal"]
+        },
+        {
+          "key": "corrected_area",
+          "label": "修正后信号",
+          "type": "number",
+          "required": false,
+          "aliases": ["修正后area", "corrected area", "修正面积", "校正后area"]
+        },
+        {
+          "key": "dilution_factor",
+          "label": "稀释倍数",
+          "type": "number",
+          "required": false,
+          "aliases": ["稀释2倍", "稀释20倍", "稀释100倍", "dilution", "稀释倍数"]
+        },
+        {
+          "key": "concentration_ppm",
+          "label": "计算浓度(ppm)",
+          "type": "number",
+          "unit": "ppm",
+          "required": false,
+          "aliases": ["calculated ppm", "ppm", "计算浓度", "浓度ppm"]
+        },
+        {
+          "key": "concentration_mol",
+          "label": "摩尔浓度",
+          "type": "number",
+          "unit": "mol/L",
+          "required": false,
+          "aliases": ["mol/l", "稀释x倍(mol/l)", "摩尔浓度"]
+        },
+        {
+          "key": "concentration_mg_l",
+          "label": "质量浓度",
+          "type": "number",
+          "unit": "mg/L",
+          "required": false,
+          "aliases": ["mg/l", "质量浓度", "mg l-1"]
+        }
+      ]
+    },
+    "capacity": {
+      "label": "吸附容量数据",
+      "description": "按循环次数/材料整理的吸附容量结果，常见于论文作图用表格。",
+      "target_fields": [
+        {
+          "key": "cycle",
+          "label": "循环序号",
+          "type": "string",
+          "required": false,
+          "aliases": ["1st", "2nd", "3rd", "cycle", "循环", "首次", "二次"]
+        },
+        {
+          "key": "resin",
+          "label": "树脂/材料",
+          "type": "string",
+          "required": false,
+          "aliases": ["wac", "haix", "sba", "sac", "host", "hpec", "resin", "树脂", "材料"]
+        },
+        {
+          "key": "influent_ppm",
+          "label": "进水/初始浓度",
+          "type": "number",
+          "unit": "ppm",
+          "required": false,
+          "aliases": ["ca, ppm", "hpo4, ppm", "phosphate, mg/l", "influent", "初始浓度"]
+        },
+        {
+          "key": "capacity",
+          "label": "吸附容量",
+          "type": "number",
+          "unit": "mg/g",
+          "required": true,
+          "aliases": ["capacity", "mg/g", "mg p/g", "mg ions /g", "容量"]
+        }
+      ]
+    },
+    "ph_curve": {
+      "label": "pH 曲线",
+      "description": "随时间或电流密度变化的 pH 监测数据。",
+      "target_fields": [
+        {
+          "key": "contact_time",
+          "label": "时间",
+          "type": "number",
+          "unit": "min",
+          "required": true,
+          "aliases": ["time", "time,min", "min", "时间"]
+        },
+        {
+          "key": "ph",
+          "label": "pH 值",
+          "type": "number",
+          "unit": "pH",
+          "required": true,
+          "aliases": ["ph", "anolyte ph", "catholyte ph", "ph值"]
+        },
+        {
+          "key": "condition",
+          "label": "实验条件",
+          "type": "string",
+          "required": false,
+          "aliases": ["nacl", "na2so4", "ma/cm2", "effluent", "catholyte", "anolyte"]
+        }
+      ]
+    }
+  },
+  "experiment_meta": {
+    "label": "实验元数据",
+    "description": "从 Sheet 标题/条件说明等自由文本中抽取的实验级信息（不属于任何数据块）。",
+    "fields": [
+      {
+        "key": "solution_volume",
+        "label": "溶液体积",
+        "type": "number",
+        "unit": "mL",
+        "aliases": ["ml", "毫升"]
+      },
+      {
+        "key": "resin_mass",
+        "label": "树脂质量",
+        "type": "number",
+        "unit": "mg",
+        "aliases": ["mg resin", "树脂质量", "g resin"]
+      },
+      {
+        "key": "resin_type",
+        "label": "树脂型号",
+        "type": "string",
+        "aliases": ["a600", "a520", "c104", "wac", "haix", "sba", "sac"]
+      },
+      {
+        "key": "initial_concentration",
+        "label": "目标离子初始浓度",
+        "type": "number",
+        "unit": "mg/L",
+        "aliases": ["mg/l so4", "mg/l cl", "初始浓度"]
+      },
+      {
+        "key": "matrix",
+        "label": "背景基质",
+        "type": "string",
+        "aliases": ["na2so4", "nacl", "seawater", "海水", "nh4hco3", "licl", "naoh"]
+      },
+      {
+        "key": "experiment_type",
+        "label": "实验类型",
+        "type": "string",
+        "aliases": ["batch", "column", "regeneration", "characterization"]
+      }
+    ]
+  },
+  "units_canonical": {
+    "concentration": ["mol/L", "mmol/L", "mg/L", "ppm", "ppb"],
+    "mass": ["kg", "g", "mg", "ug"],
+    "volume": ["L", "mL", "uL"],
+    "time": ["day", "h", "min", "s"],
+    "temperature": ["degC", "K"],
+    "capacity": ["mg/g", "mmol/g", "meq/g"]
+  }
+}
