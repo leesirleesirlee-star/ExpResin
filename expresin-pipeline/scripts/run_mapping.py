@@ -21,7 +21,7 @@ from mapping import load_schema, map_block, mapping_to_dict, validate_mapping  #
 
 WORKSPACE = ROOT
 OUT_DIR = WORKSPACE / ".deepworks" / "tmp"
-XLSX = WORKSPACE / "example_ion_exchange.xlsx"
+XLSX = WORKSPACE / "materials" / "data" / "example_ion_exchange.xlsx"
 SCHEMA_PATH = WORKSPACE / "expresin-pipeline" / "config" / "standard_schema.json"
 
 DEFAULT_SHEETS = ["sheet-01"]

@@ -1,0 +1,48 @@
+# COLUMN TEST
+
+## A. Experiment Information
+
+| Field                      | Value             |
+| -------------------------- | ----------------- |
+| Experiment ID              |                   |
+| Date                       |                   |
+| Researcher                 |                   |
+| Adsorbent / Material       |                   |
+| Target substance           |                   |
+| Influent concentration, C₀ |                   |
+| Bed volume, BV             |                   |
+| Adsorbent mass             |                   |
+| Flow rate                  |                   |
+| Temperature                |                   |
+| Flow direction             | Upflow / Downflow |
+
+---
+
+## B. Experimental Data
+
+| Time (min) | Effluent Concentration, Cₜ (mg/L) | Effluent pH |
+| ---------: | --------------------------------: | ----------: |
+|          0 |                                   |             |
+|            |                                   |             |
+|            |                                   |             |
+|            |                                   |             |
+|            |                                   |             |
+
+### Automatically Calculated Data
+
+| Parameter           | Value | Unit |
+| ------------------- | ----: | ---- |
+| Treated volume      |       | mL   |
+| Bed volumes treated |       | BV   |
+| Cₜ/C₀               |       | —    |
+| Breakthrough time   |       | min  |
+| Exhaustion time     |       | min  |
+
+### Data Entry Rules
+
+* One row represents one effluent sample.
+* `Time` = elapsed operating time.
+* `Effluent Concentration` = concentration measured at the column outlet.
+* `Effluent pH` = pH measured at the column outlet.
+* `Bed volume` is entered once in the experiment information section.
+* `Cₜ/C₀` should be calculated automatically rather than manually entered.

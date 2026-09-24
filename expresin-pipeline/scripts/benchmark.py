@@ -29,7 +29,7 @@ from l1_structure import parse_workbook  # noqa: E402
 
 TMP = ROOT / ".deepworks" / "tmp"
 DOCS = ROOT / "docs"
-XLSX = ROOT / "example_ion_exchange.xlsx"
+XLSX = ROOT / "materials" / "data" / "example_ion_exchange.xlsx"
 GOLD_PATH = ROOT / "expresin-pipeline" / "config" / "gold_mapping_v0.json"
 
 ION_ALIASES = {"so4", "cl", "nh4+", "nh4", "li+", "li", "ca", "na", "hpo4", "po4", "no3", "f"}

@@ -25,7 +25,7 @@ from mapping import load_schema  # noqa: E402
 
 TMP = ROOT / ".deepworks" / "tmp"
 OUT = ROOT / "expresin-portal" / "public" / "data" / "analysis.json"
-XLSX = ROOT / "example_ion_exchange.xlsx"
+XLSX = ROOT / "materials" / "data" / "example_ion_exchange.xlsx"
 SCHEMA_PATH = ROOT / "expresin-pipeline" / "config" / "standard_schema.json"
 
 DEFAULT_SHEETS = ["sheet-01", "sheet-02", "sheet-03", "sheet-04", "sheet-05", "sheet-06", "sheet-07"]

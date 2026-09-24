@@ -120,7 +120,7 @@
 |---|---|
 | 新增（配置） | `expresin-pipeline/config/templates/{batch,column,electrochemical}_template_v1.json` |
 | 新增（代码） | `expresin-pipeline/src/{derive,template_fill,template_export}.py` |
-| 新增（文档） | `docs/session-log-2026-09-23.md`（本文件） |
+| 新增（文档） | `docs/session-logs/session-log-2026-09-23.md`（本文件） |
 | 更新（文档） | `docs/research-opportunities.md`（方针 + 发现雷达/扫描清单 + RO-006~013 + v3/v4） |
 | 更新（文档） | `docs/design-changelog.md`（§18 + v1.5） |
 | 验证脚本（非交付） | `.deepworks/tmp/{probe_cache,probe_db,probe_processed,verify_template_fill}.py` |

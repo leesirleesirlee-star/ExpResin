@@ -1,0 +1,51 @@
+# BATCH TEST
+
+## A. Experiment Information
+
+| Field                        | Value |
+| ---------------------------- | ----- |
+| Experiment ID                |       |
+| Date                         |       |
+| Researcher                   |       |
+| Adsorbent / Material         |       |
+| Adsorbate / Target substance |       |
+| Initial concentration, C₀    |       |
+| Solution volume              |       |
+| Adsorbent mass               |       |
+| Temperature                  |       |
+| Experiment objective         |       |
+
+**Units:** Use a separate unit field or specify the unit in the column header.
+
+---
+
+## B. Experimental Data
+
+| Time (min) | Concentration (mg/L) | pH |
+| ---------: | -------------------: | -: |
+|          0 |                      |    |
+|            |                      |    |
+|            |                      |    |
+|            |                      |    |
+|            |                      |    |
+
+### Data Entry Rules
+
+* One row represents one measurement.
+* `Time` = elapsed experimental time.
+* `Concentration` = measured concentration at that time.
+* `pH` = measured pH at that time.
+* Do not put units inside individual cells.
+* Use `NA` when a parameter is not applicable.
+* Use `ND` when the concentration is below the detection limit.
+
+---
+
+## C. Optional Results
+
+| Parameter                     | Value | Unit |
+| ----------------------------- | ----: | ---- |
+| Equilibrium concentration, Cₑ |       | mg/L |
+| Removal efficiency            |       | %    |
+| Adsorption capacity, qₑ       |       | mg/g |
+| Equilibrium time              |       | min  |
