@@ -16,7 +16,7 @@ from l1_structure import parse_workbook, summarize, to_dict  # noqa: E402
 WORKSPACE = Path(__file__).resolve().parents[2]
 OUT_DIR = WORKSPACE / ".deepworks" / "tmp"
 
-FILES = ["20250528 DHT Cl SO4.xlsx", "2 Data for Figures.xlsx"]
+FILES = ["materials/data/20250528 DHT Cl SO4.xlsx", "materials/data/2 Data for Figures.xlsx"]
 
 
 def main() -> None:

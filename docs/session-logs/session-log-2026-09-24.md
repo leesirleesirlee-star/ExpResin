@@ -93,6 +93,32 @@
 
 ---
 
+## 3.6 仓库结构整理（本日新增）
+
+应用户要求，根目录松散文件全部分类归档（全英文命名），commit message 保持英文：
+
+| 原位置（根目录） | 新位置 |
+|---|---|
+| `ExpResin_PRD.md` | `docs/ExpResin-PRD.md` |
+| `ExpResin 界面设计规范 v1.0.md` | `docs/ExpResin-UI-Design-Spec-v1.0.md` |
+| `ExpResin 项目推进规划 v2.0.md` | `docs/ExpResin-Project-Roadmap-v2.0.md` |
+| `docs/session-log-*.md` ×4 | `docs/session-logs/`（含本文件） |
+| `Batch_Test.txt` 等 3 份模板草稿 | `materials/template-drafts/`（原名保留） |
+| 4 份中文 docx 指南 | `materials/guides/`（文件名英译，内容未动） |
+| `20250528 DHT Cl SO4.xlsx`、`2 Data for Figures.xlsx` | `materials/data/`（原名保留） |
+
+同步更新的引用（移动不断链）：
+- 4 个 pipeline 脚本的 xlsx 路径常量（`benchmark.py` / `run_mapping.py` / `run_l1.py` / `export_web.py`）
+- 3 个模板 JSON 的 `source` 溯源字段
+- 历史 session log 之间的 `docs/session-log-*` 路径互引（机械替换为 `docs/session-logs/`，记录内容未动）
+- README 的 Repository Layout 表
+
+**不改动的**：`demo.js` / `analysis.json` / `ApiDocsView.vue` 中的 `20250528 DHT Cl SO4.xlsx`
+为展示用文本（sourceFile 字段 / curl 示例），非文件加载路径；design-changelog 中的书名号引用
+《界面设计规范》等指向文档标题而非路径，文档内容保持中文原文。
+
+---
+
 ## 4. 遗留 / 待办（下次接手起点）
 
 1. **T3 候选**：原始数据表模板设计（用户已确认"由我们设计"）+ NAS 适配器预留接口。

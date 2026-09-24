@@ -146,7 +146,7 @@ body: {"block_id":"0305-600#R44-44/B1","col":"block","action":"confirm"}
 
 新增 **RO-005**（表头缺失列的确定性身份推断与派生关系识别），含 L1 证据表、逐点验证、
 跳变实测、Gap、实验设计、目标会议。详见 `docs/research-opportunities.md`（版本记录已更新）。
-同时 `docs/session-log-2026-09-21.md` 第 8 项已追加「2026-09-22 更正」块。
+同时 `docs/session-logs/session-log-2026-09-21.md` 第 8 项已追加「2026-09-22 更正」块。
 
 ---
 
@@ -188,7 +188,7 @@ body: {"block_id":"0305-600#R44-44/B1","col":"block","action":"confirm"}
 | `expresin-portal/src/views/RecognizeView.vue` | `pendingTotal`/`failedTotal` 解耦；徽标文案 |
 | `docs/design-changelog.md` | **v1.3**（§13–§16）、**v1.4**（§17 缺陷 C） |
 | `docs/research-opportunities.md` | 新增 **RO-005** |
-| `docs/session-log-2026-09-21.md` | 第 8 项追加更正块；遗留项状态标注 |
+| `docs/session-logs/session-log-2026-09-21.md` | 第 8 项追加更正块；遗留项状态标注 |
 | `.deepworks/tmp/verify_rule_determinism.py`、`verify_fieldstate.mjs`、`probe_archive_snapshot.py` | 只读/离线验证脚本 |
 
 ---

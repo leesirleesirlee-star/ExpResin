@@ -3,7 +3,7 @@
   "experiment_type": "batch",
   "title": "BATCH TEST",
   "version": "1.0",
-  "source": "Batch_Test.txt（指导老师提供草稿，2026-09-23 转录）",
+  "source": "materials/template-drafts/Batch_Test.txt（指导老师提供草稿，2026-09-23 转录）",
   "description": "批次（Batch）吸附实验标准模板。A 区实验信息、B 区逐行测量数据、C 区派生结果。",
   "data_policy": {
     "concentration": "engine_first",

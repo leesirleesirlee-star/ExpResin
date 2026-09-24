@@ -10,8 +10,11 @@ Excel exports — **recognize → canonicalize → archive → export**.
 |---|---|
 | `expresin-pipeline/` | FastAPI backend + core Python pipeline: L1/L2 table recognition, canonical long-table materialization, derived-quantity computation, template fill/export |
 | `expresin-portal/` | Vue 3 + Vite frontend workbench: experiment setup, recognition review, experiment archive, API docs |
-| `docs/` | PRD, UI design specification, design changelog, per-session logs |
-| `Batch_Test.txt` / `Column_Test.txt` / `Electrochemical_Experiment.txt` | Original experiment template drafts (transcribed into JSON configs under `expresin-pipeline/config/templates/`) |
+| `docs/` | Living documents: `ExpResin-PRD.md`, `ExpResin-UI-Design-Spec-v1.0.md`, `ExpResin-Project-Roadmap-v2.0.md`, `design-changelog.md`, `research-opportunities.md`, `benchmark-v0.md` |
+| `docs/session-logs/` | Per-session progress logs (append-only history) |
+| `materials/template-drafts/` | Original experiment template drafts from the advisor (transcribed into JSON configs under `expresin-pipeline/config/templates/`) |
+| `materials/guides/` | Research proposal and build/implementation guide documents (docx) |
+| `materials/data/` | Original raw data workbooks (xlsx) used by benchmark and pipeline scripts |
 
 ## Features
 
@@ -65,5 +68,5 @@ The full endpoint specification lives in `docs/` and the in-app API Docs page.
 ## Status
 
 Active development. Design decisions are recorded in
-`docs/design-changelog.md`; per-session progress in `docs/session-log-*.md`.
+`docs/design-changelog.md`; per-session progress in `docs/session-logs/`.
 This README evolves with the project.

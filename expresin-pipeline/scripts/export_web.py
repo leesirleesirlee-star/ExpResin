@@ -25,7 +25,7 @@ from mapping import load_schema  # noqa: E402
 
 TMP = ROOT / ".deepworks" / "tmp"
 OUT = ROOT / "expresin-portal" / "public" / "data" / "analysis.json"
-XLSX = ROOT / "20250528 DHT Cl SO4.xlsx"
+XLSX = ROOT / "materials" / "data" / "20250528 DHT Cl SO4.xlsx"
 SCHEMA_PATH = ROOT / "expresin-pipeline" / "config" / "standard_schema.json"
 
 DEFAULT_SHEETS = ["0305-600", "0121", "0212", "0312-600", "0326-C104", "0512-C104", "0528-C104"]
