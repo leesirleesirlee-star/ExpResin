@@ -6,18 +6,37 @@
 
 ---
 
-## 0. 本日服务状态（以下均为实际探测结果）
+## 0. 服务状态与下次快速重启
 
-| 服务 | PID | 监听地址 | 状态 | 启动方式 |
-|---|---|---|---|---|
-| 后端 uvicorn (FastAPI) | 3744 | `127.0.0.1:8000` | ✅ 运行中（health ok） | `Start-Process python -m uvicorn app:app --app-dir expresin-pipeline\server --port 8000` |
-| 前端 Vite dev server | 8484 | `localhost:5173` | ✅ 运行中（HTTP 200） | `Start-Process node node_modules\vite\bin\vite.js --port 5173 --strictPort`（cwd=expresin-portal） |
+**本日收工状态（2026-09-24 晚，实际探测确认）：前后端均已停止 —— 端口 8000 / 5173 无监听，无残留 node / python 进程。**
+
+### 下次快速重启（复制即用，按顺序执行）
+
+```powershell
+# 1. 后端 FastAPI（在工作区根目录执行；无 --reload，改 app.py 后须重启）
+Start-Process -FilePath "python" -ArgumentList '-m','uvicorn','app:app','--app-dir','expresin-pipeline\server','--port','8000' -WindowStyle Hidden
+
+# 2. 前端 Vite（必须用 node 直接启动；不要用 dev.ps1 start，原因见下方环境事实 1）
+Start-Process -FilePath "node" -ArgumentList 'node_modules\vite\bin\vite.js','--port','5173','--strictPort' -WorkingDirectory "D:\ExpResin Project Redesign\expresin-portal" -WindowStyle Hidden
+
+# 3. 就绪验证（以 HTTP 探测为准，勿信日志文本）
+Invoke-WebRequest http://127.0.0.1:8000/api/health -UseBasicParsing   # 期望 {"status":"ok",...}
+Invoke-WebRequest http://localhost:5173/ -UseBasicParsing             # 期望 HTTP 200
+```
+
+4. 浏览器打开 `http://localhost:5173/`；T2 导出按钮在档案详情页
+   （例：`/#/archive/RES-20260923-001`）。
+
+> ⚠️ 后端依赖工作区根目录的 `.env`（DeepSeek key，不进 git）；换机器时从
+> `expresin-pipeline/.env.example` 复制到**根目录** `.env` 并填 key。
+> 代码克隆后还需：`pip install -r expresin-pipeline/requirements.txt -r expresin-pipeline/server/requirements.txt`
+> 与 `cd expresin-portal && npm install`。
 
 ### ⚠️ 本日确认的环境事实（实测，非推测）
 
 1. **`dev.ps1 start` 在本宿主下不可靠**：脚本经 `vite.cmd`（cmd 批处理）启动进程树，
    父 PowerShell 退出后子进程被连带清理 —— 日志打出 `VITE ready` 但端口实际无监听。
-   **绕过方法：直接用 `node` EXE 启动**（见上表），与 python 同理可脱离宿主存活。
+   **绕过方法：直接用 `node` EXE 启动**（见上方命令），与 python 同理可脱离宿主存活。
    （09-23 日志"dev.ps1 start 曾超时，前端由用户自行启动"为同一根因。）
 2. 就绪信号用 **HTTP 探测**（`Invoke-WebRequest http://localhost:5173/`），
    不依赖 `Get-NetTCPConnection` 或日志文本。
