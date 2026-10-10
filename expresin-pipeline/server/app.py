@@ -32,6 +32,7 @@ from l1_structure import parse_workbook  # noqa: E402
 from llm import LLMClient, LLMConfig  # noqa: E402
 from mapping import load_schema, map_block  # noqa: E402
 from nas_adapter import get_adapter as get_nas_adapter  # noqa: E402
+from checks import experiment_warnings  # noqa: E402
 from template_export import workbook_bytes  # noqa: E402
 from template_fill import build_template_data  # noqa: E402
 from services import (  # noqa: E402
@@ -928,6 +929,8 @@ def get_experiment(experiment_id: str) -> dict:
     exp = store.get_experiment(experiment_id)
     if not exp:
         raise HTTPException(status_code=404, detail="实验不存在")
+    # 确定性数据质量警告（类型一致性等，checks.py），随取随算、不落库
+    exp["warnings"] = experiment_warnings(exp)
     return exp
 
 
