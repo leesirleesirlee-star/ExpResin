@@ -32,15 +32,15 @@
           "path": "01_Metadata.experiment_type",
           "label": "实验类型",
           "type": "enum",
-          "options": ["batch", "column", "regeneration", "characterization"],
+          "options": ["batch", "column", "electrochemical"],
           "option_labels": {
             "batch": "批次实验",
             "column": "柱实验",
-            "regeneration": "再生实验",
-            "characterization": "表征实验"
+            "electrochemical": "电化学实验"
           },
           "required": true,
-          "default": "batch"
+          "default": "batch",
+          "comment": "与 materials/record-templates/ 三个 Excel 模板一一对应；新增实验类型时在此追加 option 与 label，并在 record_templates/ 补对应模板"
         },
         {
           "path": "01_Metadata.operator",
