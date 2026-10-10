@@ -378,6 +378,85 @@
 
 ---
 
+## 2026-10-11 · 配色体系升级：暖色 Claude/Anthropic 风格 + 浅/深主题
+
+### 27. 暖色调色板替换冷蓝，Jarvis 温暖对话区
+
+- **背景 / 目标**：原配色为「科技蓝 + 冷灰 + 纯黑/纯白」工业感体系，与产品「温暖的
+  AI 实验伙伴」定位不符。本次按用户给定的设计说明，整体替换为温暖、克制、现代的
+  琥珀橙体系，并对齐 Anthropic Claude 的视觉语言。浅/深主题切换机制不变（沿用
+  `useTheme.js` 的 auto/light/dark 与 `data-theme`）。
+- **调色板（tokens.css）**：
+  - 新增权威调色板变量：`--bg-page` / `--bg-workbench` / `--bg-card`、
+    `--brand-orange` / `--brand-orange-hover`、
+    `--accent-blue` / `--accent-green` / `--accent-yellow` / `--accent-red`、
+    `--text-disabled`，以及 Jarvis 专用的 `--chat-surface` / `--chat-bubble` /
+    `--chat-bubble-user` / `--chat-dot`。
+  - **旧语义 token 桥接到新调色板，组件零改名**：`--bg-canvas`/`--bg-primary`/
+    `--bg-secondary`/`--surface-card`/`--accent`/`--accent-hover`/`--accent-subtle`/
+    `--success`/`--warning`/`--error`/`--info` 全部指向暖色值，因此全站组件自动换肤，
+    无需逐个文件改动。浅色 `--bg-primary = --bg-workbench`，深色 `--surface-card = --bg-card`。
+  - 浅色三级层次：页面 #FAF9F5 → 工作台 #F2F0E9 → 卡片 #FFFFFF；深色：页面 #151312 →
+    工作台 #1F1D1B → 卡片 #282623（不使用纯黑）。
+- **状态色降饱和并保持温暖统一**：浅色状态标签用「浅底 + 深字」（如待确认 #FFF4E6 /
+  #B36A3E），深色用「半透明底 + 彩字」（如 #A4B688）。低置信度=warning、单位异常=error、
+  确认成功=success 的语义映射不变。
+- **深度策略**：卡片/面板静止态去掉阴影，改用「表面色差 + 极淡暖边框」区分层次，
+  仅悬停抬升（`--shadow-md` + translateY-2px）。阴影色由纯黑改为暖灰。
+- **组件改造**（结构性，非仅换色）：
+  - `base.css`：主按钮改为琥珀橙底 + 深暖色文字（`--on-accent`）；次要按钮悬停转橙
+    （`--accent-subtle` 底 + `--brand-orange` 边框/文字）；输入框极淡边框 + 暖白底 +
+    橙色聚焦环；`.card` 去静止阴影。
+  - `PanelHead.vue`：新增 `dot` 属性，标题前渲染一枚橙色光点。
+  - `ChatPanel.vue`：Jarvis 区背景改为 `--chat-surface`（与工作台一致，去掉冷灰块），
+    输入框改 `--radius-full` 圆角，聚焦橙高亮；面板头启用 `dot`。
+  - `ChatMessage.vue`：Jarvis 气泡改用 `--chat-bubble` 暖底 + 极淡边框；用户气泡用
+    `--chat-bubble-user`。
+  - `BaseModal.vue`：遮罩改用 `--overlay`，容器背景改用 `--surface-card`。
+  - `AppHeader.vue`：导航结构与交互保持 v1.0 的胶囊轨道 + 平移滑块不变（曾尝试改为
+    简洁文字导航，经用户指出属错误改动，已完整回退）。
+  - 导航暖色呈现调优：新增 `--nav-track`（浅 #E6E1D3 / 深 #232120）、
+    `--nav-track-border`（浅 #DDD7C6 / 深 #2C2926）、`--nav-slider`（浅 #FFFEFB / 深 #3B3630）
+    三个 token。修正深色模式下滑块（原取自 `--surface-card` #282623）比轨道更暗导致的
+    「凹陷」错觉，现滑块恒比轨道更亮，浮起感在浅/深两种模式下一致。
+- **偏离与理由（规范 §十.13 要求）**：
+  - 主按钮文字由「白色」改为 `--on-accent` 深暖色：琥珀橙 #D97757 上白字对比度仅约
+    3.1:1，不满足规范 §八.5「对比度 ≥ 4.5:1」；深暖色 #2C1810 约 5.4:1 达标。
+    此为规范 §4.1 的文字色修订，已同步更新规范文档。
+  - 深色 `--success`/`--warning` 等取较亮的彩色值直接作文字色（在半透明底上），
+    替代浅色模式的深字方案。
+- **文档**：`docs/ExpResin-UI-Design-Spec-v1.0.md` 升版为 **v1.1**，§2.1 配色表、
+  §4.1/§4.2/§4.3/§4.4/§六 相关条目同步为暖色；文件名保持不变以兼容既有引用。
+- **验证**：`npm run build` 通过（无错误）。新增静态预览 `outputs/warm-theme-preview/index.html`
+  用于浅/深一键对照。
+
+---
+
+### 28. 框架区块暖色化 + 视图副标题改为悬浮提示（2026-10-11 追加）
+
+- **左 / 上 / 右白色区块变暖（Claude 风格）**：
+  - `--glass-bg` / `--glass-bg-strong` 浅色由「近纯白」`rgba(250,249,245,…)` 改为与工作台
+    同源的暖米 `rgba(242,240,233,0.78 / 0.92)`。顶部全局栏（AppHeader）与检查器吸顶头
+    随之从白色变为暖米，深色不变（原本就是暖炭）。
+  - 左 / 右折叠栏（`.pane--collapsed` 48px 图标轨）：背景由 `--surface-card`（白）改为
+    `--bg-workbench`（与工作台同色系），并去掉 `shadow-sm`——轨道后退为「框架」而非
+    白色卡片；竖排标签 `.rail-label` 颜色提为 `--text-secondary` 保证在新底色上的可读性。
+  - 三处均只换底色 token / 引用，结构与交互不变。
+- **四个视图大标题后的小字改为鼠标悬浮提示，并精简文案**：
+  - `base.css` 新增全局 `[data-tip]` 悬浮提示工具（含 `data-tip-align="start"` 左对齐变体
+    与 `h1[data-tip]` 的 help 光标暗示）；AppHeader 原有的 `.brand-wrap::after` 局部实现
+    删除，改由全局工具承接（视觉一致）。
+  - `WorkbenchLayout` 的 `subtitle` 不再渲染为可见小字，改为 h1 的 `data-tip`；
+    SetupView / RecognizeView 随之生效。
+  - HomeView / ArchiveView 的 h1 同样改为 `data-tip`，删除原 `<p class="muted">` 说明行
+    及其样式。
+  - 文案精简（保持原意）：工作台「三步：实验前录入、实验后识别、归档调用；Raw 只读，
+    Processed 可追溯」；新建实验「录入初始信息，形成记录草稿」；数据识别「上传原始表格，
+    识别列与单位，逐列确认」；实验档案「归档规范文档，供复用与 Public API 调用」。
+- **验证**：`npm run build` 通过；dev server HMR 已生效。
+
+---
+
 ## 版本记录
 
 | 版本 | 日期 | 变更 |
@@ -392,3 +471,4 @@
 | 1.7 | 2026-10-02 | UI 升级第 0–1 阶段：移除 4 个死代码文件；修复深色模式跟随系统；字段状态收敛到 `domain/fieldStatus.js`；新增控件/聚焦/层级/info/布局 token（纯增量）；深度策略单一化（面板无阴影、悬浮才抬升）；工作台标题升到 `--text-lg`、移动端 tab 补语义 |
 | 1.8 | 2026-10-02 | UI 升级第 2 阶段：toast 队列+色调+可关闭；Home/Archive 加载骨架与错误条；StatusBar `saving` 与 MappingInspector `resolving` 提交反馈；Home/Archive 卡片停止态去阴影；修正 RecognizeView 不存在令牌与硬编码色 |
 | 1.9 | 2026-10-02 | UI 升级第 3–4 阶段：抽取 9 个共享组件；工作台 h1 升 `--text-xl`、折叠栏 48px 图标轨；断点收敛 480/768/1024/1280；签名层 ProvenanceRail + 档案锚点目录 + 表格/统计语义；首屏入场序列与 BaseModal（§4.9，部分实现）；首页搜索清空、触控目标 40px |
+| 2.0 | 2026-10-11 | 配色体系升级：科技蓝 → 暖色琥珀橙（Claude/Anthropic 风格），新增浅/深两套暖色调色板；旧语义 token 桥接新色板实现全站换肤；状态色降饱和改暖；卡片去静止阴影；主按钮橙底深暖字（对比度达标）；Jarvis 温暖对话区（橙色光点 + 暖气泡 + 圆角输入框）；设计规范升 v1.1 |

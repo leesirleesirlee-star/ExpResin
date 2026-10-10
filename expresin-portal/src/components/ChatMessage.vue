@@ -56,12 +56,13 @@ function textOf(m) {
   word-break: break-word;
 }
 .msg--jarvis .bubble {
-  background: var(--bg-tertiary);
+  background: var(--chat-bubble);
   color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
   border-top-left-radius: var(--radius-sm);
 }
 .msg--user .bubble {
-  background: var(--accent);
+  background: var(--chat-bubble-user);
   color: var(--on-accent);
   border-top-right-radius: var(--radius-sm);
 }

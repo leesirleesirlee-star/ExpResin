@@ -1,9 +1,13 @@
-# ExpResin 界面设计规范 v1.0
+# ExpResin 界面设计规范 v1.1
 
 > 本规范继承《第一轮基准：ExpResin 项目宪法》与《项目计划书 v2.1》。  
 > 用于指导 AI Agent 设计 ExpResin 的 PortalJarvis 页面与 API 文档页面。  
-> 设计目标：**极简、科技感、符合人机交互基本逻辑**，参考 OpenAI 与 Apple 的设计语言。  
+> 设计目标：**温暖、克制、现代、AI 感强**，参考 Anthropic Claude 的设计语言（琥珀橙强调、暖米黄/暖炭灰底色）。  
 > 本规范为可执行文件，AI Agent 必须严格遵循以下所有 token、尺寸、动效和布局规则。
+>
+> **v1.1 修订（2026-10-11）**：配色体系由科技蓝改为暖色琥珀橙；新增浅色/深色两套暖色调色板
+> 与 Jarvis 温暖对话区变量；状态色降低饱和度并保持温暖统一。变更理由与实现见
+> `docs/design-changelog.md`（§27）。下列 §2.1 为当前权威色值，取代 v1.0 的冷色表。
 
 ---
 
@@ -22,30 +26,62 @@
 
 ## 二、设计 Token
 
-### 2.1 颜色
+### 2.1 颜色（v1.1 暖色体系）
+
+浅色模式为默认主题。三级明暗层次：**页面（米黄）→ 工作台（暖灰）→ 卡片（暖白）**，
+不使用纯黑、纯白与高饱和冷色。
+
+**基础面 / 文字 / 主色**
+
+| Token（调色板名） | Light | Dark | 用途 |
+|---|---|---|---|
+| `--bg-page`（≈`--bg-canvas`） | #FAF9F5 | #151312 | 页面背景：浅米黄 / 暖炭灰 |
+| `--bg-workbench`（≈`--bg-primary`/`--bg-secondary`） | #F2F0E9 | #1F1D1B | 工作台 / 任务栏 / 侧边栏 |
+| `--bg-card`（≈`--surface-card`） | #FFFFFF | #282623 | 卡片 / 表单区 |
+| `--bg-tertiary` | #F4F2EB | #302D2A | hover / 代码块 / 内凹面 |
+| `--text-primary` | #2C2A26 | #EAE8E5 | 主文字（深暖灰，不用纯黑） |
+| `--text-secondary` | #7A776E | #8E8B85 | 次要文字 |
+| `--text-disabled`（≈`--text-tertiary`） | #B0AEA5 | #55534F | 占位符 / 禁用 |
+| `--border-subtle` | #E8E6DC | #3A3632 | 极淡暖灰分隔线 |
+| `--border-strong` | #DBD8CC | #47423D | 次级边框 |
+| `--brand-orange`（≈`--accent`） | #D97757 | #F2A978 | 主色：琥珀橙（按钮 / 高亮 / 选中） |
+| `--brand-orange-hover`（≈`--accent-hover`） | #C46A4D | #D99A6B | 主色悬停 |
+| `--accent-subtle` | #FBEDE5 | #3A2A20 | 强调浅底 |
+| `--on-accent` | #2C1810 | #2A1A12 | 橙底文字（深暖色，对比度 ≥ 4.5:1） |
+
+**状态标识色（降低饱和度，保持温暖统一）**
 
 | Token | Light | Dark | 用途 |
 |---|---|---|---|
-| `--bg-primary` | #FFFFFF | #0A0A0A | 页面背景 |
-| `--bg-secondary` | #FAFAFA | #141414 | 卡片、面板 |
-| `--bg-tertiary` | #F5F5F5 | #1F1F1F | 输入框、代码块 |
-| `--text-primary` | #0D0D0D | #F5F5F5 | 主文字 |
-| `--text-secondary` | #6B6B6B | #A0A0A0 | 次要文字 |
-| `--text-tertiary` | #9A9A9A | #6B6B6B | 占位符、禁用 |
-| `--border-subtle` | #E5E5E5 | #1F1F1F | 分隔线 |
-| `--border-strong` | #D4D4D4 | #2A2A2A | 输入框边框 |
-| `--accent` | #0066FF | #3B82F6 | 主强调色 |
-| `--accent-hover` | #0052CC | #2563EB | 悬停 |
-| `--accent-subtle` | #EBF2FF | #1E2A4A | 强调背景 |
-| `--success` | #10B981 | #34D399 | 成功 |
-| `--warning` | #F59E0B | #FBBF24 | 警告、低置信度 |
-| `--error` | #EF4444 | #F87171 | 错误、单位异常 |
-| `--info` | #6B7280 | #9CA3AF | 中性提示 |
+| `--info`（蓝） | #4A7BA8 | #8FB4D6 | 信息 / 待处理 / AI 识别 |
+| `--success`（绿） | #5A6B44 | #A4B688 | 成功 / 通过 / 正常 |
+| `--warning`（琥珀黄） | #B36A3E | #FFE4A1 | 警告 / 待确认 |
+| `--error`（红） | #C0392B | #E88383 | 错误 / 必填缺失 / 阻断 |
+
+状态标签用「浅底 + 深字」（浅色）或「半透明底 + 彩字」（深色），不使用高饱和纯色底：
+
+| 状态 | 浅色背景 | 浅色文字 | 深色文字 |
+|---|---|---|---|
+| 待确认 | #FFF4E6 | #B36A3E | #FFE4A1 |
+| 识别中 | #EDF3FA | #4A7BA8 | #8FB4D6 |
+| 已通过 | #F3F5EE | #5A6B44 | #A4B688 |
+| 必填缺失 / 错误 | #FFF2F1 | #C0392B | #E88383 |
+
+**Jarvis 温暖对话区**
+
+| Token | Light | Dark | 用途 |
+|---|---|---|---|
+| `--chat-surface` | #F2F0E9 | #1F1D1B | 对话区背景（与工作台一致） |
+| `--chat-bubble` | #FFF5EA | #2A2520 | Jarvis 气泡暖底 |
+| `--chat-bubble-user` | #D97757 | #F2A978 | 用户气泡 |
+| `--chat-dot` | #D97757 | #F2A978 | 名称旁橙色光点 |
 
 规则：
-- 强调色全站只用一个。
+- 强调色全站只用一个（琥珀橙）。
 - 状态色只用于状态，不用于装饰。
 - 低置信度 = warning，单位异常 = error，确认成功 = success。
+- 工作台、任务栏、卡片之间以**明暗层次 + 极淡分割线**区分，不用粗边框或强色块。
+- 深色模式不使用纯黑背景，使用带轻微暖调的暖炭灰。
 
 ### 2.2 字体
 
@@ -205,7 +241,7 @@
 - 内边距：0 16px
 - 圆角：`--radius-md`
 - 背景：`--accent`
-- 文字：`--text-sm`，500，白色
+- 文字：`--text-sm`，500，`--on-accent`（深暖色；橙底上用白色对比度不足）
 - 悬停：`--accent-hover` + 阴影升一级
 - 按压：`transform: scale(0.98)`
 - 禁用：透明度 0.4，`cursor: not-allowed`
@@ -216,9 +252,9 @@
 - 内边距：0 16px
 - 圆角：`--radius-md`
 - 背景：透明
-- 边框：1px `--border-strong`
+- 边框：1px `--border-strong`（极淡暖灰）
 - 文字：`--text-primary`
-- 悬停：背景 `--bg-tertiary`
+- 悬停：背景 `--accent-subtle`，边框与文字转为 `--brand-orange`
 - 按压：`scale(0.98)`
 
 #### Ghost Button
@@ -241,36 +277,36 @@
 
 - 高度：40px
 - 内边距：0 12px
-- 圆角：`--radius-md`
-- 边框：1px `--border-strong`
-- 背景：`--bg-tertiary`
+- 圆角：`--radius-md`（对话输入框可用 `--radius-full`）
+- 边框：1px `--control-border`（极淡暖灰，不使用粗边框）
+- 背景：`--control-bg`
 - 文字：`--text-base`
-- 占位符：`--text-tertiary`
-- 聚焦：边框 `--accent`，外发光 0 0 0 3px `--accent-subtle`
+- 占位符：`--text-disabled`
+- 聚焦：边框 `--brand-orange`，外发光 `--focus-ring`（0 0 0 3px `--accent-bg`）
 - 错误：边框 `--error`
-- 禁用：背景 `--bg-secondary`，文字 `--text-tertiary`
+- 禁用：背景 `--control-bg-disabled`，文字 `--text-disabled`
 
 ### 4.3 卡片
 
 - 内边距：24px
 - 圆角：`--radius-lg`
-- 背景：`--bg-secondary`
+- 背景：`--bg-card`
 - 边框：1px `--border-subtle`
-- 阴影：`--shadow-sm`
+- 阴影：静止态不加阴影，以明暗层次区分；悬停 `--shadow-md`
 - 悬停：阴影 `--shadow-md`，`transform: translateY(-2px)`，`duration-fast`
 
 ### 4.4 对话气泡
 
 #### Jarvis 消息
-- 背景：`--bg-tertiary`
+- 背景：`--chat-bubble`（轻微暖色，衬托「有温度的 AI 助手」）
 - 圆角：`--radius-lg`，左上角 `--radius-sm`
 - 内边距：12px 16px
 - 最大宽度：80%
 - 文字：`--text-base`
 
 #### 用户消息
-- 背景：`--accent`
-- 文字：白色
+- 背景：`--chat-bubble-user`
+- 文字：`--on-accent`（深暖色，保证橙色背景上的对比度）
 - 圆角：`--radius-lg`，右上角 `--radius-sm`
 - 内边距：12px 16px
 - 最大宽度：80%
@@ -370,7 +406,9 @@
 ## 六、Top Bar 规范
 
 - 高度：56px（桌面）/ 48px（移动）
-- 背景：`--bg-primary` + `backdrop-filter: blur(12px)`
+- 背景：`--glass-bg` + `backdrop-filter: blur(12px)`
+- 导航：分段控件；轨道 `--nav-track` + 边框 `--nav-track-border`，滑块 `--nav-slider`
+  （滑块必须比轨道更亮以产生浮起感），激活项文字 `--accent`
 - 底部边框：1px `--border-subtle`
 - 左侧：Logo 24x24px + 项目名 `--text-sm` 500
 - 中间：当前 Project 名称，点击可切换

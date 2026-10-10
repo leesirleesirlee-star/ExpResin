@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ExpResin 暖色主题预览 · Light / Dark</title>
+<style>
+  /* ===== 与 src/styles/tokens.css 保持一致的暖色调色板（浅色默认） ===== */
+  :root {
+    color-scheme: light;
+    --bg-page:#faf9f5; --bg-workbench:#f2f0e9; --bg-card:#ffffff; --bg-tertiary:#f4f2eb;
+    --border-subtle:#e8e6dc; --border-strong:#dbd8cc;
+    --text-primary:#2c2a26; --text-secondary:#7a776e; --text-disabled:#b0aea5;
+    --brand-orange:#d97757; --brand-orange-hover:#c46a4d;
+    --accent-blue:#6a9bcc; --accent-green:#788c5d; --accent-yellow:#ffd166; --accent-red:#e05a5a;
+    --accent:var(--brand-orange); --accent-hover:var(--brand-orange-hover);
+    --accent-subtle:#fbede5; --on-accent:#2c1810;
+    --success:#5a6b44; --warning:#b36a3e; --error:#c0392b; --info:#4a7ba8;
+    --success-bg:#f3f5ee; --warning-bg:#fff4e6; --error-bg:#fff2f1; --info-bg:#edf3fa;
+    --accent-bg:rgba(217,119,87,.14);
+    --control-bg:#faf9f5; --control-border:#e8e6dc;
+    --focus-ring:0 0 0 3px var(--accent-bg);
+    --glass-bg:rgba(250,249,245,.72);
+    --chat-surface:var(--bg-workbench); --chat-bubble:#fff5ea; --chat-dot:var(--brand-orange);
+    --nav-track:#e6e1d3; --nav-track-border:#ddd7c6; --nav-slider:#fffefb;
+    --radius-sm:6px; --radius-md:8px; --radius-lg:12px; --radius-full:999px;
+    --shadow-sm:0 2px 8px rgba(44,42,38,.06); --shadow-md:0 8px 24px rgba(44,42,38,.08);
+    --font-sans:Inter,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  html[data-theme="dark"] {
+    color-scheme: dark;
+    --bg-page:#151312; --bg-workbench:#1f1d1b; --bg-card:#282623; --bg-tertiary:#302d2a;
+    --border-subtle:#3a3632; --border-strong:#47423d;
+    --text-primary:#eae8e5; --text-secondary:#8e8b85; --text-disabled:#55534f;
+    --brand-orange:#f2a978; --brand-orange-hover:#d99a6b;
+    --accent-blue:#8fb4d6; --accent-green:#a4b688; --accent-yellow:#ffe4a1; --accent-red:#e88383;
+    --accent:var(--brand-orange); --accent-hover:var(--brand-orange-hover);
+    --accent-subtle:#3a2a20; --on-accent:#2a1a12;
+    --success:#a4b688; --warning:#ffe4a1; --error:#e88383; --info:#8fb4d6;
+    --success-bg:rgba(164,182,136,.16); --warning-bg:rgba(255,228,161,.16);
+    --error-bg:rgba(232,131,131,.16); --info-bg:rgba(143,180,214,.16);
+    --accent-bg:rgba(242,169,120,.18);
+    --control-bg:#2e2b28; --control-border:#3a3632;
+    --glass-bg:rgba(31,29,27,.72);
+    --chat-surface:var(--bg-workbench); --chat-bubble:#2a2520; --chat-dot:var(--brand-orange);
+    --nav-track:#232120; --nav-track-border:#2c2926; --nav-slider:#3b3630;
+    --shadow-sm:0 2px 8px rgba(0,0,0,.03); --shadow-md:0 8px 24px rgba(0,0,0,.04);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg-page); color: var(--text-primary);
+    font: 400 14px/1.55 var(--font-sans);
+    transition: background .25s ease, color .25s ease;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  /* Top bar */
+  .topbar {
+    position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 12px;
+    height: 56px; padding: 0 20px; background: var(--glass-bg);
+    border-bottom: 1px solid var(--border-subtle); backdrop-filter: blur(12px);
+  }
+  .logo { font-weight: 700; color: var(--accent); letter-spacing: -.02em; }
+  /* 分段控件：暖米灰凹槽轨道 + 比轨道更亮的滑块 */
+  .nav {
+    display: flex; align-items: center; gap: 2px; margin-left: 8px; padding: 4px;
+    border: 1px solid var(--nav-track-border); border-radius: var(--radius-full);
+    background: var(--nav-track);
+  }
+  .nav a {
+    display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px;
+    border-radius: var(--radius-full); color: var(--text-secondary); text-decoration: none;
+    font-weight: 400; transition: color .15s cubic-bezier(.4,0,.2,1);
+  }
+  .nav a:hover { color: var(--text-primary); }
+  .nav a.is-active {
+    color: var(--accent); font-weight: 500; background: var(--nav-slider); box-shadow: var(--shadow-sm);
+  }
+  .spacer { flex: 1; }
+  .toggle {
+    display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px;
+    border: 1px solid var(--border-strong); border-radius: var(--radius-full);
+    background: transparent; color: var(--text-primary); cursor: pointer; font: inherit;
+    transition: all .15s ease;
+  }
+  .toggle:hover { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent-hover); }
+
+  h1 { font-size: 24px; font-weight: 600; margin: 32px 0 6px; letter-spacing: -.02em; }
+  .sub { color: var(--text-secondary); margin: 0 0 28px; }
+  .caps { text-transform: uppercase; letter-spacing: .05em; font-size: 12px; color: var(--text-secondary); }
+  section { margin: 28px 0; }
+  .grid { display: grid; gap: 16px; }
+  .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 820px) { .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; } }
+
+  /* Card */
+  .card {
+    padding: 24px; background: var(--bg-card); border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg); transition: box-shadow .25s ease, transform .25s ease, border-color .15s ease;
+  }
+  .card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--border-strong); }
+  .card h3 { margin: 0 0 4px; font-size: 16px; font-weight: 600; }
+  .card p { margin: 0; color: var(--text-secondary); font-size: 13px; }
+  .metric { font-size: 32px; font-weight: 700; letter-spacing: -.02em; }
+  .metric small { font-size: 14px; color: var(--text-secondary); font-weight: 400; }
+
+  /* Buttons */
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .btn {
+    height: 40px; padding: 0 16px; border-radius: var(--radius-md); border: 1px solid transparent;
+    font: 500 14px/1 var(--font-sans); cursor: pointer; transition: all .15s ease;
+  }
+  .btn-primary { background: var(--accent); color: var(--on-accent); }
+  .btn-primary:hover { background: var(--accent-hover); box-shadow: var(--shadow-sm); }
+  .btn-secondary { background: transparent; border-color: var(--border-strong); color: var(--text-primary); }
+  .btn-secondary:hover { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent-hover); }
+  .btn-ghost { background: transparent; color: var(--text-secondary); }
+  .btn-ghost:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+  /* Inputs */
+  .field { display: grid; gap: 6px; }
+  .field label { font-size: 13px; color: var(--text-secondary); }
+  .input {
+    height: 40px; padding: 0 12px; border: 1px solid var(--control-border); border-radius: var(--radius-md);
+    background: var(--control-bg); color: var(--text-primary); font: 400 14px var(--font-sans); outline: none;
+    transition: all .15s ease;
+  }
+  .input::placeholder { color: var(--text-disabled); }
+  .input:focus { border-color: var(--accent); box-shadow: var(--focus-ring); }
+
+  /* Status badges */
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--radius-full);
+    font-size: 12px; font-weight: 500; line-height: 1.6;
+  }
+  .badge::before { content:""; width:6px; height:6px; border-radius:50%; background: currentColor; }
+  .b-pending { background: var(--warning-bg); color: var(--warning); }
+  .b-recog { background: var(--info-bg); color: var(--info); }
+  .b-pass { background: var(--success-bg); color: var(--success); }
+  .b-fail { background: var(--error-bg); color: var(--error); }
+
+  /* Jarvis chat */
+  .chat {
+    background: var(--chat-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+    padding: 16px; display: grid; gap: 12px;
+  }
+  .chat-head { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--chat-dot); box-shadow: 0 0 0 3px var(--accent-bg); }
+  .chat-head .caps { color: var(--text-secondary); }
+  .bubble { max-width: 78%; padding: 10px 14px; border-radius: 14px; font-size: 14px; }
+  .bubble.jarvis { background: var(--chat-bubble); border: 1px solid var(--border-subtle); border-top-left-radius: 6px; }
+  .bubble.user { margin-left: auto; background: var(--accent); color: var(--on-accent); border-top-right-radius: 6px; }
+  .composer { display: flex; gap: 8px; }
+  .composer .input { flex: 1; border-radius: var(--radius-full); padding: 0 16px; }
+
+  /* Swatches */
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+  .sw { border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; }
+  .sw .chip { height: 46px; }
+  .sw .meta { padding: 8px 10px; font-size: 11px; color: var(--text-secondary); background: var(--bg-card); }
+  .sw .meta b { display:block; color: var(--text-primary); font-size: 12px; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <span class="logo">ExpResin</span>
+    <nav class="nav">
+      <a href="#" class="is-active">工作台</a>
+      <a href="#">新建实验</a>
+      <a href="#">数据识别</a>
+      <a href="#">实验档案</a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="toggle" id="toggle">🌗 切换深/浅色</button>
+  </div>
+
+  <div class="wrap">
+    <h1>暖色主题预览（Claude / Anthropic 风格）</h1>
+    <p class="sub">科技蓝 → 琥珀橙；米黄/暖炭灰底色，克制高亮。<span id="modeLabel"></span></p>
+
+    <section>
+      <p class="caps">基础面层次</p>
+      <div class="grid cols-3">
+        <div class="card"><div class="metric">128<small> 批</small></div><p>页面 / 工作台 / 卡片三级明暗</p></div>
+        <div class="card"><h3>已识别字段</h3><p>静态卡片不加阴影，仅用极淡暖边框区分</p></div>
+        <div class="card"><h3>数据完整度</h3><p>悬停时柔和抬升 shadow-md</p></div>
+      </div>
+    </section>
+
+    <section>
+      <p class="caps">按钮</p>
+      <div class="row">
+        <button class="btn btn-primary">开始识别</button>
+        <button class="btn btn-secondary">保存草稿</button>
+        <button class="btn btn-ghost">取消</button>
+      </div>
+    </section>
+
+    <section>
+      <p class="caps">输入框</p>
+      <div class="grid cols-2">
+        <div class="field"><label>实验批次</label><input class="input" placeholder="如 EXP-2026-014" /></div>
+        <div class="field"><label>树脂型号</label><input class="input" value="EP-3310" /></div>
+      </div>
+    </section>
+
+    <section>
+      <p class="caps">状态标签</p>
+      <div class="row">
+        <span class="badge b-pending">待确认</span>
+        <span class="badge b-recog">识别中</span>
+        <span class="badge b-pass">已通过</span>
+        <span class="badge b-fail">必填缺失</span>
+      </div>
+    </section>
+
+    <section>
+      <p class="caps">Jarvis 温暖对话区</p>
+      <div class="chat">
+        <div class="chat-head"><span class="dot"></span><span class="caps">Jarvis · 实验记录助手</span></div>
+        <div class="bubble jarvis">你好，把今天的实验记录发给我，我来帮你整理成结构化数据。</div>
+        <div class="bubble user">批次 EXP-2026-014，树脂 EP-3310，固化温度 80℃。</div>
+        <div class="bubble jarvis">收到，已提取 3 个字段，其中「固化时间」置信度偏低，需要你确认一下。</div>
+        <div class="composer">
+          <input class="input" placeholder="回复 Jarvis…" />
+          <button class="btn btn-primary">发送</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <p class="caps">调色板</p>
+      <div class="swatches" id="swatches"></div>
+    </section>
+  </div>
+
+<script>
+  var html = document.documentElement;
+  var label = document.getElementById('modeLabel');
+  function setMode(m) {
+    html.setAttribute('data-theme', m);
+    label.textContent = m === 'dark' ? '当前：深色模式' : '当前：浅色模式';
+  }
+  setMode(matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.getElementById('toggle').addEventListener('click', function () {
+    setMode(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+
+  var tokens = [
+    ['--bg-page','页面'], ['--bg-workbench','工作台'], ['--bg-card','卡片'], ['--bg-tertiary','内凹面'],
+    ['--brand-orange','主色 · 琥珀橙'], ['--accent-blue','信息'], ['--accent-green','成功'],
+    ['--accent-yellow','警告'], ['--accent-red','错误'], ['--chat-bubble','Jarvis 气泡'],
+    ['--nav-track','导航轨道'], ['--nav-slider','导航滑块']
+  ];
+  var box = document.getElementById('swatches');
+  function paint() {
+    var cs = getComputedStyle(html);
+    box.innerHTML = tokens.map(function (t) {
+      return '<div class="sw"><div class="chip" style="background:' + cs.getPropertyValue(t[0]).trim() +
+        '"></div><div class="meta"><b>' + t[1] + '</b>' + t[0] + '</div></div>';
+    }).join('');
+  }
+  paint();
+  document.getElementById('toggle').addEventListener('click', function () { setTimeout(paint, 20); });
+</script>
+</body>
+</html>

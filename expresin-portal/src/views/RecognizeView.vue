@@ -280,7 +280,7 @@ function goSetup() {
 <template>
   <WorkbenchLayout
     title="数据识别"
-    subtitle="实验后上传原始表格，系统识别列与单位，人工逐列确认"
+    subtitle="上传原始表格，识别列与单位，逐列确认"
     :steps="STEPS"
     active-step="post"
   >

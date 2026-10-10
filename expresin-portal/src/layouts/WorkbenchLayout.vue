@@ -32,8 +32,7 @@ const style = computed(() => ({
   <div class="workbench">
     <header class="workbar">
       <div class="titles">
-        <h1>{{ title }}</h1>
-        <p v-if="subtitle" class="muted">{{ subtitle }}</p>
+        <h1 :data-tip="subtitle || null" data-tip-align="start">{{ title }}</h1>
       </div>
 
       <ol v-if="steps.length" class="steps" aria-label="阶段进度">
@@ -182,12 +181,6 @@ const style = computed(() => ({
   letter-spacing: var(--tracking-tight);
   white-space: nowrap;
 }
-.titles p {
-  font: var(--text-xs);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .steps {
   display: flex;
@@ -246,9 +239,12 @@ const style = computed(() => ({
   min-width: 0;
 }
 
-/* 折叠态：保留 48px 图标条，而不是整栏消失（规范 §3.3 / changelog §2） */
+/* 折叠态：保留 48px 图标条，而不是整栏消失（规范 §3.3 / changelog §2）。
+   轨道与工作台同色系（暖米/暖炭），去阴影使其后退为「框架」而非白色卡片 */
 .pane--collapsed {
   align-items: center;
+  background: var(--bg-workbench);
+  box-shadow: none;
 }
 .rail {
   display: flex;
@@ -261,6 +257,7 @@ const style = computed(() => ({
 .rail-label {
   writing-mode: vertical-rl;
   letter-spacing: var(--tracking-caps);
+  color: var(--text-secondary);
 }
 
 .tabs {

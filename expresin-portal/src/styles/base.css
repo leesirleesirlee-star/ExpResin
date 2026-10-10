@@ -114,13 +114,16 @@ select {
   box-shadow: var(--shadow-sm);
 }
 
+/* 次要按钮：透明背景 + 极淡暖边框；静默保持中性，悬停浮现琥珀橙 */
 .btn-secondary {
   background: transparent;
   border-color: var(--border-strong);
   color: var(--text-primary);
 }
 .btn-secondary:hover:not(:disabled) {
-  background: var(--bg-tertiary);
+  background: var(--accent-subtle);
+  border-color: var(--brand-orange);
+  color: var(--accent-hover);
 }
 
 .btn-ghost {
@@ -192,14 +195,13 @@ select {
    4.3 卡片
    ========================================================================== */
 
-/* 深度策略：静止态用「纯白卡片 + 极弱边框 + 细阴影」从冷灰画布上浮；
-   悬浮态按规范 §4.3 提升到 shadow-md 并轻微上移。 */
+/* 深度策略：静止态用「暖白卡片 + 极淡暖边框」从米黄画布上浮，不加阴影；
+   悬浮态按规范 §4.3 提升到 shadow-md 并轻微上移。避免重阴影，改为明暗层次区分。 */
 .card {
   padding: var(--space-5);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   background: var(--surface-card);
-  box-shadow: var(--shadow-sm);
   transition: box-shadow var(--duration-normal) var(--ease-standard),
     transform var(--duration-normal) var(--ease-standard),
     border-color var(--duration-fast) var(--ease-standard);
@@ -344,6 +346,50 @@ select {
   letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
   color: var(--text-tertiary);
+}
+
+/* ---- 悬浮提示（data-tip）：深色气泡，跟随暖色 token 自动反色 ----
+   用法：<h1 data-tip="提示文案" data-tip-align="start">；默认在元素下方居中，
+   data-tip-align="start" 改为左对齐（用于页面大标题）。 */
+[data-tip] {
+  position: relative;
+}
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  z-index: var(--z-toast);
+  transform: translate(-50%, -2px);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  font: var(--text-xs);
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+[data-tip]:hover::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+[data-tip-align='start']::after {
+  left: 0;
+  transform: translate(0, -2px);
+}
+[data-tip-align='start']:hover::after {
+  transform: translate(0, 0);
+}
+/* 标题上的提示：给出可悬浮的光标暗示 */
+h1[data-tip] {
+  cursor: help;
+  width: fit-content;
 }
 
 /* ---- 骨架屏（5.1） ---- */

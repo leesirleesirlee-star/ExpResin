@@ -2,7 +2,7 @@
 /**
  * 模态对话框（规范 §4.9）。
  *
- * 背景 rgba(0,0,0,0.4) + blur(8px)，容器最大 560px、--radius-xl、--shadow-lg，
+ * 遮罩 --overlay + blur(8px)，容器背景 --surface-card、最大 560px、--radius-xl、--shadow-lg，
  * 入场 scale(0.96)→1 + 淡入。关闭方式：Esc、点击遮罩、关闭按钮。
  * 打开时把焦点移入对话框，关闭后归还触发元素。
  */
@@ -96,7 +96,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
   display: grid;
   place-items: center;
   padding: var(--space-4);
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--overlay);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
@@ -107,7 +107,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--bg-primary);
+  background: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);

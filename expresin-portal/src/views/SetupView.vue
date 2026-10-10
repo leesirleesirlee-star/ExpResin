@@ -99,7 +99,7 @@ function onSave() {
 <template>
   <WorkbenchLayout
     title="新建实验"
-    subtitle="实验前录入初始信息，形成实验记录草稿"
+    subtitle="录入初始信息，形成记录草稿"
     :steps="STEPS"
     active-step="pre"
   >

@@ -1,50 +1,91 @@
 /* ==========================================================================
-   ExpResin Design Tokens v1.0
-   涓ユ牸瀹炵幇銆奅xpResin 鐣岄潰璁捐瑙勮寖 v1.0銆嬬浜岀珷銆?   鍞竴鎵╁睍锛氭瘺鐜荤拑 glass-* 浠ょ墝锛堣鑼冧粎鍏佽 Top Bar/妯℃€?娴眰浣跨敤 blur锛?   鏈璁″皢鍏?token 鍖栧苟鎵╁睍鍒伴潰鏉胯〃灞傦紝鐞嗙敱瑙?docs/design-changelog.md锛夈€?   ========================================================================== */
+   ExpResin Design Tokens v1.1（暖色 · Claude/Anthropic 风格配色修订）
+   严格实现《ExpResin 界面设计规范 v1.1》第二章，并桥接 v1.0 的语义 token
+   （组件仍消费 --bg-primary / --accent / --success 等旧名，无需逐个改名）。
+   唯一扩展：毛玻璃 glass-* 令牌（规范仅允许 Top Bar/模态/浮层使用 blur；
+   本设计将其 token 化并扩展到面板表层，理由见 docs/design-changelog.md）。
+   ========================================================================== */
 
 :root {
   color-scheme: light;
 
-  /* ---- 2.1 棰滆壊 ---- */
-  --bg-primary: #ffffff;
-  --bg-secondary: #fafafa;
-  --bg-tertiary: #f5f5f5;
+  /* ======================================================================
+     2.1 暖色调色板（权威色值，浅色为默认主题）
+     命名对齐设计说明：bg-page / bg-workbench / bg-card / brand-orange …
+     ====================================================================== */
+  --bg-page: #faf9f5; /* 页面背景：浅米黄 / 纸张白 */
+  --bg-workbench: #f2f0e9; /* 工作台 / 任务栏 / 侧边栏：比页面稍深一层 */
+  --bg-card: #ffffff; /* 卡片 / 表单区：最亮一层 */
 
-  --text-primary: #0d0d0d;
-  --text-secondary: #6b6b6b;
-  --text-tertiary: #9a9a9a;
+  --border-subtle: #e8e6dc; /* 极淡暖灰分割线 */
+  --border-strong: #dbd8cc; /* 输入框 / 次级边框 */
 
-  --border-subtle: #e5e5e5;
-  --border-strong: #d4d4d4;
+  --text-primary: #2c2a26; /* 深暖灰，不使用纯黑 */
+  --text-secondary: #7a776e; /* 辅助说明 */
+  --text-tertiary: #b0aea5; /* 占位 / 禁用（沿用旧名） */
+  --text-disabled: #b0aea5; /* 未填写 / 禁用（设计说明命名） */
 
-  --accent: #0066ff;
-  --accent-hover: #0052cc;
-  --accent-subtle: #ebf2ff;
-  --on-accent: #ffffff;
+  --brand-orange: #d97757; /* 主色：琥珀橙 */
+  --brand-orange-hover: #c46a4d; /* 主色悬停 */
 
-  --success: #10b981;
-  --warning: #f59e0b;
-  --error: #ef4444;
-  --info: #6b7280;
+  --accent-blue: #6a9bcc; /* 信息 / 待处理 / AI 识别 */
+  --accent-green: #788c5d; /* 成功 / 通过 / 正常 */
+  --accent-yellow: #ffd166; /* 警告 / 待确认 */
+  --accent-red: #e05a5a; /* 错误 / 缺失 / 阻断 */
 
-  /* 鐘舵€佽壊 10% 鑳屾櫙锛岀敤浜庡瓧娈甸珮浜?*/
-  --warning-bg: rgba(245, 158, 11, 0.1);
-  --error-bg: rgba(239, 68, 68, 0.1);
-  --accent-bg: rgba(0, 102, 255, 0.1);
-  --success-bg: rgba(16, 185, 129, 0.1);
-  --overlay: rgba(0, 0, 0, 0.4);
+  /* ======================================================================
+     2.1b 语义桥接：旧 token 名 → 暖色调色板（保持组件零改名）
+     ====================================================================== */
+  --bg-canvas: var(--bg-page); /* App 最底页面层 */
+  --bg-primary: var(--bg-workbench); /* 任务栏 / 对话区 / 内嵌面 */
+  --bg-secondary: var(--bg-workbench); /* 状态栏 / 二级面 */
+  --bg-tertiary: #f4f2eb; /* hover / 代码块 / 内凹面 */
+  --surface-card: var(--bg-card); /* 卡片、面板 */
 
-  /* ---- 姣涚幓鐠冩墿灞曚护鐗?---- */
-  --glass-bg: rgba(255, 255, 255, 0.62);
-  --glass-bg-strong: rgba(255, 255, 255, 0.82);
-  --glass-border: rgba(255, 255, 255, 0.65);
-  --glass-blur: 20px;
-  --glass-saturate: 1.6;
-  --bg-canvas: #eef1f5;
-  --surface-card: #ffffff;
-  --nav-track: #e6e9ee;
+  --accent: var(--brand-orange);
+  --accent-hover: var(--brand-orange-hover);
+  --accent-subtle: #fbede5; /* 强调浅底 */
+  --on-accent: #2c1810; /* 橙底上的深暖色文字（对比度 ≥ 4.5:1） */
 
-  /* ---- 2.2 瀛椾綋 ---- */
+  /* 状态色：降低饱和度并保持温暖统一；浅色用「浅底 + 深字」 */
+  --success: #5a6b44;
+  --warning: #b36a3e;
+  --error: #c0392b;
+  --info: #4a7ba8;
+
+  --success-bg: #f3f5ee;
+  --warning-bg: #fff4e6;
+  --error-bg: #fff2f1;
+  --info-bg: #edf3fa;
+  --accent-bg: rgba(217, 119, 87, 0.14);
+  --overlay: rgba(44, 42, 38, 0.45);
+
+  /* 控件专用：输入框不再用粗边框，改为极淡边框 + 暖白底 */
+  --control-bg: #faf9f5;
+  --control-bg-disabled: #f2f0e9;
+  --control-border: #e8e6dc;
+
+  /* 聚焦环统一使用琥珀橙 */
+  --focus-ring: 0 0 0 3px var(--accent-bg);
+
+  /* 毛玻璃表面：与工作台同源的暖米色调（Claude 风格），不再接近纯白 */
+  --glass-bg: rgba(242, 240, 233, 0.78);
+  --glass-bg-strong: rgba(242, 240, 233, 0.92);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  /* 导航分段控件：轨道为暖米灰凹槽，滑块为暖白（明显浮起） */
+  --nav-track: #e6e1d3;
+  --nav-track-border: #ddd7c6;
+  --nav-slider: #fffefb;
+
+  /* ---- Jarvis 温暖对话区 ---- */
+  --chat-surface: var(--bg-workbench); /* 对话区背景与工作台一致 */
+  --chat-bubble: #fff5ea; /* Jarvis 气泡：轻微暖色 */
+  --chat-bubble-user: var(--brand-orange); /* 用户气泡 */
+  --chat-dot: var(--brand-orange); /* 名称旁橙色光点 */
+
+  /* ======================================================================
+     2.2 字体
+     ====================================================================== */
   --font-sans: Inter, "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI",
     "PingFang SC", "Microsoft YaHei", sans-serif;
   --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Consolas, monospace;
@@ -61,7 +102,9 @@
   --tracking-tight: -0.02em;
   --tracking-caps: 0.05em;
 
-  /* ---- 2.3 闂磋窛锛?px 鍩哄噯锛?---- */
+  /* ======================================================================
+     2.3 间距（8px 基准）
+     ====================================================================== */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -73,20 +116,20 @@
   --space-9: 96px;
   --space-10: 128px;
 
-  /* ---- 2.4 鍦嗚 ---- */
+  /* ---- 2.4 圆角 ---- */
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
   --radius-full: 999px;
 
-  /* ---- 2.5 闃村奖 ---- */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.12);
+  /* ---- 2.5 阴影（中性、无彩色，暖底色上使用更柔和） ---- */
+  --shadow-xs: 0 1px 2px rgba(44, 42, 38, 0.04);
+  --shadow-sm: 0 2px 8px rgba(44, 42, 38, 0.06);
+  --shadow-md: 0 8px 24px rgba(44, 42, 38, 0.08);
+  --shadow-lg: 0 16px 48px rgba(44, 42, 38, 0.12);
 
-  /* ---- 2.6 鍔ㄦ晥 ---- */
+  /* ---- 2.6 动效 ---- */
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
   --ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
@@ -98,22 +141,13 @@
   --duration-slow: 400ms;
   --duration-slower: 600ms;
 
-  /* ---- 甯冨眬甯搁噺锛?.3 / 鍏?/ 涓冿級 ---- */
+  /* ---- 布局常量（规范 3.3 / 六 / 七） ---- */
   --topbar-h: 56px;
   --statusbar-h: 48px;
   --chat-w: 360px;
   --inspector-w: 320px;
 
-  /* ---- 澧為噺浠ょ墝锛坴2.0 UI 鍗囩骇锛岀函鏂板锛屼笉鏀规棦鏈夊€硷級 ---- */
-  /* 鎺т欢涓撶敤锛氳杈撳叆鎺т欢鍙嫭绔嬭皟浼橈紝涓嶅啀鐩村紩 surface/border */
-  --control-bg: var(--bg-tertiary);
-  --control-bg-disabled: var(--bg-secondary);
-  --control-border: var(--border-strong);
-
-  /* 鑱氱劍鐜細缁熶竴鏇夸唬鏁ｈ惤鐨?box-shadow 纭紪鐮?*/
-  --focus-ring: 0 0 0 3px var(--accent-bg);
-
-  /* 灞傜骇锛氭秷闄?20/30/60 纭紪鐮佷笌娼滃湪鍐茬獊 */
+  /* ---- 层级 ---- */
   --z-base: 0;
   --z-panel: 1;
   --z-sticky: 20;
@@ -121,101 +155,158 @@
   --z-overlay: 40;
   --z-toast: 60;
 
-  /* 鐘舵€佽ˉ鍏咃細琛ラ綈 info 鐨?10% 鑳屾櫙 */
-  --info-bg: rgba(107, 114, 128, 0.1);
-
-  /* 甯冨眬琛ュ叏锛氭秷闄?48px/44px 绛夌‖缂栫爜 */
+  /* ---- 布局补全 ---- */
   --panel-head-h: 48px;
   --topbar-h-mobile: 48px;
   --statusbar-h-mobile: 44px;
   --rail-collapsed-w: 48px;
 }
 
-/* ---- Dark 涓婚锛堟樉寮忓垏鎹級 ---- */
+/* ==========================================================================
+   深色模式：暖炭灰（不使用纯黑），比页面稍亮的层级递进
+   ========================================================================== */
+
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #141414;
-  --bg-tertiary: #1f1f1f;
+  /* ---- 深色调色板 ---- */
+  --bg-page: #151312;
+  --bg-workbench: #1f1d1b;
+  --bg-card: #282623;
 
-  --text-primary: #f5f5f5;
-  --text-secondary: #a0a0a0;
-  --text-tertiary: #6b6b6b;
+  --border-subtle: #3a3632;
+  --border-strong: #47423d;
 
-  --border-subtle: #1f1f1f;
-  --border-strong: #2a2a2a;
+  --text-primary: #eae8e5;
+  --text-secondary: #8e8b85;
+  --text-tertiary: #55534f;
+  --text-disabled: #55534f;
 
-  --accent: #3b82f6;
-  --accent-hover: #2563eb;
-  --accent-subtle: #1e2a4a;
-  --on-accent: #ffffff;
+  --brand-orange: #f2a978;
+  --brand-orange-hover: #d99a6b;
 
-  --success: #34d399;
-  --warning: #fbbf24;
-  --error: #f87171;
-  --info: #9ca3af;
+  --accent-blue: #8fb4d6;
+  --accent-green: #a4b688;
+  --accent-yellow: #ffe4a1;
+  --accent-red: #e88383;
 
-  --warning-bg: rgba(251, 191, 36, 0.1);
-  --error-bg: rgba(248, 113, 113, 0.1);
-  --accent-bg: rgba(59, 130, 246, 0.1);
-  --success-bg: rgba(52, 211, 153, 0.1);
-  --info-bg: rgba(156, 163, 175, 0.1);
+  /* ---- 语义桥接 ---- */
+  --bg-canvas: var(--bg-page);
+  --bg-primary: var(--bg-workbench);
+  --bg-secondary: var(--bg-workbench);
+  --bg-tertiary: #302d2a;
+  --surface-card: var(--bg-card);
+
+  --accent: var(--brand-orange);
+  --accent-hover: var(--brand-orange-hover);
+  --accent-subtle: #3a2a20;
+  --on-accent: #2a1a12;
+
+  --success: #a4b688;
+  --warning: #ffe4a1;
+  --error: #e88383;
+  --info: #8fb4d6;
+
+  --success-bg: rgba(164, 182, 136, 0.16);
+  --warning-bg: rgba(255, 228, 161, 0.16);
+  --error-bg: rgba(232, 131, 131, 0.16);
+  --info-bg: rgba(143, 180, 214, 0.16);
+  --accent-bg: rgba(242, 169, 120, 0.18);
   --overlay: rgba(0, 0, 0, 0.6);
 
-  --glass-bg: rgba(20, 20, 20, 0.55);
-  --glass-bg-strong: rgba(20, 20, 20, 0.85);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --bg-canvas: #060607;
-  --surface-card: #171717;
-  --nav-track: rgba(255, 255, 255, 0.07);
+  --control-bg: #2e2b28;
+  --control-bg-disabled: #232120;
+  --control-border: #3a3632;
 
-  /* 瑙勮寖 2.5锛欴ark 妯″紡闃村奖閫忔槑搴﹀噺鍗?*/
+  --focus-ring: 0 0 0 3px var(--accent-bg);
+
+  --glass-bg: rgba(31, 29, 27, 0.72);
+  --glass-bg-strong: rgba(31, 29, 27, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  /* 导航分段控件：轨道比工作台更深，滑块比轨道更亮（避免「凹陷」错觉） */
+  --nav-track: #232120;
+  --nav-track-border: #2c2926;
+  --nav-slider: #3b3630;
+
+  --chat-surface: var(--bg-workbench);
+  --chat-bubble: #2a2520;
+  --chat-bubble-user: var(--brand-orange);
+  --chat-dot: var(--brand-orange);
+
+  /* 规范 2.5：Dark 模式阴影透明度减半 */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.02);
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.03);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.04);
   --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.06);
 }
 
-/* ---- 璺熼殢绯荤粺锛堟湭鏄惧紡璁剧疆 data-theme 鏃讹級 ---- */
+/* ==========================================================================
+   跟随系统（未显式设置 data-theme 时），数值与上方 [data-theme="dark"] 同步
+   ========================================================================== */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
 
-    --bg-primary: #0a0a0a;
-    --bg-secondary: #141414;
-    --bg-tertiary: #1f1f1f;
+    --bg-page: #151312;
+    --bg-workbench: #1f1d1b;
+    --bg-card: #282623;
 
-    --text-primary: #f5f5f5;
-    --text-secondary: #a0a0a0;
-    --text-tertiary: #6b6b6b;
+    --border-subtle: #3a3632;
+    --border-strong: #47423d;
 
-    --border-subtle: #1f1f1f;
-    --border-strong: #2a2a2a;
+    --text-primary: #eae8e5;
+    --text-secondary: #8e8b85;
+    --text-tertiary: #55534f;
+    --text-disabled: #55534f;
 
-    --accent: #3b82f6;
-    --accent-hover: #2563eb;
-    --accent-subtle: #1e2a4a;
-    --on-accent: #ffffff;
+    --brand-orange: #f2a978;
+    --brand-orange-hover: #d99a6b;
 
-    --success: #34d399;
-    --warning: #fbbf24;
-    --error: #f87171;
-    --info: #9ca3af;
+    --accent-blue: #8fb4d6;
+    --accent-green: #a4b688;
+    --accent-yellow: #ffe4a1;
+    --accent-red: #e88383;
 
-    --warning-bg: rgba(251, 191, 36, 0.1);
-    --error-bg: rgba(248, 113, 113, 0.1);
-    --accent-bg: rgba(59, 130, 246, 0.1);
-    --success-bg: rgba(52, 211, 153, 0.1);
-    --info-bg: rgba(156, 163, 175, 0.1);
+    --bg-canvas: var(--bg-page);
+    --bg-primary: var(--bg-workbench);
+    --bg-secondary: var(--bg-workbench);
+    --bg-tertiary: #302d2a;
+    --surface-card: var(--bg-card);
+
+    --accent: var(--brand-orange);
+    --accent-hover: var(--brand-orange-hover);
+    --accent-subtle: #3a2a20;
+    --on-accent: #2a1a12;
+
+    --success: #a4b688;
+    --warning: #ffe4a1;
+    --error: #e88383;
+    --info: #8fb4d6;
+
+    --success-bg: rgba(164, 182, 136, 0.16);
+    --warning-bg: rgba(255, 228, 161, 0.16);
+    --error-bg: rgba(232, 131, 131, 0.16);
+    --info-bg: rgba(143, 180, 214, 0.16);
+    --accent-bg: rgba(242, 169, 120, 0.18);
     --overlay: rgba(0, 0, 0, 0.6);
 
-    --glass-bg: rgba(20, 20, 20, 0.55);
-    --glass-bg-strong: rgba(20, 20, 20, 0.85);
+    --control-bg: #2e2b28;
+    --control-bg-disabled: #232120;
+    --control-border: #3a3632;
+
+    --focus-ring: 0 0 0 3px var(--accent-bg);
+
+    --glass-bg: rgba(31, 29, 27, 0.72);
+    --glass-bg-strong: rgba(31, 29, 27, 0.88);
     --glass-border: rgba(255, 255, 255, 0.1);
-    --bg-canvas: #060607;
-    --surface-card: #171717;
-    --nav-track: rgba(255, 255, 255, 0.07);
+    --nav-track: #232120;
+    --nav-track-border: #2c2926;
+    --nav-slider: #3b3630;
+
+    --chat-surface: var(--bg-workbench);
+    --chat-bubble: #2a2520;
+    --chat-bubble-user: var(--brand-orange);
+    --chat-dot: var(--brand-orange);
 
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.02);
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.03);

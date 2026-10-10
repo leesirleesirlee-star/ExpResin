@@ -61,10 +61,7 @@ function targetOf(row) {
     <div class="wrap">
       <header class="head">
         <div>
-          <h1>实验档案</h1>
-          <p class="muted">
-            归档后的规范文档，供后续研究复用，也可通过 Public API 供外部系统调用。
-          </p>
+          <h1 data-tip="归档规范文档，供复用与 Public API 调用" data-tip-align="start">实验档案</h1>
         </div>
         <div class="head-actions">
           <div class="search-wrap">
@@ -162,12 +159,6 @@ function targetOf(row) {
 .head h1 {
   font: var(--text-2xl);
   letter-spacing: var(--tracking-tight);
-}
-.head p {
-  margin-top: var(--space-2);
-  font: var(--text-sm);
-  max-width: 58ch;
-  line-height: 1.6;
 }
 .head-actions {
   display: flex;

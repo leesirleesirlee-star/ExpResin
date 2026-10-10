@@ -141,29 +141,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateSlider))
 .brand-wrap:hover {
   background: var(--bg-tertiary);
 }
-/* 悬停提示：「回到工作台」 */
-.brand-wrap::after {
-  content: attr(data-tip);
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 50%;
-  transform: translate(-50%, -2px);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-md);
-  background: var(--text-primary);
-  color: var(--bg-primary);
-  font-size: 12px;
-  line-height: 1.5;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--duration-fast) var(--ease-standard),
-    transform var(--duration-fast) var(--ease-standard);
-}
-.brand-wrap:hover::after {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
+/* 「回到工作台」悬停提示由 base.css 的全局 [data-tip] 工具承接 */
 
 .logo {
   display: grid;
@@ -192,7 +170,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateSlider))
   gap: 2px;
   margin-left: var(--space-4);
   padding: 4px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--nav-track-border);
   border-radius: var(--radius-full);
   background: var(--nav-track);
 }
@@ -203,7 +181,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateSlider))
   bottom: 4px;
   left: 0;
   border-radius: var(--radius-full);
-  background: var(--surface-card);
+  background: var(--nav-slider);
   box-shadow: var(--shadow-sm);
   pointer-events: none;
   transition: transform var(--duration-fast) var(--ease-standard),

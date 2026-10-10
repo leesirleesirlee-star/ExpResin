@@ -31,11 +31,12 @@ onMounted(loadArchive)
   <main class="page">
     <div class="wrap">
       <header class="hero">
-        <h1 class="stagger-in" style="--stagger: 100ms">ExpResin 实验数据工作台</h1>
-        <p class="muted stagger-in" style="--stagger: 200ms">
-          把实验记录拆成清晰的三步：实验前录入、实验后识别、归档调用。
-          Raw 数据只读，Processed 全程可追溯。
-        </p>
+        <h1
+          class="stagger-in"
+          style="--stagger: 100ms"
+          data-tip="三步：实验前录入、实验后识别、归档调用；Raw 只读，Processed 可追溯"
+          data-tip-align="start"
+        >ExpResin 实验数据工作台</h1>
       </header>
 
       <section class="entries">
@@ -109,12 +110,6 @@ onMounted(loadArchive)
 .hero h1 {
   font: var(--text-2xl);
   letter-spacing: var(--tracking-tight);
-}
-.hero p {
-  margin-top: var(--space-3);
-  font: var(--text-base);
-  max-width: 62ch;
-  line-height: 1.6;
 }
 
 .entries {

@@ -35,7 +35,7 @@ watch(
 
 <template>
   <section class="panel chat" aria-label="Jarvis 对话">
-    <PanelHead label="Jarvis">
+    <PanelHead label="Jarvis" dot>
       <template #actions>
         <span class="badge badge-accent">实验记录助手</span>
       </template>
@@ -79,11 +79,12 @@ watch(
 </template>
 
 <style scoped>
+/* Jarvis 温暖对话区：背景与工作台一致，不再使用冷灰系统面板 */
 .chat {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: var(--bg-primary);
+  background: var(--chat-surface);
   border-right: 1px solid var(--border-subtle);
 }
 
@@ -106,9 +107,12 @@ watch(
   padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--border-subtle);
 }
+/* 圆角输入框，聚焦时出现琥珀橙高亮（由 .input:focus + --accent 承接） */
 .composer .input {
   flex: 1;
   min-width: 0;
+  border-radius: var(--radius-full);
+  padding: 0 var(--space-4);
 }
 .send {
   flex: none;
