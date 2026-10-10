@@ -224,15 +224,22 @@ const style = computed(() => ({
 .panes {
   display: grid;
   grid-template-columns: var(--chat-col, var(--chat-w)) minmax(0, 1fr) var(--inspector-col, var(--inspector-w));
+  gap: var(--space-3);
+  padding: var(--space-3);
   min-height: 0;
   transition: grid-template-columns var(--duration-normal) var(--ease-standard);
 }
+/* 每栏独立成卡片：边框 + 圆角 + 细阴影，栏间以画布灰分隔 */
 .pane {
   display: flex;
   flex-direction: column;
   min-height: 0;
   min-width: 0;
   overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
 }
 .pane > :deep(*) {
   flex: 1;
@@ -242,13 +249,6 @@ const style = computed(() => ({
 /* 折叠态：保留 48px 图标条，而不是整栏消失（规范 §3.3 / changelog §2） */
 .pane--collapsed {
   align-items: center;
-  background: var(--bg-secondary);
-}
-.pane--chat.pane--collapsed {
-  border-right: 1px solid var(--border-subtle);
-}
-.pane--inspector.pane--collapsed {
-  border-left: 1px solid var(--border-subtle);
 }
 .rail {
   display: flex;

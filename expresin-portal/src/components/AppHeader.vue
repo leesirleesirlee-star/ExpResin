@@ -1,4 +1,5 @@
 <script setup>
+import { ref, reactive, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTheme } from '../composables/useTheme.js'
 
@@ -15,12 +16,37 @@ const links = [
 function isActive(to) {
   return to === '/' ? route.path === '/' : route.path.startsWith(to)
 }
+
+/* 分段控件滑块：测量激活链接的位置与宽度，transform 平移过去 */
+const navEl = ref(null)
+const slider = reactive({ x: 0, w: 0, ready: false })
+
+async function updateSlider() {
+  await nextTick()
+  const nav = navEl.value
+  if (!nav) return
+  const active = nav.querySelector('.nav-link.is-active')
+  if (!active) {
+    slider.ready = false
+    return
+  }
+  slider.x = active.offsetLeft
+  slider.w = active.offsetWidth
+  slider.ready = true
+}
+
+watch(() => route.path, updateSlider)
+onMounted(() => {
+  updateSlider()
+  window.addEventListener('resize', updateSlider)
+})
+onBeforeUnmount(() => window.removeEventListener('resize', updateSlider))
 </script>
 
 <template>
   <header class="header">
     <div class="left">
-      <RouterLink to="/" class="brand-wrap">
+      <RouterLink to="/" class="brand-wrap" data-tip="回到工作台" aria-label="回到工作台">
         <span class="logo" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linejoin="round">
             <path d="M12 3 20 7.5v9L12 21 4 16.5v-9L12 3Z" />
@@ -30,7 +56,16 @@ function isActive(to) {
         <span class="brand">ExpResin</span>
       </RouterLink>
 
-      <nav class="nav" aria-label="主导航">
+      <nav ref="navEl" class="nav" aria-label="主导航">
+        <span
+          class="nav-slider"
+          aria-hidden="true"
+          :style="{
+            transform: `translateX(${slider.x}px)`,
+            width: `${slider.w}px`,
+            opacity: slider.ready ? 1 : 0,
+          }"
+        ></span>
         <RouterLink
           v-for="l in links"
           :key="l.to"
@@ -75,8 +110,8 @@ function isActive(to) {
   height: var(--topbar-h);
   padding: 0 var(--space-4);
   background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border-bottom: 1px solid var(--border-subtle);
   box-shadow: var(--shadow-xs);
   z-index: var(--z-header);
@@ -94,6 +129,7 @@ function isActive(to) {
 }
 
 .brand-wrap {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -104,6 +140,29 @@ function isActive(to) {
 }
 .brand-wrap:hover {
   background: var(--bg-tertiary);
+}
+/* 悬停提示：「回到工作台」 */
+.brand-wrap::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translate(-50%, -2px);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+.brand-wrap:hover::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 .logo {
@@ -125,31 +184,50 @@ function isActive(to) {
   letter-spacing: -0.01em;
 }
 
+/* 分段控件：圆角矩形轨道以 --nav-track 与顶栏拉开对比，滑块在激活项之间快速平移 */
 .nav {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: 2px;
   margin-left: var(--space-4);
+  padding: 4px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  background: var(--nav-track);
+}
+
+.nav-slider {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  border-radius: var(--radius-full);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+  transition: transform var(--duration-fast) var(--ease-standard),
+    width var(--duration-fast) var(--ease-standard),
+    opacity var(--duration-fast) var(--ease-standard);
 }
 
 .nav-link {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 32px;
   padding: 0 var(--space-3);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
   font: var(--text-sm);
   color: var(--text-secondary);
   text-decoration: none;
-  transition: background var(--duration-fast) var(--ease-standard),
-    color var(--duration-fast) var(--ease-standard);
+  transition: color var(--duration-fast) var(--ease-standard);
 }
 .nav-link:hover {
-  background: var(--bg-tertiary);
   color: var(--text-primary);
 }
 .nav-link.is-active {
-  background: var(--accent-subtle);
   color: var(--accent);
   font-weight: 500;
 }

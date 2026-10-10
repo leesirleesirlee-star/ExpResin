@@ -371,8 +371,8 @@ const blocking = computed(() => props.missing.length)
   padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--border-subtle);
   background: var(--glass-bg-strong);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 .block-btn {
   width: 100%;
