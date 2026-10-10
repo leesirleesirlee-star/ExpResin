@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch, nextTick } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { api } from '../data/api.js'
 import { loadArchive, session } from '../data/session.js'
@@ -88,12 +88,96 @@ const stats = computed(() => {
   return { regions: regions.length, blocks, cols, mapped, low }
 })
 
+/**
+ * 数据质量警告（后端 checks.py 随取随算，挂在 detail 响应的 warnings 上）。
+ * 本地兜底记录 / 旧快照没有该字段时按空数组处理，不渲染本节。
+ */
+const warnings = computed(() => record.value?.warnings || [])
+
+/** 警告代码 → 徽标文案；未知代码给通用兜底，便于后端后续新增警告类型。 */
+function warningLabel(code) {
+  return { type_field_mismatch: '类型一致性' }[code] || '数据提示'
+}
+
 /** 规范长表的列清单由后端给出，避免前端硬编码列顺序造成漂移。 */
 const canonicalColumns = computed(() => canonical.value?.columns || [])
 /** 单页最多渲染的行数：列多（24+）时全量渲染会明显拖慢，故截断并提示导出 CSV。 */
 const CANONICAL_PREVIEW_ROWS = 100
 const canonicalRows = computed(() => (canonical.value?.rows || []).slice(0, CANONICAL_PREVIEW_ROWS))
 const canonicalTotal = computed(() => (canonical.value?.rows || []).length)
+
+/**
+ * 页内目录跳转：hash 路由下 `href="#xxx"` 会改写 location.hash，
+ * 被 Vue Router 当成未匹配路由重定向到工作台，因此必须用 JS 滚动。
+ * 目录条为滑块分段控件：点击/滚动时滑块平移到当前区域。
+ */
+const tocEl = ref(null)
+const activeSection = ref('')
+const tocSlider = reactive({ x: 0, w: 0, ready: false })
+let spyLock = false
+let observer = null
+
+async function updateTocSlider() {
+  await nextTick()
+  const toc = tocEl.value
+  if (!toc) return
+  const active = toc.querySelector('.toc-link.is-active')
+  if (!active) {
+    tocSlider.ready = false
+    return
+  }
+  tocSlider.x = active.offsetLeft
+  tocSlider.w = active.offsetWidth
+  tocSlider.ready = true
+}
+
+function setActiveSection(id) {
+  if (activeSection.value === id) return
+  activeSection.value = id
+  updateTocSlider()
+}
+
+function scrollToId(id) {
+  setActiveSection(id)
+  spyLock = true
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  window.setTimeout(() => {
+    spyLock = false
+  }, 700)
+}
+
+/* 滚动侦测：区域进入视口上沿识别带时，滑块跟随过去 */
+function setupScrollSpy() {
+  observer?.disconnect()
+  const ids = (record.value?.regions || []).map((r) => 'region-' + r.id)
+  if (canonicalColumns.value.length) ids.push('canonical')
+  const els = ids.map((id) => document.getElementById(id)).filter(Boolean)
+  if (!els.length) return
+  if (!activeSection.value) setActiveSection(ids[0])
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (spyLock) return
+      for (const e of entries) {
+        if (e.isIntersecting) setActiveSection(e.target.id)
+      }
+    },
+    { rootMargin: '-96px 0px -70% 0px' }
+  )
+  els.forEach((el) => observer.observe(el))
+}
+
+watch(
+  () => [record.value?.regions, canonicalColumns.value.length],
+  async () => {
+    await nextTick()
+    setupScrollSpy()
+  }
+)
+onMounted(() => window.addEventListener('resize', updateTocSlider))
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  window.removeEventListener('resize', updateTocSlider)
+})
 
 /**
  * 列填充证据：后端在识别骨架里透传 nonNull / fillRatio。
@@ -180,20 +264,52 @@ function fillText(col) {
           </div>
         </dl>
 
+        <section v-if="warnings.length" class="warnings" aria-label="数据质量提示">
+          <div v-for="(w, i) in warnings" :key="i" class="warn-item">
+            <span class="badge badge-warning warn-badge">{{ warningLabel(w.code) }}</span>
+            <div class="warn-body">
+              <p class="warn-msg">{{ w.message }}</p>
+              <p v-if="(w.columns || []).length" class="muted mono warn-cols">
+                {{ w.columns.join('、') }}
+              </p>
+            </div>
+          </div>
+        </section>
+
         <nav
           v-if="(record.regions || []).length || canonicalColumns.length"
+          ref="tocEl"
           class="toc"
           aria-label="页内目录"
         >
-          <a
+          <span
+            class="toc-slider"
+            aria-hidden="true"
+            :style="{
+              transform: `translateX(${tocSlider.x}px)`,
+              width: `${tocSlider.w}px`,
+              opacity: tocSlider.ready ? 1 : 0,
+            }"
+          ></span>
+          <button
             v-for="region in record.regions || []"
             :key="region.id"
-            :href="'#region-' + region.id"
+            type="button"
             class="toc-link"
+            :class="{ 'is-active': activeSection === 'region-' + region.id }"
+            @click="scrollToId('region-' + region.id)"
           >
             {{ region.kindLabel }}
-          </a>
-          <a v-if="canonicalColumns.length" href="#canonical" class="toc-link">规范长表</a>
+          </button>
+          <button
+            v-if="canonicalColumns.length"
+            type="button"
+            class="toc-link"
+            :class="{ 'is-active': activeSection === 'canonical' }"
+            @click="scrollToId('canonical')"
+          >
+            规范长表
+          </button>
         </nav>
 
         <p v-if="record.status === 'demo'" class="notice">
@@ -321,12 +437,20 @@ function fillText(col) {
   gap: var(--space-3);
 }
 
-/* 返回上级页面：复用全局 .btn-secondary，仅压缩到与顶部导航一致的高度 */
+/* 返回上级页面：复用全局 .btn-secondary 的尺寸，但在灰色画布上给白底 + 细阴影上浮 */
 .back {
   height: 40px;
   padding: 0 var(--space-3);
   font: var(--text-xs);
   text-decoration: none;
+  background: var(--surface-card);
+  border-color: var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+.back:hover:not(:disabled) {
+  background: var(--surface-card);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
 }
 .back svg {
   width: 16px;
@@ -395,32 +519,56 @@ function fillText(col) {
   color: var(--text-secondary);
 }
 
-/* 页内目录：吸顶锚点导航，把长档案切成可跳转的段 */
+/* 页内目录：吸顶滑块分段控件，与顶栏导航同一视觉语言，整体居中 */
 .toc {
   position: sticky;
-  top: 0;
+  top: var(--space-3);
   z-index: 2;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-1);
-  padding: var(--space-2);
+  gap: 2px;
+  width: fit-content;
+  margin: 0 auto var(--space-5);
+  padding: 4px;
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--bg-secondary);
+  border-radius: var(--radius-full);
+  background: var(--nav-track);
+}
+.toc-slider {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  border-radius: var(--radius-full);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+  transition: transform var(--duration-fast) var(--ease-standard),
+    width var(--duration-fast) var(--ease-standard),
+    opacity var(--duration-fast) var(--ease-standard);
 }
 .toc-link {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 32px;
   padding: 0 var(--space-3);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: none;
+  cursor: pointer;
   font: var(--text-xs);
   color: var(--text-secondary);
   text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-standard);
 }
 .toc-link:hover {
-  background: var(--bg-tertiary);
   color: var(--text-primary);
+}
+.toc-link.is-active {
+  color: var(--accent);
+  font-weight: 500;
 }
 .region {
   scroll-margin-top: var(--space-8);
@@ -436,6 +584,39 @@ function fillText(col) {
   border-radius: var(--radius-md);
   font: var(--text-xs);
   line-height: 1.5;
+}
+
+/* 数据质量警告：与 .notice 同族的警示肌理，扩展为徽标 + 正文的横排列表 */
+.warnings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.warn-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-left: 2px solid var(--warning);
+  background: var(--warning-bg);
+  border-radius: var(--radius-md);
+}
+.warn-badge {
+  flex: none;
+  margin-top: 1px;
+}
+.warn-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.warn-msg {
+  font: var(--text-xs);
+  line-height: 1.5;
+}
+.warn-cols {
+  font-size: 12px;
 }
 
 .region-head {
