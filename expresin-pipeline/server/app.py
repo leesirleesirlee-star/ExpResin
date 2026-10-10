@@ -31,6 +31,7 @@ for extra in (PIPELINE / "src", PIPELINE / "server"):
 from l1_structure import parse_workbook  # noqa: E402
 from llm import LLMClient, LLMConfig  # noqa: E402
 from mapping import load_schema, map_block  # noqa: E402
+from nas_adapter import get_adapter as get_nas_adapter  # noqa: E402
 from template_export import workbook_bytes  # noqa: E402
 from template_fill import build_template_data  # noqa: E402
 from services import (  # noqa: E402
@@ -66,7 +67,7 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 # 识别「规则层」版本号：任何会改变识别结果的规则改动都必须递增。
 # 缓存里存的是最终 payload（已含规则层结论），若不带版本校验，
 # 升级后的规则会被旧缓存整体绕过 —— 确定性修复尤其容易被缓存悄悄吞掉。
-RECOGNITION_RULE_VERSION = "rules_v2_missing_header"
+RECOGNITION_RULE_VERSION = "rules_v3_measurement_fields"
 
 # 列块之间彼此独立，可并行映射；并发过高易触发服务端限流，4 为本数据的实测甜点值。
 MAX_MAPPING_WORKERS = max(1, int(os.environ.get("MAPPING_MAX_WORKERS", "4")))
@@ -894,6 +895,20 @@ def confirm(sid: str, payload: ConfirmIn) -> dict:
     )
     store.set_session_experiment(sid, experiment_id)
     store.add_message(sid, "assistant", f"实验已归档，编号 {experiment_id}。")
+
+    # NAS 汇总（预留实现）：归档成功后发布原始文件与规范文档到镜像目录；
+    # 发布失败不影响归档本身（与识别/计算链路一致的降级策略）。
+    try:
+        experiment["nas"] = get_nas_adapter().publish_experiment(
+            experiment_id,
+            raw_path=Path(raw_path) if raw_path else None,
+            raw_name=(raw_asset or {}).get("name"),
+            processed=processed,
+        )
+    except NotImplementedError as exc:
+        experiment["nas"] = {"skipped": str(exc)}
+    except Exception as exc:  # noqa: BLE001
+        experiment["nas"] = {"error": str(exc)[:200]}
 
     return experiment
 

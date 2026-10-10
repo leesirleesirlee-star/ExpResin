@@ -411,10 +411,21 @@ def split_column_blocks(
 
 
 def guess_region_kind(columns: list[ColumnProfile]) -> str:
-    """启发式推断数据块语义类型，辅助后续映射。"""
+    """启发式推断数据块语义类型，辅助后续映射（仅作 LLM prompt 提示，不参与判定）。
+
+    判定顺序（先特异后宽泛）：
+    1. BV / bed volume -> sample_data（柱实验样品序列表）
+    2. time + 浓度（concentration / mg L / ppm）-> measurement（标准记录表时的时序测量块）
+    3. capacity / mg/g -> capacity
+    4. time + ph -> ph_curve（仅有时间与 pH 的曲线）
+    5. area + ppm -> calibration
+    6. 仅 time -> kinetic
+    """
     names = " ".join(c.normalized for c in columns)
     if "bed volume" in names or re.search(r"\bbv\b", names):
         return "sample_data"
+    if "time" in names and ("concentration" in names or "mg l" in names or "ppm" in names):
+        return "measurement"
     if "capacity" in names or "mg/g" in names:
         return "capacity"
     if "time" in names and "ph" in names:

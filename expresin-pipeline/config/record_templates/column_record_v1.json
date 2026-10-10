@@ -1,0 +1,72 @@
+{
+  "record_id": "column_record_v1",
+  "experiment_type": "column",
+  "version": "1.0",
+  "title": "COLUMN TEST 实验记录表",
+  "subtitle": "Column breakthrough experiment record · 按导师模板 B 区设计（详见 docs/record-template-design.md）",
+  "sheet_name": "Record",
+  "info_section": {
+    "fields": [
+      { "label": "实验编号 (Experiment ID)", "example": "RES-20260929-002" },
+      { "label": "实验日期 (Date)", "example": "2026-09-29" },
+      { "label": "实验员 (Researcher)", "example": "Li Wei" },
+      { "label": "吸附剂/材料 (Adsorbent)", "example": "A600" },
+      { "label": "目标离子 (Target)", "example": "SO4" },
+      { "label": "初始浓度 C₀ (mg/L)", "example": "120" },
+      { "label": "床体积 BV (mL)", "example": "10" },
+      { "label": "吸附剂质量 (mg)", "example": "100" },
+      { "label": "流速 (mL/min)", "example": "2" },
+      { "label": "温度 (degC)", "example": "25" },
+      { "label": "流向 (Upflow/Downflow)", "example": "Downflow" },
+      { "label": "备注 / 检测仪器", "example": "IC (Dionex Aquion)" }
+    ]
+  },
+  "block_template": {
+    "title": "【离子名】测量数据"
+  },
+  "data_columns": [
+    { "key": "time", "header": "Time (min)", "unit": "min", "target_field": "contact_time" },
+    { "key": "concentration", "header": "Effluent Concentration (mg/L)", "unit": "mg/L", "target_field": "concentration_mg_l" },
+    { "key": "ph", "header": "Effluent pH", "unit": "pH", "target_field": "ph" }
+  ],
+  "fill_rules": [
+    "1) 把数据块标题中的【离子名】替换为实际目标离子（如 SO4、Cl、Na）。",
+    "2) 数据从表头下方第一行开始连续填写，不要留空行；未测量的点留空。",
+    "3) 多离子实验：复制整个数据块（标题行 + 表头行 + 数据行），每离子一块，块间保留 3 行空行。",
+    "4) 实验信息区每行只写在最左侧一格内，不要拆到多列。",
+    "5) 每行代表一个出水样品；时间 = 累计运行时间；只记录原始测量值。"
+  ],
+  "example": {
+    "info_values": [
+      "RES-20260929-002",
+      "2026-09-29",
+      "Li Wei",
+      "A600",
+      "SO4",
+      "120",
+      "10",
+      "100",
+      "2",
+      "25",
+      "Downflow",
+      "IC (Dionex Aquion)"
+    ],
+    "blocks": [
+      {
+        "title": "SO4 测量数据",
+        "rows": [
+          [0, 0.5, 7.10],
+          [30, 1.8, 7.05],
+          [60, 5.6, 7.00],
+          [90, 14.2, 6.95],
+          [120, 31.0, 6.90],
+          [150, 52.0, 6.88],
+          [180, 74.0, 6.85],
+          [210, 96.0, 6.83],
+          [240, 108.0, 6.80],
+          [300, 116.0, 6.78]
+        ]
+      }
+    ]
+  }
+}

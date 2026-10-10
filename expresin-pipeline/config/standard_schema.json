@@ -1,6 +1,6 @@
 {
-  "schema_version": "0.1.0",
-  "description": "ExpResin 标准科学数据 Schema。定义异构实验表格需要映射到的统一字段，供 L2 候选生成与 L3/L4 LLM 映射使用。",
+  "schema_version": "0.2.0",
+  "description": "ExpResin 标准科学数据 Schema。定义异构实验表格需要映射到的统一字段，供 L2 候选生成与 L3/L4 LLM 映射使用。v0.2 为 sample_measurement 增补 pH/电位/电流字段，覆盖 Batch/Column/Electrochemical 三类标准记录表。",
   "block_kinds": {
     "calibration": {
       "label": "标定曲线",
@@ -33,7 +33,7 @@
     },
     "sample_measurement": {
       "label": "样品测量数据",
-      "description": "一次实验中各取样点/床体积的仪器信号与换算浓度，是实验的核心结果数据。",
+      "description": "一次实验中各取样点/时间点的测量数据（仪器信号与换算浓度），是实验的核心结果数据。v0.2 起同时承载标准记录表的时序测量：时间 + 浓度 + pH（batch/column）与时间 + 电位 + 电流 + 浓度 + pH（electrochemical）。",
       "target_fields": [
         {
           "key": "sample_number",
@@ -110,6 +110,30 @@
           "unit": "mg/L",
           "required": false,
           "aliases": ["mg/l", "质量浓度", "mg l-1"]
+        },
+        {
+          "key": "ph",
+          "label": "pH 值",
+          "type": "number",
+          "unit": "pH",
+          "required": false,
+          "aliases": ["ph", "ph值", "effluent ph", "出水ph", "measured ph"]
+        },
+        {
+          "key": "potential_v",
+          "label": "电位/电压",
+          "type": "number",
+          "unit": "V",
+          "required": false,
+          "aliases": ["potential", "voltage", "potential/v", "voltage/v", "cell voltage", "电位", "电压"]
+        },
+        {
+          "key": "current_a",
+          "label": "电流",
+          "type": "number",
+          "unit": "A",
+          "required": false,
+          "aliases": ["current", "current/a", "applied current", "电流"]
         }
       ]
     },
@@ -216,12 +240,12 @@
         "type": "string",
         "aliases": ["na2so4", "nacl", "seawater", "海水", "nh4hco3", "licl", "naoh"]
       },
-      {
-        "key": "experiment_type",
-        "label": "实验类型",
-        "type": "string",
-        "aliases": ["batch", "column", "regeneration", "characterization"]
-      }
+        {
+          "key": "experiment_type",
+          "label": "实验类型",
+          "type": "string",
+          "aliases": ["batch", "column", "electrochemical", "regeneration", "characterization"]
+        }
     ]
   },
   "units_canonical": {

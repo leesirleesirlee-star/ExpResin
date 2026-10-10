@@ -1,0 +1,81 @@
+{
+  "record_id": "batch_record_v1",
+  "experiment_type": "batch",
+  "version": "1.0",
+  "title": "BATCH TEST 实验记录表",
+  "subtitle": "Batch adsorption experiment record · 按导师模板 B 区设计（详见 docs/record-template-design.md）",
+  "sheet_name": "Record",
+  "info_section": {
+    "fields": [
+      { "label": "实验编号 (Experiment ID)", "example": "RES-20260929-001" },
+      { "label": "实验日期 (Date)", "example": "2026-09-29" },
+      { "label": "实验员 (Researcher)", "example": "Li Wei" },
+      { "label": "吸附剂/材料 (Adsorbent)", "example": "A600" },
+      { "label": "目标离子 (Target)", "example": "SO4" },
+      { "label": "初始浓度 C₀ (mg/L)", "example": "120" },
+      { "label": "溶液体积 (mL)", "example": "50" },
+      { "label": "吸附剂质量 (mg)", "example": "100" },
+      { "label": "温度 (degC)", "example": "25" },
+      { "label": "实验目标 (Objective)", "example": "A600 对 SO4 的吸附动力学验证" },
+      { "label": "备注 / 检测仪器", "example": "IC (Dionex Aquion)" }
+    ]
+  },
+  "block_template": {
+    "title": "【离子名】测量数据"
+  },
+  "data_columns": [
+    { "key": "time", "header": "Time (min)", "unit": "min", "target_field": "contact_time" },
+    { "key": "concentration", "header": "Concentration (mg/L)", "unit": "mg/L", "target_field": "concentration_mg_l" },
+    { "key": "ph", "header": "pH", "unit": "pH", "target_field": "ph" }
+  ],
+  "fill_rules": [
+    "1) 把数据块标题中的【离子名】替换为实际目标离子（如 SO4、Cl、Na）。",
+    "2) 数据从表头下方第一行开始连续填写，不要留空行；未测量的点留空。",
+    "3) 多离子实验：复制整个数据块（标题行 + 表头行 + 数据行），每离子一块，块间保留 3 行空行。",
+    "4) 实验信息区每行只写在最左侧一格内，不要拆到多列。",
+    "5) 只记录原始测量值；派生量（去除率、吸附容量等）由系统自动计算。"
+  ],
+  "example": {
+    "info_values": [
+      "RES-20260929-001",
+      "2026-09-29",
+      "Li Wei",
+      "A600",
+      "SO4",
+      "120",
+      "50",
+      "100",
+      "25",
+      "A600 对 SO4 的吸附动力学验证",
+      "IC (Dionex Aquion)"
+    ],
+    "blocks": [
+      {
+        "title": "SO4 测量数据",
+        "rows": [
+          [0, 120.0, 6.85],
+          [5, 101.0, 6.88],
+          [15, 72.0, 6.92],
+          [30, 48.0, 6.97],
+          [60, 25.0, 7.03],
+          [120, 8.5, 7.12],
+          [180, 2.4, 7.18],
+          [240, 1.2, 7.21]
+        ]
+      },
+      {
+        "title": "Cl 测量数据",
+        "rows": [
+          [0, 100.0, 6.85],
+          [5, 88.0, 6.88],
+          [15, 66.0, 6.92],
+          [30, 47.0, 6.96],
+          [60, 28.0, 7.02],
+          [120, 11.0, 7.10],
+          [180, 4.0, 7.16],
+          [240, 2.2, 7.20]
+        ]
+      }
+    ]
+  }
+}

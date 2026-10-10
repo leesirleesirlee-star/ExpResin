@@ -32,10 +32,11 @@
           "path": "01_Metadata.experiment_type",
           "label": "实验类型",
           "type": "enum",
-          "options": ["batch", "column", "regeneration", "characterization"],
+          "options": ["batch", "column", "electrochemical", "regeneration", "characterization"],
           "option_labels": {
             "batch": "批次实验",
             "column": "柱实验",
+            "electrochemical": "电化学实验",
             "regeneration": "再生实验",
             "characterization": "表征实验"
           },
@@ -144,6 +145,93 @@
           "unit": "degC",
           "required": false,
           "canonical_unit": "degC"
+        },
+        {
+          "path": "02_Method_Materials.bed_volume",
+          "label": "床体积 BV",
+          "type": "number",
+          "unit": "mL",
+          "required": false,
+          "canonical_unit": "mL",
+          "show_for": ["column"],
+          "hint": "柱实验必填项之一；导出模板 A 区的 Bed volume 取此值"
+        },
+        {
+          "path": "02_Method_Materials.flow_rate",
+          "label": "流速",
+          "type": "number",
+          "unit": "mL/min",
+          "required": false,
+          "canonical_unit": "mL/min",
+          "show_for": ["column"],
+          "hint": "导出模板 A 区的 Flow rate 取此值；缺失时 C 区处理体积不可算"
+        },
+        {
+          "path": "02_Method_Materials.flow_direction",
+          "label": "流向",
+          "type": "enum",
+          "options": ["Upflow", "Downflow"],
+          "option_labels": { "Upflow": "上流 Upflow", "Downflow": "下流 Downflow" },
+          "required": false,
+          "show_for": ["column"]
+        },
+        {
+          "path": "02_Method_Materials.technique",
+          "label": "电化学技术",
+          "type": "string",
+          "required": false,
+          "show_for": ["electrochemical"],
+          "placeholder": "例如：Electrosorption / Electrodialysis / CDI"
+        },
+        {
+          "path": "02_Method_Materials.working_electrode",
+          "label": "工作电极",
+          "type": "string",
+          "required": false,
+          "show_for": ["electrochemical"],
+          "placeholder": "例如：Activated carbon electrode"
+        },
+        {
+          "path": "02_Method_Materials.reference_electrode",
+          "label": "参比电极",
+          "type": "string",
+          "required": false,
+          "show_for": ["electrochemical"],
+          "placeholder": "例如：Ag/AgCl"
+        },
+        {
+          "path": "02_Method_Materials.counter_electrode",
+          "label": "对电极",
+          "type": "string",
+          "required": false,
+          "show_for": ["electrochemical"],
+          "placeholder": "例如：Pt mesh"
+        },
+        {
+          "path": "02_Method_Materials.electrolyte",
+          "label": "电解液",
+          "type": "string",
+          "required": false,
+          "show_for": ["electrochemical"],
+          "placeholder": "例如：Na2SO4 0.05 M"
+        },
+        {
+          "path": "02_Method_Materials.cell_configuration",
+          "label": "电解池配置",
+          "type": "string",
+          "required": false,
+          "show_for": ["electrochemical"],
+          "placeholder": "例如：Two-compartment cell / Single cell"
+        },
+        {
+          "path": "02_Method_Materials.electrode_area",
+          "label": "电极面积",
+          "type": "number",
+          "unit": "cm2",
+          "required": false,
+          "canonical_unit": "cm2",
+          "show_for": ["electrochemical"],
+          "hint": "用于 C 区电流密度计算；缺失时该派生量留空"
         },
         {
           "path": "02_Method_Materials.method_sop",
