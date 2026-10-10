@@ -16,9 +16,15 @@ const chatOpen = ref(true)
 const inspectorOpen = ref(true)
 const tab = ref('form')
 
+const tabs = [
+  { key: 'chat', label: '对话' },
+  { key: 'form', label: '表单' },
+  { key: 'inspector', label: '检查' },
+]
+
 const style = computed(() => ({
-  '--chat-col': chatOpen.value ? 'var(--chat-w)' : '0px',
-  '--inspector-col': inspectorOpen.value ? 'var(--inspector-w)' : '0px',
+  '--chat-col': chatOpen.value ? 'var(--chat-w)' : 'var(--rail-collapsed-w)',
+  '--inspector-col': inspectorOpen.value ? 'var(--inspector-w)' : 'var(--rail-collapsed-w)',
 }))
 </script>
 
@@ -71,20 +77,68 @@ const style = computed(() => ({
     </header>
 
     <div class="panes" :data-tab="tab" :style="style">
-      <div class="pane pane--chat"><slot name="chat" /></div>
-      <div class="pane pane--form"><slot name="form" /></div>
-      <div class="pane pane--inspector"><slot name="inspector" /></div>
+      <div
+        id="pane-chat"
+        class="pane pane--chat"
+        :class="{ 'pane--collapsed': !chatOpen }"
+        role="tabpanel"
+        aria-labelledby="tab-chat"
+      >
+        <slot v-if="chatOpen" name="chat" />
+        <div v-else class="rail">
+          <button
+            class="icon-btn"
+            type="button"
+            aria-label="展开对话面板"
+            @click="chatOpen = true"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <path d="M9 4v16" />
+            </svg>
+          </button>
+          <span class="rail-label caps">对话</span>
+        </div>
+      </div>
+
+      <div id="pane-form" class="pane pane--form" role="tabpanel" aria-labelledby="tab-form">
+        <slot name="form" />
+      </div>
+
+      <div
+        id="pane-inspector"
+        class="pane pane--inspector"
+        :class="{ 'pane--collapsed': !inspectorOpen }"
+        role="tabpanel"
+        aria-labelledby="tab-inspector"
+      >
+        <slot v-if="inspectorOpen" name="inspector" />
+        <div v-else class="rail">
+          <button
+            class="icon-btn"
+            type="button"
+            aria-label="展开检查面板"
+            @click="inspectorOpen = true"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <path d="M15 4v16" />
+            </svg>
+          </button>
+          <span class="rail-label caps">检查</span>
+        </div>
+      </div>
     </div>
 
-    <nav class="tabs" aria-label="面板切换">
+    <nav class="tabs" role="tablist" aria-label="面板切换">
       <button
-        v-for="t in [
-          { key: 'chat', label: '对话' },
-          { key: 'form', label: '表单' },
-          { key: 'inspector', label: '检查' },
-        ]"
+        v-for="t in tabs"
         :key="t.key"
+        :id="`tab-${t.key}`"
         type="button"
+        role="tab"
+        :aria-selected="tab === t.key"
+        :aria-controls="`pane-${t.key}`"
         :class="{ active: tab === t.key }"
         @click="tab = t.key"
       >
@@ -99,11 +153,11 @@ const style = computed(() => ({
 <style scoped>
 .workbench {
   display: grid;
-  grid-template-rows: 48px minmax(0, 1fr) 0 minmax(0, auto);
+  grid-template-rows: var(--panel-head-h) minmax(0, 1fr) 0 minmax(0, auto);
   min-height: 0;
   height: 100%;
   position: relative;
-  z-index: 1;
+  z-index: var(--z-panel);
 }
 
 .workbar {
@@ -123,8 +177,9 @@ const style = computed(() => ({
   min-width: 0;
 }
 .titles h1 {
-  font: var(--text-base);
+  font: var(--text-xl);
   font-weight: 600;
+  letter-spacing: var(--tracking-tight);
   white-space: nowrap;
 }
 .titles p {
@@ -184,6 +239,30 @@ const style = computed(() => ({
   min-width: 0;
 }
 
+/* 折叠态：保留 48px 图标条，而不是整栏消失（规范 §3.3 / changelog §2） */
+.pane--collapsed {
+  align-items: center;
+  background: var(--bg-secondary);
+}
+.pane--chat.pane--collapsed {
+  border-right: 1px solid var(--border-subtle);
+}
+.pane--inspector.pane--collapsed {
+  border-left: 1px solid var(--border-subtle);
+}
+.rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  width: 100%;
+}
+.rail-label {
+  writing-mode: vertical-rl;
+  letter-spacing: var(--tracking-caps);
+}
+
 .tabs {
   display: none;
 }
@@ -194,7 +273,7 @@ const style = computed(() => ({
 
 @media (max-width: 1024px) {
   .workbench {
-    grid-template-rows: 48px minmax(0, 1fr) 52px auto;
+    grid-template-rows: var(--panel-head-h) minmax(0, 1fr) 52px auto;
   }
   .panes {
     grid-template-columns: minmax(0, 1fr);
@@ -224,6 +303,12 @@ const style = computed(() => ({
     color: var(--text-secondary);
     cursor: pointer;
     min-height: 44px;
+    transition: background var(--duration-fast) var(--ease-standard),
+      color var(--duration-fast) var(--ease-standard);
+  }
+  .tabs button:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
   }
   .tabs button.active {
     color: var(--accent);

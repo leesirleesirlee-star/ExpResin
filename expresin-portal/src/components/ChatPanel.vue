@@ -1,5 +1,7 @@
 <script setup>
 import { nextTick, ref, watch } from 'vue'
+import PanelHead from './PanelHead.vue'
+import ChatMessage from './ChatMessage.vue'
 
 const props = defineProps({
   messages: { type: Array, required: true },
@@ -13,10 +15,6 @@ const emit = defineEmits(['send', 'upload'])
 
 const draft = ref('')
 const scroller = ref(null)
-
-function textOf(m) {
-  return m.content ?? m.text ?? ''
-}
 
 function submit() {
   const text = draft.value.trim()
@@ -37,29 +35,16 @@ watch(
 
 <template>
   <section class="panel chat" aria-label="Jarvis 对话">
-    <div class="panel-head">
-      <span class="caps">Jarvis</span>
-      <span class="badge badge-accent">实验记录助手</span>
-    </div>
+    <PanelHead label="Jarvis">
+      <template #actions>
+        <span class="badge badge-accent">实验记录助手</span>
+      </template>
+    </PanelHead>
 
     <div ref="scroller" class="thread" role="log" aria-live="polite">
-      <article
-        v-for="(m, i) in messages"
-        :key="m.id ?? i"
-        class="msg enter-up"
-        :class="m.role === 'user' ? 'msg--user' : 'msg--jarvis'"
-      >
-        <p class="bubble">{{ textOf(m) }}</p>
-        <div v-if="m.chips?.length" class="chips">
-          <span v-for="c in m.chips" :key="c" class="badge badge-neutral">{{ c }}</span>
-        </div>
-      </article>
+      <ChatMessage v-for="(m, i) in messages" :key="m.id ?? i" :message="m" />
 
-      <div v-if="streaming" class="msg msg--jarvis">
-        <p class="bubble typing" aria-label="Jarvis 正在输入">
-          <i></i><i></i><i></i>
-        </p>
-      </div>
+      <ChatMessage v-if="streaming" :message="{ role: 'jarvis' }" streaming />
     </div>
 
     <form class="composer" @submit.prevent="submit">
@@ -102,15 +87,6 @@ watch(
   border-right: 1px solid var(--border-subtle);
 }
 
-.panel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 48px;
-  padding: 0 var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
-  flex: none;
-}
 
 .thread {
   flex: 1;
@@ -120,42 +96,6 @@ watch(
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-}
-
-.msg {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  max-width: 100%;
-}
-.msg--user {
-  align-items: flex-end;
-}
-
-.bubble {
-  max-width: 80%;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-lg);
-  font: var(--text-base);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.msg--jarvis .bubble {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-  border-top-left-radius: var(--radius-sm);
-}
-.msg--user .bubble {
-  background: var(--accent);
-  color: var(--on-accent);
-  border-top-right-radius: var(--radius-sm);
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  padding-left: var(--space-1);
 }
 
 .composer {

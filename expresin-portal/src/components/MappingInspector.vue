@@ -12,6 +12,10 @@
  *   ignore ：判定为非数据列（标签列/空列），不参与 Processed
  */
 import { computed, ref, watch } from 'vue'
+import PanelHead from './PanelHead.vue'
+import StatGrid from './StatGrid.vue'
+import IssueList from './IssueList.vue'
+import TraceList from './TraceList.vue'
 
 const props = defineProps({
   issues: { type: Object, default: () => ({}) },
@@ -21,6 +25,8 @@ const props = defineProps({
   schemaColumns: { type: Object, default: () => ({}) },
   /** [{ key, label }] 列块级离子判定的候选离子 */
   analyteOptions: { type: Array, default: () => [] },
+  /** 人工判定提交中：禁用操作，避免重复提交 */
+  resolving: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['select', 'resolve', 'confirm'])
@@ -104,6 +110,19 @@ const review = computed(() =>
   isAnalyteRow.value ? (props.selected?.analyteReview ?? null) : (props.selected?.review ?? null),
 )
 
+/** 选中列的溯源键值行，交给共享 TraceList 渲染。 */
+const selectedMeta = computed(() => {
+  const s = props.selected
+  if (!s) return []
+  const rows = []
+  if (!isBlockFailed.value) rows.push({ k: '原始表头', v: s.raw || '（空）' })
+  rows.push({ k: '所属列块', v: s.block })
+  if (isAnalyteRow.value) rows.push({ k: '标签列证据', v: s.expected || '—' })
+  rows.push({ k: '置信度', v: typeof s.conf === 'number' ? s.conf.toFixed(2) : '—' })
+  rows.push({ k: '判定证据', v: s.evidence || '—' })
+  return rows
+})
+
 watch(
   () => props.selected,
   () => {
@@ -130,48 +149,20 @@ function resolve(action, targetField) {
 
 <template>
   <aside class="map-inspector" aria-label="映射确认面板">
-    <div class="panel-head">
-      <span class="caps">映射确认</span>
-      <span class="badge" :class="total ? 'badge-warning' : 'badge-success'">
-        {{ total ? `${total} 项待处理` : '全部通过' }}
-      </span>
-    </div>
+    <PanelHead label="映射确认">
+      <template #actions>
+        <span class="badge" :class="total ? 'badge-warning' : 'badge-success'">
+          {{ total ? `${total} 项待处理` : '全部通过' }}
+        </span>
+      </template>
+    </PanelHead>
 
     <div class="body">
       <!-- 概览 -->
-      <section class="stats">
-        <div v-for="s in stats" :key="s.key" class="stat">
-          <span class="stat-num mono">{{ s.value }}</span>
-          <span class="stat-label">{{ s.label }}</span>
-        </div>
-      </section>
+      <StatGrid :items="stats" :columns="3" />
 
       <!-- 问题分组 -->
-      <section v-for="g in groups" :key="g.key" class="block">
-        <h3 class="caps group-title">
-          {{ g.label }}
-          <span class="mono group-count">{{ g.items.length }}</span>
-        </h3>
-        <ul class="list">
-          <li v-for="item in g.items" :key="`${g.key}-${item.block}/${item.col}`">
-            <button
-              class="issue"
-              type="button"
-              :class="[`issue--${g.tone}`, { 'is-active': selected && selected.block === item.block && selected.col === item.col }]"
-              @click="$emit('select', item)"
-            >
-              <span class="issue-top">
-                <span class="mono col">{{ item.col }}</span>
-                <span class="raw mono">{{ item.raw || '（空表头）' }}</span>
-                <span v-if="typeof item.conf === 'number'" class="conf mono">
-                  {{ item.conf.toFixed(2) }}
-                </span>
-              </span>
-              <span class="issue-body muted">{{ item.evidence }}</span>
-            </button>
-          </li>
-        </ul>
-      </section>
+      <IssueList :groups="groups" :selected="selected" @select="$emit('select', $event)" />
 
       <p v-if="!total" class="empty muted">
         没有需要人工处置的列。所有列均已映射且置信度合格。
@@ -200,30 +191,7 @@ function resolve(action, targetField) {
             </span>
           </div>
 
-          <dl class="sel-meta">
-            <div v-if="!isBlockFailed" class="meta-row">
-              <dt>原始表头</dt>
-              <dd class="mono">{{ selected.raw || '（空）' }}</dd>
-            </div>
-            <div class="meta-row">
-              <dt>所属列块</dt>
-              <dd class="mono">{{ selected.block }}</dd>
-            </div>
-            <div v-if="isAnalyteRow" class="meta-row">
-              <dt>标签列证据</dt>
-              <dd class="mono">{{ selected.expected || '—' }}</dd>
-            </div>
-            <div class="meta-row">
-              <dt>置信度</dt>
-              <dd class="mono">
-                {{ typeof selected.conf === 'number' ? selected.conf.toFixed(2) : '—' }}
-              </dd>
-            </div>
-            <div class="meta-row meta-row--stack">
-              <dt>判定证据</dt>
-              <dd>{{ selected.evidence || '—' }}</dd>
-            </div>
-          </dl>
+          <TraceList :rows="selectedMeta" />
 
           <p v-if="review" class="review-done">
             人工判定：{{ REVIEW_LABEL[review.status] || review.status }}
@@ -249,10 +217,10 @@ function resolve(action, targetField) {
             <button
               class="btn btn-primary act"
               type="button"
-              :disabled="!currentValue"
+              :disabled="!currentValue || resolving"
               @click="resolve('confirm')"
             >
-              {{ isAnalyteRow ? '确认离子判定' : '确认此映射' }}
+              {{ resolving ? '提交中…' : isAnalyteRow ? '确认离子判定' : '确认此映射' }}
             </button>
             <p v-if="isAnalyteRow" class="empty muted tiny">
               离子判定是该列块的结论（整块测的是哪种离子），确认后会清除存疑标记。
@@ -275,7 +243,7 @@ function resolve(action, targetField) {
               <button
                 class="btn btn-secondary act"
                 type="button"
-                :disabled="!targetDraft || targetDraft === currentValue"
+                :disabled="!targetDraft || targetDraft === currentValue || resolving"
                 @click="resolve('remap', targetDraft)"
               >
                 应用改判
@@ -286,6 +254,7 @@ function resolve(action, targetField) {
               v-if="!isAnalyteRow"
               class="btn btn-ghost act"
               type="button"
+              :disabled="resolving"
               @click="resolve('ignore')"
             >
               标记为非数据列
@@ -296,7 +265,12 @@ function resolve(action, targetField) {
     </div>
 
     <div class="foot">
-      <button class="btn btn-primary block-btn" type="button" @click="$emit('confirm')">
+      <button
+        class="btn btn-primary block-btn"
+        type="button"
+        :disabled="resolving"
+        @click="$emit('confirm')"
+      >
         确认并写入 Processed
       </button>
       <p class="foot-hint muted">
@@ -316,16 +290,6 @@ function resolve(action, targetField) {
   border-left: 1px solid var(--border-subtle);
 }
 
-.panel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 48px;
-  padding: 0 var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
-  flex: none;
-}
-
 .body {
   flex: 1;
   min-height: 0;
@@ -334,29 +298,6 @@ function resolve(action, targetField) {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-2);
-}
-.stat {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--bg-primary);
-}
-.stat-num {
-  font: var(--text-lg);
-  color: var(--text-primary);
-}
-.stat-label {
-  font: var(--text-xs);
-  color: var(--text-secondary);
 }
 
 .block {
@@ -369,80 +310,11 @@ function resolve(action, targetField) {
   align-items: center;
   justify-content: space-between;
 }
-.group-count {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
 .empty {
   font: var(--text-sm);
 }
 .tiny {
   font: var(--text-xs);
-}
-
-.list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.issue {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border-subtle);
-  border-left-width: 2px;
-  border-radius: var(--radius-md);
-  background: var(--bg-primary);
-  text-align: left;
-  cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-standard);
-}
-.issue--warning {
-  border-left-color: var(--warning);
-}
-.issue--error {
-  border-left-color: var(--error);
-}
-.issue:hover {
-  background: var(--bg-tertiary);
-}
-.issue.is-active {
-  border-color: var(--accent);
-  background: var(--bg-tertiary);
-}
-.issue-top {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font: var(--text-sm);
-}
-.issue-top .col {
-  flex: none;
-  color: var(--text-secondary);
-}
-.issue-top .raw {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.conf {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-.issue-body {
-  font: var(--text-xs);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .confirm-block {
@@ -464,32 +336,6 @@ function resolve(action, targetField) {
 }
 .sel-target {
   color: var(--text-primary);
-}
-
-.sel-meta {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-.meta-row {
-  display: grid;
-  grid-template-columns: 68px 1fr;
-  gap: var(--space-2);
-  align-items: baseline;
-}
-.meta-row--stack {
-  grid-template-columns: 1fr;
-}
-.meta-row dt {
-  font: var(--text-xs);
-  color: var(--text-tertiary);
-}
-.meta-row dd {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-primary);
-  word-break: break-word;
 }
 
 .review-done {
@@ -515,7 +361,7 @@ function resolve(action, targetField) {
   color: var(--text-tertiary);
 }
 .remap-select {
-  height: 34px;
+  min-height: 40px;
   background: var(--bg-primary);
 }
 

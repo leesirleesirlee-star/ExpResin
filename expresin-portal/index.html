@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="light">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -7,10 +7,14 @@
     <meta name="color-scheme" content="light dark" />
     <title>ExpResin · PortalJarvis</title>
     <script>
-      // 提前应用主题，避免首屏闪烁
+      // 提前应用主题，避免首屏闪烁。
+      // 仅当用户显式选择 light/dark 时写 data-theme；'auto' 或无记录时留空，
+      // 交给 tokens.css 的 prefers-color-scheme 规则跟随系统。
       try {
         var saved = localStorage.getItem('expresin-theme')
-        if (saved) document.documentElement.dataset.theme = saved
+        if (saved === 'light' || saved === 'dark') {
+          document.documentElement.dataset.theme = saved
+        }
       } catch (e) {}
     </script>
   </head>

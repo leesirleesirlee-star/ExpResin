@@ -1,5 +1,8 @@
 <script setup>
-import { fieldState } from '../data/demo.js'
+import { fieldState } from '../domain/fieldStatus.js'
+import PanelHead from './PanelHead.vue'
+import ConfirmChip from './ConfirmChip.vue'
+import ProvenanceRail from './ProvenanceRail.vue'
 
 defineProps({
   regions: { type: Array, required: true },
@@ -19,38 +22,18 @@ function fillText(col) {
   const ratio = col.fillRatio
   return ratio === undefined || ratio === null ? `${n}` : `${n} · ${Math.round(ratio * 100)}%`
 }
-
-function toneOf(col) {
-  const state = fieldState(col)
-  if (state === 'label') return 'neutral'
-  if (state === 'confirmed') return 'success'
-  if (state === 'unit-error') return 'error'
-  return 'warning'
-}
-
-function stateLabel(state) {
-  return (
-    {
-      confirmed: '已确认',
-      pending: '待确认',
-      'low-confidence': '低置信度',
-      'unit-error': '单位异常',
-      missing: '缺失',
-      label: '标签列',
-    }[state] ?? state
-  )
-}
 </script>
 
 <template>
   <section class="panel form" aria-label="结构化表单">
-    <div class="panel-head">
-      <span class="caps">Dynamic Form</span>
-      <span class="muted count">
-        {{ regions.reduce((n, r) => n + r.blocks.length, 0) }} 个列块 ·
-        {{ regions.reduce((n, r) => n + r.blocks.reduce((m, b) => m + b.columns.length, 0), 0) }} 列
-      </span>
-    </div>
+    <PanelHead label="Dynamic Form">
+      <template #actions>
+        <span class="muted count">
+          {{ regions.reduce((n, r) => n + r.blocks.length, 0) }} 个列块 ·
+          {{ regions.reduce((n, r) => n + r.blocks.reduce((m, b) => m + b.columns.length, 0), 0) }} 列
+        </span>
+      </template>
+    </PanelHead>
 
     <div class="body">
       <article v-for="region in regions" :key="region.id" class="region">
@@ -94,19 +77,21 @@ function stateLabel(state) {
               ]"
               role="button"
               tabindex="0"
+              :aria-pressed="Boolean(selected && selected.block === block.id && selected.col === col.col)"
               @click="emit('select', { ...col, block: block.id, region: region.title, analyte: block.analyte })"
-              @keydown.enter="emit('select', { ...col, block: block.id, region: region.title, analyte: block.analyte })"
+              @keydown.enter.prevent="emit('select', { ...col, block: block.id, region: region.title, analyte: block.analyte })"
+              @keydown.space.prevent="emit('select', { ...col, block: block.id, region: region.title, analyte: block.analyte })"
             >
               <span class="cell col mono">{{ col.col }}</span>
               <span class="cell raw mono" :title="col.raw">{{ col.raw || '（空）' }}</span>
               <span class="cell arrow" aria-hidden="true">→</span>
               <span class="cell target">{{ col.field || '未映射' }}</span>
               <span class="cell fill mono">{{ fillText(col) }}</span>
-              <span class="cell conf mono">{{ col.conf.toFixed(2) }}</span>
+              <span class="cell conf">
+                <ProvenanceRail :confidence="typeof col.conf === 'number' ? col.conf : null" />
+              </span>
               <span class="cell">
-                <span class="badge" :class="`badge-${toneOf(col)}`">
-                  {{ stateLabel(fieldState(col)) }}
-                </span>
+                <ConfirmChip :state="fieldState(col)" />
               </span>
             </div>
           </div>
@@ -125,15 +110,6 @@ function stateLabel(state) {
   background: var(--bg-primary);
 }
 
-.panel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 48px;
-  padding: 0 var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
-  flex: none;
-}
 .count {
   font: var(--text-xs);
 }
@@ -169,7 +145,6 @@ function stateLabel(state) {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   background: var(--bg-secondary);
-  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 .block + .block {
@@ -251,11 +226,12 @@ function stateLabel(state) {
   color: var(--text-secondary);
 }
 .conf {
-  font-size: 12px;
-  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
 }
 .fill {
   font-size: 12px;
+  font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
 }
 

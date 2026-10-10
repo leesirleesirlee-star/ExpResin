@@ -6,6 +6,7 @@ import ChatPanel from '../components/ChatPanel.vue'
 import TemplateForm from '../components/TemplateForm.vue'
 import MetadataInspector from '../components/MetadataInspector.vue'
 import StatusBar from '../components/StatusBar.vue'
+import PanelHead from '../components/PanelHead.vue'
 import { useToast } from '../composables/useToast.js'
 import {
   confirmSession,
@@ -24,6 +25,7 @@ const { show } = useToast()
 
 const streaming = ref(false)
 const selected = ref(null)
+const archiving = ref(false)
 
 const STEPS = [
   { id: 'pre', label: '实验前 · 录入' },
@@ -63,29 +65,34 @@ const statusExperiment = computed(() => ({
 
 async function onConfirm() {
   if (missingFields.value.length) {
-    show(`还有 ${missingFields.value.length} 项必填信息未填写，请先补全或标记「稍后补」。`)
+    show(`还有 ${missingFields.value.length} 项必填信息未填写，请先补全或标记「稍后补」。`, {
+      tone: 'warning',
+    })
     return
   }
+  archiving.value = true
   try {
     const exp = await confirmSession()
     if (exp.local) {
-      show('本地草稿模式：未写入后端归档，请先启动后端服务。')
+      show('本地草稿模式：未写入后端归档，请先启动后端服务。', { tone: 'warning' })
       return
     }
-    show(`实验已归档：${exp.id}，接着上传这次实验的原始数据表格。`)
+    show(`实验已归档：${exp.id}，接着上传这次实验的原始数据表格。`, { tone: 'success' })
     router.push({ name: 'recognize' })
   } catch (e) {
     const missing = e.payload?.detail?.missing || []
     if (e.status === 409) {
-      show(`还缺 ${missing.length} 项必填信息，无法归档`)
+      show(`还缺 ${missing.length} 项必填信息，无法归档`, { tone: 'warning' })
       return
     }
-    show(`归档失败：${e.message}`)
+    show(`归档失败：${e.message}`, { tone: 'error' })
+  } finally {
+    archiving.value = false
   }
 }
 
 function onSave() {
-  show('草稿已保存。Raw 数据保持只读，未被修改。')
+  show('草稿已保存。Raw 数据保持只读，未被修改。', { tone: 'success' })
 }
 </script>
 
@@ -113,13 +120,14 @@ function onSave() {
     </template>
 
     <template #form>
-      <section class="pane-head">
-        <span class="caps">FormDraft</span>
-        <span class="muted count">
-          {{ preSheets.length }} 个分区 ·
-          {{ preSheets.reduce((n, s) => n + s.fields.length, 0) }} 个字段
-        </span>
-      </section>
+      <PanelHead label="FormDraft">
+        <template #actions>
+          <span class="muted count">
+            {{ preSheets.length }} 个分区 ·
+            {{ preSheets.reduce((n, s) => n + s.fields.length, 0) }} 个字段
+          </span>
+        </template>
+      </PanelHead>
       <div class="pane-body">
         <TemplateForm
           :sheets="preSheets"
@@ -151,6 +159,8 @@ function onSave() {
         :experiment="statusExperiment"
         confirm-label="确认并归档"
         save-label="保存草稿"
+        :saving="archiving"
+        saving-label="归档中…"
         @save="onSave"
         @confirm="onConfirm"
       />
@@ -159,16 +169,6 @@ function onSave() {
 </template>
 
 <style scoped>
-.pane-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 48px;
-  padding: 0 var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
-  flex: none;
-  background: var(--bg-primary);
-}
 .count {
   font: var(--text-xs);
 }

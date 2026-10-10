@@ -4,6 +4,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import { api } from '../data/api.js'
 import { loadArchive, session } from '../data/session.js'
 import { useToast } from '../composables/useToast.js'
+import ProvenanceRail from '../components/ProvenanceRail.vue'
 
 const route = useRoute()
 const { show } = useToast()
@@ -29,7 +30,7 @@ async function downloadFile(kind) {
     URL.revokeObjectURL(url)
     show(`已导出 ${filename}`)
   } catch (e) {
-    show(e.message || '导出失败，请稍后重试')
+    show(e.message || '导出失败，请稍后重试', { tone: 'error' })
   } finally {
     exporting.value = ''
   }
@@ -160,31 +161,52 @@ function fillText(col) {
           </div>
         </header>
 
-        <section class="stats">
+        <dl class="stats">
           <div class="stat">
-            <span class="num">{{ stats.regions }}</span>
-            <span class="lbl">数据区</span>
+            <dd class="num">{{ stats.regions }}</dd>
+            <dt class="lbl">数据区</dt>
           </div>
           <div class="stat">
-            <span class="num">{{ stats.blocks }}</span>
-            <span class="lbl">列块</span>
+            <dd class="num">{{ stats.blocks }}</dd>
+            <dt class="lbl">列块</dt>
           </div>
           <div class="stat">
-            <span class="num">{{ stats.mapped }}/{{ stats.cols }}</span>
-            <span class="lbl">已映射列</span>
+            <dd class="num">{{ stats.mapped }}/{{ stats.cols }}</dd>
+            <dt class="lbl">已映射列</dt>
           </div>
           <div class="stat">
-            <span class="num">{{ stats.low }}</span>
-            <span class="lbl">低置信度</span>
+            <dd class="num">{{ stats.low }}</dd>
+            <dt class="lbl">低置信度</dt>
           </div>
-        </section>
+        </dl>
+
+        <nav
+          v-if="(record.regions || []).length || canonicalColumns.length"
+          class="toc"
+          aria-label="页内目录"
+        >
+          <a
+            v-for="region in record.regions || []"
+            :key="region.id"
+            :href="'#region-' + region.id"
+            class="toc-link"
+          >
+            {{ region.kindLabel }}
+          </a>
+          <a v-if="canonicalColumns.length" href="#canonical" class="toc-link">规范长表</a>
+        </nav>
 
         <p v-if="record.status === 'demo'" class="notice">
           该档案来自识别链路输出（未经过人工确认写入），因此标记为示例。连接后端并完成一次
           「确认并归档」后，此处将展示正式规范文档。
         </p>
 
-        <section v-for="region in record.regions || []" :key="region.id" class="region">
+        <section
+          v-for="region in record.regions || []"
+          :id="'region-' + region.id"
+          :key="region.id"
+          class="region"
+        >
           <header class="region-head">
             <h2>{{ region.kindLabel }}</h2>
             <span class="muted mono">{{ region.title || region.id }}</span>
@@ -195,40 +217,43 @@ function fillText(col) {
               <span class="mono muted">{{ block.id }}</span>
               <div class="tags">
                 <span v-if="block.analyte" class="badge badge-accent">目标离子 {{ block.analyte }}</span>
-                <span class="badge" :class="block.confidence < 0.8 ? 'badge-warning' : 'badge-success'">
-                  置信度 {{ (block.confidence * 100).toFixed(0) }}%
-                </span>
+                <ProvenanceRail
+                  :confidence="block.confidence"
+                  :evidence="`已映射 ${(block.columns || []).filter((c) => c.target).length}/${(block.columns || []).length} 列 · 阈值 0.80`"
+                />
               </div>
             </div>
 
-            <table class="grid">
-              <thead>
-                <tr>
-                  <th>列</th>
-                  <th>原始表头</th>
-                  <th>标准字段</th>
-                  <th>填充</th>
-                  <th>单位</th>
-                  <th>置信度</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="col in block.columns" :key="col.col">
-                  <td class="mono dim">{{ col.col }}</td>
-                  <td class="mono">{{ col.raw || '（空）' }}</td>
-                  <td>{{ col.field || '未映射' }}</td>
-                  <td class="mono dim">{{ fillText(col) }}</td>
-                  <td class="mono dim">{{ col.unit || col.unitStd || '—' }}</td>
-                  <td class="mono" :class="{ warn: col.target && col.conf < 0.8 }">
-                    {{ col.conf.toFixed(2) }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="table-scroll">
+              <table class="grid" aria-label="列映射">
+                <thead>
+                  <tr>
+                    <th scope="col">列</th>
+                    <th scope="col">原始表头</th>
+                    <th scope="col">标准字段</th>
+                    <th scope="col">填充</th>
+                    <th scope="col">单位</th>
+                    <th scope="col">置信度</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="col in block.columns" :key="col.col">
+                    <td class="mono dim">{{ col.col }}</td>
+                    <td class="mono">{{ col.raw || '（空）' }}</td>
+                    <td>{{ col.field || '未映射' }}</td>
+                    <td class="mono dim">{{ fillText(col) }}</td>
+                    <td class="mono dim">{{ col.unit || col.unitStd || '—' }}</td>
+                    <td class="mono" :class="{ warn: col.target && col.conf < 0.8 }">
+                      {{ col.conf.toFixed(2) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </article>
         </section>
 
-        <section v-if="canonicalColumns.length" class="canonical">
+        <section v-if="canonicalColumns.length" id="canonical" class="canonical">
           <header class="region-head">
             <h2>规范长表</h2>
             <span class="muted mono">
@@ -249,10 +274,10 @@ function fillText(col) {
             此处才是数据值本身。
           </p>
           <div class="table-scroll">
-            <table class="grid">
+            <table class="grid" aria-label="规范长表">
               <thead>
                 <tr>
-                  <th v-for="name in canonicalColumns" :key="name">{{ name }}</th>
+                  <th v-for="name in canonicalColumns" :key="name" scope="col">{{ name }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -279,6 +304,8 @@ function fillText(col) {
   overflow-y: auto;
   position: relative;
   z-index: 1;
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--space-5);
 }
 .wrap {
   max-width: 1080px;
@@ -296,7 +323,7 @@ function fillText(col) {
 
 /* 返回上级页面：复用全局 .btn-secondary，仅压缩到与顶部导航一致的高度 */
 .back {
-  height: 32px;
+  height: 40px;
   padding: 0 var(--space-3);
   font: var(--text-xs);
   text-decoration: none;
@@ -323,15 +350,15 @@ function fillText(col) {
   gap: var(--space-3);
   flex-shrink: 0;
 }
-/* 嵌入 section 标题行的紧凑按钮（与 32px 返回按钮同高） */
+/* 嵌入 section 标题行的紧凑按钮（与 40px 返回按钮同高） */
 .btn-compact {
-  height: 32px;
+  height: 40px;
   padding: 0 var(--space-3);
   font: var(--text-xs);
   margin-left: auto;
 }
 .head h1 {
-  font: var(--text-2xl);
+  font: var(--text-xl);
   letter-spacing: var(--tracking-tight);
 }
 .head p {
@@ -343,6 +370,7 @@ function fillText(col) {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: var(--space-3);
+  margin: 0;
 }
 .stat {
   display: flex;
@@ -353,13 +381,52 @@ function fillText(col) {
   border-radius: var(--radius-lg);
   background: var(--bg-secondary);
 }
+.stat .num,
+.stat .lbl {
+  margin: 0;
+}
 .num {
   font: var(--text-lg);
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 .lbl {
   font: var(--text-xs);
   color: var(--text-secondary);
+}
+
+/* 页内目录：吸顶锚点导航，把长档案切成可跳转的段 */
+.toc {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+}
+.toc-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  font: var(--text-xs);
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+.toc-link:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+.region {
+  scroll-margin-top: var(--space-8);
+}
+#canonical {
+  scroll-margin-top: var(--space-8);
 }
 
 .notice {
@@ -460,6 +527,12 @@ function fillText(col) {
 .table-scroll .grid {
   min-width: max-content;
 }
+/* 列块内嵌表格已由 .block 提供外框，去掉重复边框 */
+.block .table-scroll {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
 
 .empty {
   font: var(--text-sm);
@@ -473,17 +546,12 @@ function fillText(col) {
   gap: var(--space-3);
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .stats {
     grid-template-columns: repeat(2, 1fr);
   }
   .wrap {
     padding: var(--space-4) var(--space-4) var(--space-8);
-  }
-  .grid {
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
   }
 }
 </style>

@@ -266,6 +266,118 @@
 
 ---
 
+## 2026-10-02 · UI 地基收敛：死代码清理 / 深色跟随 / 状态唯一来源 / token 增量
+
+### 20. 第 0–1 阶段（对应 docs/ExpResin-UI-Upgrade-Plan-v2.0.md）
+
+- **删除死代码**：`src/style.css`（未被 main.js 引入，且含紫色 `#aa3bff` 主题与 18px 根字号，与设计系统冲突）、
+  `components/HelloWorld.vue`、`components/TopBar.vue`、`components/Inspector.vue`（全仓无引用），
+  经 grep 二次确认后以 `git rm` 移除，保留历史可恢复。
+- **深色模式回归规范 §8.7**：此前 `index.html` 固定 `data-theme="light"` 且 `useTheme.js` 默认写死 light，
+  使 tokens.css 的 `prefers-color-scheme` 规则永不命中。现改为：仅当用户显式选择 light/dark 时写
+  `data-theme`，否则移除属性、由系统媒体查询接管；`useTheme` 新增 `auto` 模式与系统变化监听，
+  对外仍暴露 `theme`（实际生效值）与 `toggleTheme`，并新增 `setMode`。
+- **字段状态唯一事实来源**：新建 `src/domain/fieldStatus.js`，集中列识别域 `fieldState` 与录入草稿域
+  `draftStatusOf`，以及两套「状态 → 文案/色调」词表。`demo.js` 改为 import + re-export（兼容既有引用），
+  `DynamicForm.vue`、`TemplateForm.vue` 改为消费同一词表。**判定规则与旧实现逐条等价**，仅消除
+  同一语义在不同面板出现不同标签/颜色的风险（PRD 宪法 #8）。
+- **token 纯增量**：新增控件（`--control-*`）、聚焦环（`--focus-ring`）、层级（`--z-*`）、
+  `--info-bg`、面板头/移动端高度与折叠栏宽（`--panel-head-h` / `--topbar-h-mobile` /
+  `--statusbar-h-mobile` / `--rail-collapsed-w`）。**未修改任何既有颜色/间距/字号/圆角/阴影/动效值。**
+- **深度策略单一化（决策）**：静止态的面板/卡片只用「表面色差 + 极弱边框」，不再叠加阴影；
+  阴影仅留给悬浮/交互抬升。据此 `.card` 移除静止阴影，补规范 §4.3 的 hover（`shadow-md` + 上移 2px）；
+  `.input` 改用控件 token；`.badge-info` 改用 `--info-bg`。
+- **布局与语义**：`WorkbenchLayout` 工作条高度与网格行改用 `--panel-head-h`；页面标题由 `--text-base`
+  提升到 `--text-lg`/600（说明：工作条仅 48px，未采用规划中 24px 的页面标题刻度，以免在工具条内过挤，
+  24px 留给真正的页面级标题）；移动端 tab 补 `role=tablist/tab`、`aria-selected`、`aria-controls`
+  与 panes 的 `tabpanel`，并补 hover 态。
+- **验证**：`npm run build` 通过（65 modules，无错误）。
+- **已知遗留（未处理）**：`src/data/store.js` 全仓无引用，疑似死代码，但不在本次批准删除清单内，暂保留待确认。
+
+---
+
+## 2026-10-02 · UI 升级第 2 阶段：状态完整性 / toast / 提交反馈 / 深度收敛
+
+### 21. 第 2 阶段（对应 docs/ExpResin-UI-Upgrade-Plan-v2.0.md）
+
+- **toast 升级为队列 + 语义色调**：`useToast.js` 支持 `{ tone, duration }`（兼容旧的 `show(text, ms)`），
+  最多同时 3 条（规范 §4.8），错误停留更久；`App.vue` 改为 `TransitionGroup` 堆叠渲染，
+  带左侧色调条、可关闭按钮，错误用 `role="alert"`、其余 `role="status"`。所有调用点补 tone：
+  归档/识别成功=success，必填缺失/离线=warning，异常=error。
+- **列表页状态补全**：`session` 新增 `archiveLoading`，`loadArchive` 用 `finally` 归位；
+  `HomeView`/`ArchiveView` 增加加载骨架、加载失败错误条（`empty--error`），与「后端未连接」「无数据」区分。
+- **提交反馈**：`StatusBar` 新增 `saving` / `saving-label`，进行中禁用按钮、显示 spinner 与 `aria-busy`；
+  `SetupView`、`RecognizeView` 接线 `archiving`。`MappingInspector` 新增 `resolving`，
+  确认/改判/忽略与底部按钮在提交中禁用，确认按钮显示「提交中…」。
+- **深度策略继续收敛**：`HomeView` 的 `.entry`、`ArchiveView` 的 `.card-item` 移除静止态阴影
+  （改为表面色差 + 弱边框），hover 才抬升；与 `.card` 保持一致。
+- **token 收口**：`RecognizeView` 的 `#64748b` → `var(--text-tertiary)`；
+  `--border-default` / `--transition-fast` 等**不存在**的令牌 → `--control-border` /
+  `--duration-fast var(--ease-standard)`；工作表输入框高度 28→36px 并用 `--control-*` 与 `--focus-ring`；
+  `StatusBar`/`App` 的 z-index 与移动端高度改用 `--z-sticky` / `--topbar-h-mobile` / `--statusbar-h-mobile`。
+- **验证**：`npm run build` 通过（65 modules，215ms）。
+
+---
+
+## 2026-10-02 · UI 升级第 3–4 阶段：共享组件 / 页面层 / 签名层 / 打磨 / P3
+
+### 22. 组件层与页面层（对应 plan §6、§7、§8）
+
+- **抽取 9 个共享结构组件**（`src/components/`）：`PanelHead`、`ConfirmChip`、`StatGrid`、
+  `IssueList`、`TraceList`、`MiniButton`、`ChatMessage`、`ProvenanceRail`、`DocsLayout`，
+  消除此前散落的 `.panel-head` / 统计 / 问题列表 / 溯源 `<dl>` / 气泡 复制。`PanelHead` 统一
+  48px（`--panel-head-h`）；消费点已覆盖 `ChatPanel`、`DynamicForm`、`MappingInspector`、
+  `MetadataInspector`、`SetupView`、`RecognizeView`（共 7 处，含视图层两处）。
+- **标题刻度校正**：`WorkbenchLayout` 的 `h1` 由 §20 记录的 `--text-lg` 提升到 `--text-xl`（24px），
+  撤销 §20 中「工作条仅 48px 故不采用页面标题刻度」的偏离 —— 实测 24px/1.3 在 48px 工作条内可容纳，
+  与 plan §6.2、设计规范 §4.3 一致。页面级 `ArchiveDetailView`、`ApiDocsView` 的 `h1` 同为 `--text-xl`。
+- **折叠态 48px 图标轨**：`WorkbenchLayout` 折叠栏由 0 改为 `--rail-collapsed-w`（48px），
+  保留展开按钮 + 竖排 caps 标签，满足规范 §3.3（此前 changelog §2 记为未达标）。
+- **响应式断点收敛**：`App`、`HomeView`、`ArchiveView`、`StatusBar`、`AppHeader`、`DocsLayout`、
+  `ArchiveDetailView` 的 `640/720/820/900/1180` 统一为规范 §3.2 的 **480 / 768 / 1024 / 1280**。
+- **触控目标**：`.btn-ghost`/`.icon-btn` 由 36 提升到 40px；`TemplateForm` `.fcontrol .input`、
+  `RecognizeView` 工作表输入、`ArchiveDetailView` 返回/紧凑按钮均 ≥40px。
+
+### 23. 签名层
+
+- **`ProvenanceRail` 落地**：2px 竖向导轨 + 置信度芯片（颜色 + 文本双重编码，阈值 0.8），
+  接入 `DynamicForm` 行与 `ArchiveDetailView` 列块头。
+- **档案锚点目录**：`ArchiveDetailView` 头部下方新增吸顶 `nav.toc`，各区带 `id="region-*"`、
+  `id="canonical"`，`scroll-padding` + `scroll-margin` 保证跳转不遮挡。
+- **表格与统计语义**：统计由 `div` 改 `dl`（`dd` 数值 + `dt` 标签）；表格补 `scope="col"` 与
+  `aria-label`；映射表与规范长表统一走 `.table-scroll` 横向滚动。
+- **说明（偏离）**：「规范 / 原始双栏对照」未做并排两栏，改由「列映射表（原始表头 → 标准字段）+ 规范长表」
+  两段递进承载。理由：原始表头到标准字段的对照已由映射表的列直接表达，并排双栏在 24+ 列时会挤压可读性，
+  与「规范长表需横向滚动」的既有约束冲突。此取舍记入本变更。
+
+### 24. 打磨层
+
+- 表格语义、移动端 tab 语义（`role=tablist/tab/tabpanel`、`aria-selected`、`aria-controls`）已于前阶段落地；
+  本阶段补 `aria-current`（ApiDocs 导航）、搜索框清空按钮与弹性宽度（ArchiveView）、
+  统计数值 `tabular-nums`、`--radius-full` 收敛（MetadataInspector）、`.card` hover/focus（前阶段）。
+
+### 25. P3 规范落地
+
+- **首屏入场序列（规范 §5.3）**：`base.css` 新增 `.stagger-in` 工具类，`HomeView` 按
+  100/200/300+i·50/500ms 对 hero 标题、副标题、三步入口、近期实验依次入场；全局
+  `prefers-reduced-motion` 降级已覆盖。
+- **模态（规范 §4.9）**：新增 `BaseModal.vue`（blur 遮罩、560px、`--radius-xl`、`--shadow-lg`、
+  `scale(0.96)→1` 入场、Esc / 点遮罩 / 关闭按钮），并接入 `RecognizeView`：归档被 409 拦截时
+  以模态列出缺失必填项并提供「去补全」跳转。
+- **部分实现（记录）**：模态仅做打开时自动聚焦 + 关闭后焦点归还，未实现完整 Tab 焦点陷阱（trap）；
+  待有更复杂表单模态需求时补齐。
+
+### 26. 未处理 / 已知偏离
+
+- `HomeView` 近期实验仍用 `ul/li`（对「实验列表」语义比 `dl` 更贴切），未按 plan §8 改 `dl`。
+- `RecognizeView` 顶部栏未按 plan §8 拆为两行：`PanelHead` 固定 48px 高，换行会破坏该高度约束；
+  窄屏下改用省略与 `flex` 收缩。
+- `tokens.css` 的系统深色块与 `[data-theme=dark]` 块因 CSS 语法限制未合并，保持数值同步；
+  暗色 `--accent-bg` 已由 0.12 统一为 0.1，并补齐两处 `--on-accent`。
+- 验证：`npm run build` 通过（82 modules，约 230ms，无错误）。
+
+---
+
 ## 版本记录
 
 | 版本 | 日期 | 变更 |
@@ -277,3 +389,6 @@
 | 1.4 | 2026-09-22 | 缺陷 C：识别骨架「值」字段恒空的契约错位 —— 「值」列改为填充证据、新增规范长表展示区块、移除识别页无效「值」输入框 |
 | 1.5 | 2026-09-23 | 模板填充链路：三实验类型模板配置化 + 派生计算（derive_v1）+ Raw 重读填充（fill_v1）+ Excel 导出（export_v1）；确立「数据值必须从 Raw 重读」「浓度口径显式标注」「单位未知禁止换算」「展示保真」四条约束 |
 | 1.6 | 2026-09-24 | T2：模板导出端点 HTTP 实测（17/17）+ 档案详情页「导出模板 Excel」「导出 CSV」下载入口（补齐 09-22 CSV 遗留）；确立「跨会话状态以实际检查为准，日志仅作线索」方法 |
+| 1.7 | 2026-10-02 | UI 升级第 0–1 阶段：移除 4 个死代码文件；修复深色模式跟随系统；字段状态收敛到 `domain/fieldStatus.js`；新增控件/聚焦/层级/info/布局 token（纯增量）；深度策略单一化（面板无阴影、悬浮才抬升）；工作台标题升到 `--text-lg`、移动端 tab 补语义 |
+| 1.8 | 2026-10-02 | UI 升级第 2 阶段：toast 队列+色调+可关闭；Home/Archive 加载骨架与错误条；StatusBar `saving` 与 MappingInspector `resolving` 提交反馈；Home/Archive 卡片停止态去阴影；修正 RecognizeView 不存在令牌与硬编码色 |
+| 1.9 | 2026-10-02 | UI 升级第 3–4 阶段：抽取 9 个共享组件；工作台 h1 升 `--text-xl`、折叠栏 48px 图标轨；断点收敛 480/768/1024/1280；签名层 ProvenanceRail + 档案锚点目录 + 表格/统计语义；首屏入场序列与 BaseModal（§4.9，部分实现）；首页搜索清空、触控目标 40px |

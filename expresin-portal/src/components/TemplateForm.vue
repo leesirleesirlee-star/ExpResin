@@ -6,7 +6,9 @@
  *  - value_labels：如树脂型号显示为「树脂 A600」，避免裸型号歧义
  *  - 字段来源提示（对话抽取 / 手动输入）
  */
-import { watch } from 'vue'
+import { computed, watch } from 'vue'
+import { draftStatusOf } from '../domain/fieldStatus.js'
+import ConfirmChip from './ConfirmChip.vue'
 
 const props = defineProps({
   sheets: { type: Array, required: true },
@@ -17,6 +19,22 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['change', 'defer', 'focus-field'])
+
+/**
+ * 当前实验类型：用于 show_for 条件字段过滤。
+ * 未选择类型时不做过滤（避免字段"神秘消失"，用户仍能看到全部候选项）。
+ */
+const currentType = computed(() => {
+  const value = props.drafts['01_Metadata.experiment_type']?.value
+  return String(value ?? '').trim()
+})
+
+/** 按 show_for 过滤字段：已选类型后，只显示声明包含该类型的字段与通用字段。 */
+function visibleFields(sheet) {
+  const list = sheet.fields ?? []
+  if (!currentType.value) return list
+  return list.filter((field) => !field.show_for?.length || field.show_for.includes(currentType.value))
+}
 
 // 录入页右侧点「定位」时，把字段滚到视野中央并聚焦，避免用户在上百字段里翻找
 watch(
@@ -42,37 +60,9 @@ function unitOf(field) {
   return draftOf(field).unit || field.unit || ''
 }
 
+/** 录入字段状态判定与文案/色调统一来自 domain/fieldStatus.js。 */
 function statusOf(field) {
-  const d = draftOf(field)
-  const value = String(d.value ?? '').trim()
-  if (d.status === 'deferred') return 'deferred'
-  if (!value) return field.required ? 'missing' : 'empty'
-  if (d.status === 'unit_error') return 'unit-error'
-  if (d.status === 'low_confidence' || (typeof d.confidence === 'number' && d.confidence < 0.8)) {
-    return 'low-confidence'
-  }
-  if (d.status === 'confirmed') return 'confirmed'
-  return 'pending'
-}
-
-const STATE_LABEL = {
-  confirmed: '已确认',
-  pending: '待确认',
-  'low-confidence': '低置信度',
-  'unit-error': '单位异常',
-  missing: '必填缺失',
-  deferred: '稍后补',
-  empty: '',
-}
-
-const STATE_TONE = {
-  confirmed: 'success',
-  pending: 'accent',
-  'low-confidence': 'warning',
-  'unit-error': 'error',
-  missing: 'warning',
-  deferred: 'neutral',
-  empty: 'neutral',
+  return draftStatusOf(field, draftOf(field))
 }
 
 /** 带前缀的展示名：树脂型号 -> 树脂 A600 */
@@ -101,7 +91,7 @@ function emitChange(field, value) {
 
       <div class="fields">
         <div
-          v-for="field in sheet.fields"
+          v-for="field in visibleFields(sheet)"
           :key="field.path"
           class="frow field"
           :class="[
@@ -163,13 +153,7 @@ function emitChange(field, value) {
 
           <div class="fmeta">
             <span v-if="displayLabel(field)" class="badge badge-accent">{{ displayLabel(field) }}</span>
-            <span
-              v-if="STATE_LABEL[statusOf(field)]"
-              class="badge"
-              :class="`badge-${STATE_TONE[statusOf(field)]}`"
-            >
-              {{ STATE_LABEL[statusOf(field)] }}
-            </span>
+            <ConfirmChip domain="draft" :state="statusOf(field)" />
             <span v-if="draftOf(field).source_type === 'conversation'" class="badge badge-neutral">
               来自对话
             </span>
@@ -231,7 +215,10 @@ function emitChange(field, value) {
   background: var(--bg-tertiary);
 }
 .frow.is-disabled {
-  opacity: 0.9;
+  opacity: 0.68;
+}
+.frow.is-disabled .flabel label {
+  color: var(--text-secondary);
 }
 .frow.is-focused {
   background: var(--bg-tertiary);
@@ -264,7 +251,7 @@ function emitChange(field, value) {
   min-width: 0;
 }
 .fcontrol .input {
-  height: 36px;
+  height: 40px;
   background: var(--bg-primary);
 }
 .textarea {

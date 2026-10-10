@@ -21,6 +21,7 @@ export const session = reactive({
   experimentId: '',
   recognized: null,
   archive: [],
+  archiveLoading: false,
   lastArchiveError: '',
 })
 
@@ -274,17 +275,20 @@ export async function confirmSession() {
 }
 
 export async function loadArchive() {
-  if (!session.online) {
-    session.archive = []
-    return
-  }
+  session.archiveLoading = true
   try {
+    if (!session.online) {
+      session.archive = []
+      return
+    }
     const res = await api.listExperiments()
     session.archive = res.experiments || res || []
     session.lastArchiveError = ''
   } catch (e) {
     session.archive = []
     session.lastArchiveError = e.message
+  } finally {
+    session.archiveLoading = false
   }
 }
 

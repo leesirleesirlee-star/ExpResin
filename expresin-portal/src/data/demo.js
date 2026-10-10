@@ -3,6 +3,8 @@
  * 用于验证 PortalJarvis 三栏工作台的信息架构与交互状态。
  */
 
+import { fieldState } from '../domain/fieldStatus.js'
+
 export const experiment = {
   id: 'EXP-01',
   project: '示例离子交换',
@@ -210,37 +212,8 @@ export const regions = [
   },
 ]
 
-/** 离子标签列白名单：这类列天然没有目标字段，不应被标记为问题。 */
-const ION_LABELS = new Set([
-  'so4', 'cl', 'nh4+', 'nh4', 'li+', 'li', 'ca', 'na', 'hpo4', 'po4', 'no3', 'f',
-])
-
-/** 字段状态判定，供表单与 Inspector 共用。 */
-export function fieldState(col) {
-  // 人工处置优先于自动判定：用户已确认/改判/忽略的列不应再反复报警
-  if (col.review) {
-    if (col.review.status === 'ignore') return 'ignored'
-    if (col.review.status === 'remap') return 'remapped'
-    return 'confirmed'
-  }
-
-  const raw = (col.raw || '').trim()
-
-  if (!col.target) {
-    if (!raw) {
-      // 「幽灵列」严格指「空表头 **且** 整列为空」。
-      // 空表头但有数据的列（如 sheet-01#R44-44/B1 的 G 列：无表头却填满 22 个数值）
-      // 是「未映射、待人工确认」，不能与空列混为一谈 —— 否则会把真实数据当噪声丢弃。
-      const hasData = typeof col.nonNull === 'number' && col.nonNull > 0
-      return hasData ? 'pending' : 'missing'
-    }
-    if (ION_LABELS.has(raw.toLowerCase())) return 'label'
-    return 'pending'
-  }
-  if (col.unitStd && col.unit && col.unit !== col.unitStd) return 'unit-error'
-  if (col.conf < 0.8) return 'low-confidence'
-  return 'confirmed'
-}
+/** 字段状态判定已迁移至 domain/fieldStatus.js，此处 re-export 兼容既有引用。 */
+export { fieldState }
 
 /** 汇总需要人工关注的问题项。 */
 export function collectIssues(source, failedBlocks = []) {

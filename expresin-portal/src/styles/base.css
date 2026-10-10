@@ -124,7 +124,6 @@ select {
 }
 
 .btn-ghost {
-  height: 36px;
   padding: 0 var(--space-3);
   background: transparent;
   color: var(--text-secondary);
@@ -138,8 +137,8 @@ select {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
@@ -166,9 +165,9 @@ select {
   width: 100%;
   height: 40px;
   padding: 0 var(--space-3);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--control-border);
   border-radius: var(--radius-md);
-  background: var(--bg-tertiary);
+  background: var(--control-bg);
   font: var(--text-base);
   transition: border-color var(--duration-fast) var(--ease-standard),
     box-shadow var(--duration-fast) var(--ease-standard);
@@ -179,13 +178,13 @@ select {
 .input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-subtle);
+  box-shadow: var(--focus-ring);
 }
 .input[aria-invalid="true"] {
   border-color: var(--error);
 }
 .input:disabled {
-  background: var(--bg-secondary);
+  background: var(--control-bg-disabled);
   color: var(--text-tertiary);
 }
 
@@ -193,12 +192,21 @@ select {
    4.3 卡片
    ========================================================================== */
 
+/* 深度策略：静止态仅用表面色差 + 极弱边框，不用阴影；
+   悬浮态按规范 §4.3 提升到 shadow-md 并轻微上移。 */
 .card {
   padding: var(--space-5);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   background: var(--bg-secondary);
-  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--duration-normal) var(--ease-standard),
+    transform var(--duration-normal) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+}
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
 }
 
 /* ==========================================================================
@@ -233,7 +241,7 @@ select {
   color: var(--error);
 }
 .badge-info {
-  background: var(--bg-tertiary);
+  background: var(--info-bg);
   color: var(--info);
 }
 .badge-accent {
@@ -266,6 +274,14 @@ select {
 .field--missing {
   border: 1px dashed var(--border-strong);
   border-left: 2px dashed var(--warning);
+}
+/* 非问题态：标签列 / 已忽略 / 已改判（无报警语义，弱化处理） */
+.field--label,
+.field--ignored {
+  border-left-color: var(--border-strong);
+}
+.field--remapped {
+  border-left-color: var(--accent);
 }
 
 /* ==========================================================================
@@ -363,6 +379,12 @@ select {
     opacity: 1;
     transform: none;
   }
+}
+
+/* ---- 首屏入场序列（规范 §5.3） ---- */
+.stagger-in {
+  animation: enter-up var(--duration-normal) var(--ease-decelerate) both;
+  animation-delay: var(--stagger, 0ms);
 }
 
 /* ---- 8.6 支持 prefers-reduced-motion ---- */

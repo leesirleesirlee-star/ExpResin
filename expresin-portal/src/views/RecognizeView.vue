@@ -6,6 +6,8 @@ import ChatPanel from '../components/ChatPanel.vue'
 import DynamicForm from '../components/DynamicForm.vue'
 import MappingInspector from '../components/MappingInspector.vue'
 import StatusBar from '../components/StatusBar.vue'
+import PanelHead from '../components/PanelHead.vue'
+import BaseModal from '../components/BaseModal.vue'
 import { useToast } from '../composables/useToast.js'
 import { collectIssues } from '../data/demo.js'
 import {
@@ -59,6 +61,10 @@ function stopUploadClock() {
 onUnmounted(stopUploadClock)
 const streaming = ref(false)
 const archiving = ref(false)
+const resolving = ref(false)
+// 归档被拦截时列出的缺失必填项；用模态承载，避免用户错过 toast
+const missingOpen = ref(false)
+const missingItems = ref([])
 
 const messages = computed(() => session.messages)
 
@@ -92,10 +98,12 @@ const REVIEW_TOAST = {
  * 后端以「追加新版本」保存修正快照，前端用返回的快照整体刷新，保证与后端一致。
  */
 async function onResolve({ block, col, action, target_field }) {
+  if (resolving.value) return
+  resolving.value = true
   try {
     const res = await reviewColumn(block, col, action, target_field)
     if (!res.ok) {
-      show(res.reason)
+      show(res.reason, { tone: 'warning' })
       return
     }
     regions.value = session.recognized?.regions ?? regions.value
@@ -103,10 +111,12 @@ async function onResolve({ block, col, action, target_field }) {
       typeof REVIEW_TOAST[action] === 'function'
         ? REVIEW_TOAST[action](target_field)
         : REVIEW_TOAST[action]
-    show(`${block} / ${col} ${label}`)
+    show(`${block} / ${col} ${label}`, { tone: 'success' })
     selected.value = null
   } catch (e) {
-    show(`人工判定保存失败：${e.message}`)
+    show(`人工判定保存失败：${e.message}`, { tone: 'error' })
+  } finally {
+    resolving.value = false
   }
 }
 
@@ -170,7 +180,7 @@ async function onPickFile(event) {
   try {
     const res = await uploadRawFile(file, sheetName.value.trim() || null)
     if (!res.ok) {
-      show(res.reason)
+      show(res.reason, { tone: 'warning' })
       return
     }
     const payload = res.result
@@ -198,9 +208,12 @@ async function onPickFile(event) {
         : failed.length
           ? `解析完成，但有 ${failed.length} 个列块失败，可重新上传重试。`
           : '文件解析完成，请逐列确认映射。',
+      { tone: failed.length && !sourceInfo.value.cached ? 'warning' : 'success' },
     )
   } catch (e) {
-    show(e.offline ? '后端服务不可达，请先启动后端再上传。' : `解析失败：${e.message}`)
+    show(e.offline ? '后端服务不可达，请先启动后端再上传。' : `解析失败：${e.message}`, {
+      tone: 'error',
+    })
   } finally {
     stopUploadClock()
     uploading.value = false
@@ -222,11 +235,11 @@ async function onConfirm() {
   try {
     const exp = await confirmSession()
     if (exp.local) {
-      show('本地草稿模式：未写入后端归档，请先启动后端服务。')
+      show('本地草稿模式：未写入后端归档，请先启动后端服务。', { tone: 'warning' })
       return
     }
     session.messages.push({ role: 'assistant', content: `实验 ${exp.id} 已归档。` })
-    show(`实验已归档：${exp.id}`)
+    show(`实验已归档：${exp.id}`, { tone: 'success' })
     router.push({ name: 'archive' })
   } catch (e) {
     const missing = e.payload?.detail?.missing || []
@@ -238,9 +251,11 @@ async function onConfirm() {
           `归档被拦截：还有 ${missing.length} 项必填信息未填写 —— ${labels}。` +
           '请到「实验前 · 新建实验」补全后再回来归档。',
       })
-      show(`还缺 ${missing.length} 项必填信息，无法归档`)
+      show(`还缺 ${missing.length} 项必填信息，无法归档`, { tone: 'warning' })
+      missingItems.value = missing
+      missingOpen.value = true
     } else {
-      show(`归档失败：${e.message}`)
+      show(`归档失败：${e.message}`, { tone: 'error' })
     }
   } finally {
     archiving.value = false
@@ -252,7 +267,13 @@ function onSave() {
     session.online
       ? '草稿已随会话自动保存到后端，Raw 文件保持只读。'
       : '本地草稿已保存。Raw 文件保持只读。',
+    { tone: 'success' },
   )
+}
+
+function goSetup() {
+  missingOpen.value = false
+  router.push({ name: 'setup' })
 }
 </script>
 
@@ -290,9 +311,9 @@ function onSave() {
     </template>
 
     <template #form>
-      <section class="pane-head">
-        <span class="caps">识别结果</span>
-        <div class="head-right">
+      <PanelHead label="识别结果">
+        <template #actions>
+          <div class="head-right">
           <span v-if="sourceInfo" class="muted src mono">
             {{ sourceInfo.file }}{{ sourceInfo.sheet ? ` · ${sourceInfo.sheet}` : '' }}
           </span>
@@ -303,6 +324,7 @@ function onSave() {
               class="sheet-input"
               type="text"
               placeholder="留空 = 首个"
+              aria-label="工作表名称"
               :disabled="uploading"
             />
           </label>
@@ -319,8 +341,9 @@ function onSave() {
           <span v-if="uploading" class="upload-hint">
             列块已并行解析，通常 30–60 秒；同一文件重复上传会命中缓存（＜1 秒）
           </span>
-        </div>
-      </section>
+          </div>
+        </template>
+      </PanelHead>
 
       <div class="pane-body">
         <div v-if="!regions.length" class="empty">
@@ -346,6 +369,7 @@ function onSave() {
         :selected="selected"
         :schema-columns="schemaColumns"
         :analyte-options="analyteOptions"
+        :resolving="resolving"
         @select="selected = $event"
         @resolve="onResolve"
         @confirm="onConfirm"
@@ -357,25 +381,29 @@ function onSave() {
         :experiment="statusExperiment"
         confirm-label="确认识别结果"
         save-label="保存草稿"
+        :saving="archiving"
+        saving-label="归档中…"
         @save="onSave"
         @confirm="onConfirm"
       />
     </template>
   </WorkbenchLayout>
+
+  <BaseModal :open="missingOpen" title="还差必填信息，无法归档" @close="missingOpen = false">
+    <p class="muted">以下必填信息尚未填写，请到「实验前 · 新建实验」补全后再归档：</p>
+    <ul class="missing-list">
+      <li v-for="m in missingItems" :key="m.field_path" class="mono">
+        {{ m.label || m.field_path }}
+      </li>
+    </ul>
+    <template #footer>
+      <button class="btn btn-secondary" type="button" @click="missingOpen = false">稍后处理</button>
+      <button class="btn btn-primary" type="button" @click="goSetup">去补全</button>
+    </template>
+  </BaseModal>
 </template>
 
 <style scoped>
-.pane-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  height: 48px;
-  padding: 0 var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
-  flex: none;
-  background: var(--bg-primary);
-}
 .head-right {
   display: flex;
   align-items: center;
@@ -391,7 +419,7 @@ function onSave() {
 }
 .upload-hint {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 
 .sheet-field {
@@ -402,18 +430,20 @@ function onSave() {
 }
 .sheet-input {
   width: 110px;
-  height: 28px;
-  padding: 0 var(--space-2);
+  height: 40px;
+  padding: 0 var(--space-3);
   font: var(--text-sm);
   color: var(--text-primary);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-default);
+  background: var(--control-bg);
+  border: 1px solid var(--control-border);
   border-radius: var(--radius-sm);
-  transition: border-color var(--transition-fast);
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
 }
 .sheet-input:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: var(--focus-ring);
 }
 .sheet-input:disabled {
   opacity: 0.6;
@@ -449,5 +479,14 @@ function onSave() {
 }
 .empty p {
   font: var(--text-sm);
+}
+.missing-list {
+  margin: var(--space-3) 0 0;
+  padding-left: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font: var(--text-sm);
+  color: var(--text-secondary);
 }
 </style>

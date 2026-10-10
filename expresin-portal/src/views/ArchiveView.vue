@@ -4,26 +4,32 @@ import { RouterLink } from 'vue-router'
 import { loadArchive, session } from '../data/session.js'
 
 const keyword = ref('')
+const loading = ref(true)
 
 async function ensureData() {
-  await loadArchive()
-  if (session.archive.length) return
-  // 后端未连接时，用链路导出的真实识别结果作为示例档案，保证页面可核对
+  loading.value = true
   try {
-    const res = await fetch(`${import.meta.env.BASE_URL}data/analysis.json`, { cache: 'no-store' })
-    const data = await res.json()
-    session.archive = (data.experiments || []).map((e) => ({
-      id: e.id,
-      title: `${e.sheet} 实验数据`,
-      experiment_type: e.regions?.[0]?.kindLabel || '—',
-      operator: '—',
-      date_start: (data.generatedAt || '').slice(0, 10),
-      status: 'demo',
-      source_file: e.sourceFile,
-      regions: e.regions,
-    }))
-  } catch {
-    /* 保持空态 */
+    await loadArchive()
+    if (session.archive.length) return
+    // 后端未连接时，用链路导出的真实识别结果作为示例档案，保证页面可核对
+    try {
+      const res = await fetch(`${import.meta.env.BASE_URL}data/analysis.json`, { cache: 'no-store' })
+      const data = await res.json()
+      session.archive = (data.experiments || []).map((e) => ({
+        id: e.id,
+        title: `${e.sheet} 实验数据`,
+        experiment_type: e.regions?.[0]?.kindLabel || '—',
+        operator: '—',
+        date_start: (data.generatedAt || '').slice(0, 10),
+        status: 'demo',
+        source_file: e.sourceFile,
+        regions: e.regions,
+      }))
+    } catch {
+      /* 保持空态 */
+    }
+  } finally {
+    loading.value = false
   }
 }
 
@@ -61,13 +67,24 @@ function targetOf(row) {
           </p>
         </div>
         <div class="head-actions">
-          <input
-            v-model="keyword"
-            class="input search"
-            type="search"
-            placeholder="搜索实验编号或标题"
-            aria-label="搜索实验档案"
-          />
+          <div class="search-wrap">
+            <input
+              v-model="keyword"
+              class="input search"
+              type="search"
+              placeholder="搜索实验编号或标题"
+              aria-label="搜索实验档案"
+            />
+            <button
+              v-if="keyword"
+              class="search-clear"
+              type="button"
+              aria-label="清空搜索"
+              @click="keyword = ''"
+            >
+              ×
+            </button>
+          </div>
           <RouterLink to="/setup" class="btn btn-primary">新建实验</RouterLink>
         </div>
       </header>
@@ -76,7 +93,15 @@ function targetOf(row) {
         后端服务未连接，以下为识别链路已跑通的示例档案（数据真实，尚未经人工确认入库）。
       </p>
 
-      <p v-if="!rows.length" class="empty muted">
+      <p v-else-if="!loading && session.lastArchiveError" class="empty empty--error">
+        档案加载失败：{{ session.lastArchiveError }}
+      </p>
+
+      <ul v-if="loading" class="cards" aria-hidden="true">
+        <li v-for="n in 3" :key="n" class="skeleton skeleton-card"></li>
+      </ul>
+
+      <p v-else-if="!rows.length" class="empty muted">
         没有匹配的实验档案。先到「新建实验」录入一次实验的初始信息。
       </p>
 
@@ -149,9 +174,32 @@ function targetOf(row) {
   align-items: center;
   gap: var(--space-3);
 }
+.search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
 .search {
-  width: 240px;
+  width: clamp(200px, 34vw, 340px);
+  padding-right: var(--space-7);
   background: var(--bg-secondary);
+}
+.search-clear {
+  position: absolute;
+  right: var(--space-1);
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.search-clear:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 .head-actions a {
   text-decoration: none;
@@ -172,6 +220,14 @@ function targetOf(row) {
   border: 1px dashed var(--border-strong);
   border-radius: var(--radius-lg);
 }
+.empty--error {
+  border-color: var(--error);
+  background: var(--error-bg);
+}
+.skeleton-card {
+  height: 168px;
+  border-radius: var(--radius-lg);
+}
 
 .cards {
   list-style: none;
@@ -190,15 +246,16 @@ function targetOf(row) {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   background: var(--bg-secondary);
-  box-shadow: var(--shadow-sm);
   text-decoration: none;
   color: inherit;
   transition: box-shadow var(--duration-fast) var(--ease-standard),
-    transform var(--duration-fast) var(--ease-standard);
+    transform var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
 }
 .card-item:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
+  border-color: var(--border-strong);
 }
 .card-top {
   display: flex;
@@ -230,7 +287,7 @@ function targetOf(row) {
   font: var(--text-sm);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 480px) {
   .wrap {
     padding: var(--space-6) var(--space-4) var(--space-8);
   }

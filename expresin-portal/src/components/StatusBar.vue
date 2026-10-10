@@ -7,6 +7,9 @@ const props = defineProps({
   confirmLabel: { type: String, default: '确认数据' },
   saveLabel: { type: String, default: '保存' },
   showSave: { type: Boolean, default: true },
+  /** 归档/确认进行中：禁用按钮并给出进行中文案，避免重复提交与“点了没反应” */
+  saving: { type: Boolean, default: false },
+  savingLabel: { type: String, default: '处理中…' },
 })
 
 defineEmits(['save', 'confirm'])
@@ -33,12 +36,20 @@ const meta = computed(() => STATUS_META[props.experiment.status] ?? STATUS_META.
         v-if="showSave"
         class="btn btn-secondary"
         type="button"
+        :disabled="saving"
         @click="$emit('save')"
       >
         {{ saveLabel }}
       </button>
-      <button class="btn btn-primary" type="button" @click="$emit('confirm')">
-        {{ confirmLabel }}
+      <button
+        class="btn btn-primary"
+        type="button"
+        :disabled="saving"
+        :aria-busy="saving"
+        @click="$emit('confirm')"
+      >
+        <span v-if="saving" class="spinner" aria-hidden="true"></span>
+        {{ saving ? savingLabel : confirmLabel }}
       </button>
     </div>
   </footer>
@@ -54,7 +65,7 @@ const meta = computed(() => STATUS_META[props.experiment.status] ?? STATUS_META.
   padding: 0 var(--space-4);
   background: var(--bg-secondary);
   border-top: 1px solid var(--border-subtle);
-  z-index: 20;
+  z-index: var(--z-sticky);
 }
 
 .left,
@@ -76,9 +87,24 @@ const meta = computed(() => STATUS_META[props.experiment.status] ?? STATUS_META.
   background: currentColor;
 }
 
-@media (max-width: 640px) {
+.spinner {
+  width: 14px;
+  height: 14px;
+  margin-right: var(--space-2);
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: var(--radius-full);
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 480px) {
   .statusbar {
-    height: 44px;
+    height: var(--statusbar-h-mobile);
   }
   .center {
     display: none;

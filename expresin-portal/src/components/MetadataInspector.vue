@@ -9,6 +9,10 @@
  *   3. 这个值从哪来？（对话抽取 / 手动 / 模板默认 + 原始表达）
  */
 import { computed } from 'vue'
+import PanelHead from './PanelHead.vue'
+import StatGrid from './StatGrid.vue'
+import TraceList from './TraceList.vue'
+import MiniButton from './MiniButton.vue'
 
 const props = defineProps({
   sheets: { type: Array, default: () => [] },
@@ -118,12 +122,13 @@ const blocking = computed(() => props.missing.length)
 
 <template>
   <aside class="meta-inspector" aria-label="录入检查面板">
-    <div class="panel-head">
-      <span class="caps">录入检查</span>
-      <span class="badge" :class="blocking ? 'badge-warning' : 'badge-success'">
-        {{ blocking ? `${blocking} 项待补` : '可以归档' }}
-      </span>
-    </div>
+    <PanelHead label="录入检查">
+      <template #actions>
+        <span class="badge" :class="blocking ? 'badge-warning' : 'badge-success'">
+          {{ blocking ? `${blocking} 项待补` : '可以归档' }}
+        </span>
+      </template>
+    </PanelHead>
 
     <div class="body">
       <!-- 1. 填写进度 -->
@@ -156,10 +161,8 @@ const blocking = computed(() => props.missing.length)
               <span class="row-sub muted">必填项尚未填写</span>
             </div>
             <div class="row-actions">
-              <button class="mini" type="button" @click="$emit('focus', m.field_path)">定位</button>
-              <button class="mini mini--ghost" type="button" @click="$emit('defer', m.field_path)">
-                稍后补
-              </button>
+              <MiniButton @click="$emit('focus', m.field_path)">定位</MiniButton>
+              <MiniButton variant="ghost" @click="$emit('defer', m.field_path)">稍后补</MiniButton>
             </div>
           </li>
         </ul>
@@ -199,9 +202,7 @@ const blocking = computed(() => props.missing.length)
         <ul class="list">
           <li v-for="d in deferred" :key="d.field_path" class="deferred-item">
             <span class="mono">{{ d.label }}</span>
-            <button class="mini mini--ghost" type="button" @click="$emit('focus', d.field_path)">
-              去填写
-            </button>
+            <MiniButton variant="ghost" @click="$emit('focus', d.field_path)">去填写</MiniButton>
           </li>
         </ul>
       </section>
@@ -209,12 +210,7 @@ const blocking = computed(() => props.missing.length)
       <!-- 5. 来源分布 -->
       <section class="block">
         <span class="caps">字段来源</span>
-        <div class="src-grid">
-          <div v-for="s in sources" :key="s.key" class="src">
-            <span class="mono src-num">{{ s.value }}</span>
-            <span class="src-label">{{ s.label }}</span>
-          </div>
-        </div>
+        <StatGrid :items="sources" :columns="2" />
       </section>
 
       <!-- 6. 字段溯源 -->
@@ -223,13 +219,7 @@ const blocking = computed(() => props.missing.length)
         <p v-if="!selected" class="empty muted">
           在中间表单点击任意字段，查看它由谁填入、原始表达是什么。
         </p>
-        <dl v-else class="trace">
-          <div class="trace-head">{{ selected.label }}</div>
-          <div v-for="row in traceSource" :key="row.k" class="trace-row">
-            <dt>{{ row.k }}</dt>
-            <dd class="mono">{{ row.v }}</dd>
-          </div>
-        </dl>
+        <TraceList v-else :title="selected.label" :rows="traceSource" />
       </section>
     </div>
 
@@ -252,16 +242,6 @@ const blocking = computed(() => props.missing.length)
   min-width: 0;
   background: var(--bg-secondary);
   border-left: 1px solid var(--border-subtle);
-}
-
-.panel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 48px;
-  padding: 0 var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
-  flex: none;
 }
 
 .body {
@@ -292,7 +272,7 @@ const blocking = computed(() => props.missing.length)
 
 .bar {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--bg-tertiary);
   overflow: hidden;
 }
@@ -369,22 +349,6 @@ const blocking = computed(() => props.missing.length)
   gap: var(--space-1);
   flex: none;
 }
-.mini {
-  padding: 2px 8px;
-  font: var(--text-xs);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  cursor: pointer;
-}
-.mini:hover {
-  background: var(--bg-tertiary);
-}
-.mini--ghost {
-  background: transparent;
-  color: var(--text-secondary);
-}
 
 .deferred-item {
   display: flex;
@@ -397,60 +361,9 @@ const blocking = computed(() => props.missing.length)
 
 .conf {
   font-size: 12px;
+  font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
   flex: none;
-}
-
-.src-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-2);
-}
-.src {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--bg-primary);
-}
-.src-num {
-  font: var(--text-lg);
-  color: var(--text-primary);
-}
-.src-label {
-  font: var(--text-xs);
-  color: var(--text-secondary);
-}
-
-.trace {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-.trace-head {
-  font: var(--text-sm);
-  color: var(--text-primary);
-  padding-bottom: var(--space-1);
-  border-bottom: 1px solid var(--border-subtle);
-}
-.trace-row {
-  display: grid;
-  grid-template-columns: 68px 1fr;
-  gap: var(--space-2);
-  align-items: baseline;
-}
-.trace-row dt {
-  font: var(--text-xs);
-  color: var(--text-tertiary);
-}
-.trace-row dd {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-primary);
-  word-break: break-word;
 }
 
 .foot {

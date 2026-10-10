@@ -31,30 +31,44 @@ onMounted(loadArchive)
   <main class="page">
     <div class="wrap">
       <header class="hero">
-        <h1>ExpResin 实验数据工作台</h1>
-        <p class="muted">
+        <h1 class="stagger-in" style="--stagger: 100ms">ExpResin 实验数据工作台</h1>
+        <p class="muted stagger-in" style="--stagger: 200ms">
           把实验记录拆成清晰的三步：实验前录入、实验后识别、归档调用。
           Raw 数据只读，Processed 全程可追溯。
         </p>
       </header>
 
       <section class="entries">
-        <RouterLink v-for="e in entries" :key="e.to" :to="e.to" class="entry">
+        <RouterLink
+          v-for="(e, i) in entries"
+          :key="e.to"
+          :to="e.to"
+          class="entry stagger-in"
+          :style="{ '--stagger': `${300 + i * 50}ms` }"
+        >
           <span class="step mono">{{ e.step }}</span>
           <h2>{{ e.title }}</h2>
           <p class="muted">{{ e.desc }}</p>
         </RouterLink>
       </section>
 
-      <section class="recent">
+      <section class="recent stagger-in" style="--stagger: 500ms">
         <header class="section-head">
           <h2>近期实验</h2>
           <RouterLink to="/archive" class="btn btn-ghost">查看全部</RouterLink>
         </header>
 
-        <p v-if="!session.online" class="empty muted">
+        <div v-if="session.archiveLoading" class="skeleton-list" aria-hidden="true">
+          <div v-for="n in 3" :key="n" class="skeleton skeleton-row"></div>
+        </div>
+
+        <p v-else-if="!session.online" class="empty muted">
           后端服务未连接，实验档案暂不可用。启动
           <code class="mono">expresin-pipeline/server</code> 后刷新即可。
+        </p>
+
+        <p v-else-if="session.lastArchiveError" class="empty empty--error">
+          档案加载失败：{{ session.lastArchiveError }}
         </p>
 
         <p v-else-if="!session.archive.length" class="empty muted">
@@ -116,15 +130,16 @@ onMounted(loadArchive)
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   background: var(--bg-secondary);
-  box-shadow: var(--shadow-sm);
   text-decoration: none;
   color: inherit;
   transition: box-shadow var(--duration-fast) var(--ease-standard),
-    transform var(--duration-fast) var(--ease-standard);
+    transform var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
 }
 .entry:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
+  border-color: var(--border-strong);
 }
 .entry .step {
   font-size: 12px;
@@ -152,6 +167,20 @@ onMounted(loadArchive)
   font: var(--text-sm);
   padding: var(--space-4);
   border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+}
+.empty--error {
+  border-color: var(--error);
+  background: var(--error-bg);
+}
+
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.skeleton-row {
+  height: 48px;
   border-radius: var(--radius-lg);
 }
 
@@ -198,7 +227,7 @@ code {
   font-size: 12px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 480px) {
   .wrap {
     padding: var(--space-6) var(--space-4) var(--space-8);
     gap: var(--space-6);

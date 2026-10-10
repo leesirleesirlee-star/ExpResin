@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
+import DocsLayout from '../components/DocsLayout.vue'
 
 const groups = [
   {
@@ -199,8 +200,8 @@ const METHOD_CLASS = {
 </script>
 
 <template>
-  <main class="docs">
-    <aside class="nav">
+  <DocsLayout>
+    <template #nav>
       <h1 class="nav-title">API 文档</h1>
       <p class="nav-sub muted">
         契约版本 v0 · OpenAPI 3.1 风格。所有页面功能先有 API，再有界面。
@@ -215,6 +216,7 @@ const METHOD_CLASS = {
               type="button"
               class="nav-item"
               :class="{ 'is-active': item.id === activeId }"
+              :aria-current="item.id === activeId ? 'true' : undefined"
               @click="activeId = item.id"
             >
               <span class="m mono" :class="`m--${item.method.toLowerCase()}`">{{ item.method }}</span>
@@ -223,14 +225,15 @@ const METHOD_CLASS = {
           </li>
         </ul>
       </div>
-    </aside>
+    </template>
 
     <section class="content">
+      <h1 class="endpoint-title mono">{{ active.path }}</h1>
       <div class="endpoint">
         <span class="badge" :class="METHOD_CLASS[active.method] || 'badge-info'">
           {{ active.method }}
         </span>
-        <span class="mono path">{{ active.path }}</span>
+        <span class="endpoint-group muted">{{ active.group }}</span>
       </div>
 
       <p class="desc">{{ active.desc }}</p>
@@ -252,29 +255,14 @@ const METHOD_CLASS = {
       </p>
     </section>
 
-    <aside class="examples">
-      <h2 class="caps">示例</h2>
+    <template #aside>
+      <h2 class="caps aside-title">示例</h2>
       <pre class="code">{{ active.code }}</pre>
-    </aside>
-  </main>
+    </template>
+  </DocsLayout>
 </template>
 
 <style scoped>
-.docs {
-  display: grid;
-  grid-template-columns: 240px minmax(0, 1fr) 360px;
-  min-height: 0;
-  overflow: hidden;
-  position: relative;
-  z-index: 1;
-}
-
-.nav {
-  overflow-y: auto;
-  padding: var(--space-5) var(--space-4);
-  border-right: 1px solid var(--border-subtle);
-  background: var(--bg-secondary);
-}
 .nav-title {
   font: var(--text-lg);
 }
@@ -304,6 +292,7 @@ const METHOD_CLASS = {
   align-items: center;
   gap: var(--space-2);
   width: 100%;
+  min-height: 40px;
   padding: var(--space-2);
   border: none;
   border-radius: var(--radius-md);
@@ -321,7 +310,7 @@ const METHOD_CLASS = {
 .m {
   flex: none;
   width: 46px;
-  font-size: 10px;
+  font: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.02em;
 }
@@ -338,7 +327,7 @@ const METHOD_CLASS = {
   color: var(--error);
 }
 .p {
-  font-size: 11px;
+  font: var(--text-xs);
   color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -346,12 +335,15 @@ const METHOD_CLASS = {
 }
 
 .content {
-  overflow-y: auto;
-  padding: var(--space-6) var(--space-6) var(--space-8);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   max-width: 800px;
+}
+.endpoint-title {
+  font: var(--text-xl);
+  letter-spacing: var(--tracking-tight);
+  word-break: break-all;
 }
 .endpoint {
   display: flex;
@@ -359,9 +351,8 @@ const METHOD_CLASS = {
   gap: var(--space-3);
   flex-wrap: wrap;
 }
-.path {
-  font-size: 15px;
-  word-break: break-all;
+.endpoint-group {
+  font: var(--text-xs);
 }
 .desc {
   font: var(--text-base);
@@ -401,37 +392,12 @@ code {
   font-size: 12px;
 }
 
-.examples {
-  overflow-y: auto;
-  padding: var(--space-5) var(--space-4);
-  border-left: 1px solid var(--border-subtle);
-  background: var(--bg-secondary);
-}
-.examples h2 {
+.aside-title {
   margin-bottom: var(--space-3);
 }
 .code {
   margin: 0;
   white-space: pre-wrap;
   word-break: break-all;
-}
-
-@media (max-width: 1180px) {
-  .docs {
-    grid-template-columns: 200px minmax(0, 1fr);
-  }
-  .examples {
-    display: none;
-  }
-}
-@media (max-width: 820px) {
-  .docs {
-    grid-template-columns: minmax(0, 1fr);
-    overflow-y: auto;
-  }
-  .nav {
-    border-right: none;
-    border-bottom: 1px solid var(--border-subtle);
-  }
 }
 </style>
