@@ -65,7 +65,7 @@ git status 现有 41 项改动 + 大量新增文件）。按可考事实回填�
 
 ## 4. 遗留待办（更新版）
 
-1. **git 提交**：09-24 后全部工作未提交（41 项改动 + 新增）。按项目工作流应每个任务卡验证后英文 commit；建议拆 3-4 个 commit：UI 升级 / T3 模板+NAS / 映射测试产物+幻觉探针+checks。**等用户确认后执行。**
+1. ~~git 提交~~（当日已执行）：拆为 3 个英文 commit —— `3c50ca4` UI 升级、`07ef3bb` T3 模板+schema+NAS、`3d31380` 幻觉探针+类型一致性。`data/cache`、`data/raw`、`data/nas_mirror` 为运行时产物，有意保持未跟踪（如需忽略可后补 .gitignore）。
 2. 前端展示 `warnings`（ArchiveDetailView，读 detail API 新字段）。
 3. canonical 长表分页（09-24 遗留 #4，未做；CSV 导出已有）。
 4. RO-014 实验方案落地：幻觉探针扩展（温度梯度 / reasoning 配额 / 证据结构化提示词 / abstain 指令）。
