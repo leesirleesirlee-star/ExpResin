@@ -192,13 +192,14 @@ select {
    4.3 卡片
    ========================================================================== */
 
-/* 深度策略：静止态仅用表面色差 + 极弱边框，不用阴影；
+/* 深度策略：静止态用「纯白卡片 + 极弱边框 + 细阴影」从冷灰画布上浮；
    悬浮态按规范 §4.3 提升到 shadow-md 并轻微上移。 */
 .card {
   padding: var(--space-5);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  background: var(--bg-secondary);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
   transition: box-shadow var(--duration-normal) var(--ease-standard),
     transform var(--duration-normal) var(--ease-standard),
     border-color var(--duration-fast) var(--ease-standard);

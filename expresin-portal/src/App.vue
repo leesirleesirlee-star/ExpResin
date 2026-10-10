@@ -36,7 +36,7 @@ const { toasts, dismiss } = useToast()
   display: grid;
   grid-template-rows: var(--topbar-h) minmax(0, 1fr);
   height: 100%;
-  background: var(--bg-primary);
+  background: var(--bg-canvas);
   overflow: hidden;
 }
 

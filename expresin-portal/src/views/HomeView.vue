@@ -129,7 +129,8 @@ onMounted(loadArchive)
   padding: var(--space-5);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  background: var(--bg-secondary);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
   text-decoration: none;
   color: inherit;
   transition: box-shadow var(--duration-fast) var(--ease-standard),
@@ -191,7 +192,8 @@ onMounted(loadArchive)
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  background: var(--bg-secondary);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
 }
 .row {
   display: grid;
