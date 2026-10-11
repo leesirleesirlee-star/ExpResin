@@ -25,3 +25,12 @@ opencode.jsonc
 .idea/
 .DS_Store
 Thumbs.db
+
+# ---- uploaded images (session screenshots / pasted pictures: stay local) ----
+# 会话上传的截图与粘贴图片不入库；上传的表格/文档等非图片文件仍可提交
+uploads/**/*.png
+uploads/**/*.jpg
+uploads/**/*.jpeg
+uploads/**/*.webp
+uploads/**/*.gif
+uploads/**/*.bmp
