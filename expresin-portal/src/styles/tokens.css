@@ -86,8 +86,10 @@
   /* ======================================================================
      2.2 字体
      ====================================================================== */
-  --font-sans: Inter, "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    "PingFang SC", "Microsoft YaHei", sans-serif;
+  /* 全局字体：宋体（衬线）为主，西文回退 Times New Roman；
+     数值/代码仍用等宽 --font-mono，不受此影响 */
+  --font-sans: "Songti SC", SimSun, "宋体", "Noto Serif CJK SC",
+    "Times New Roman", serif;
   --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Consolas, monospace;
 
   --text-xs: 400 12px/1.4 var(--font-sans);
