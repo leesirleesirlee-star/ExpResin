@@ -5,7 +5,7 @@ import { computed, ref } from 'vue'
  * 三栏工作台布局：只服务于真正需要「对话 + 表单 + 检查」的页面。
  * 结构：页面工具条（标题/阶段进度/折叠） + 三栏 + 底部状态栏。
  */
-defineProps({
+const props = defineProps({
   title: { type: String, required: true },
   subtitle: { type: String, default: '' },
   steps: { type: Array, default: () => [] },
@@ -15,6 +15,9 @@ defineProps({
 const chatOpen = ref(true)
 const inspectorOpen = ref(true)
 const tab = ref('form')
+
+/** 当前步骤的下标；-1 表示未知。用于把已走过的步骤标为 is-done。 */
+const activeIndex = computed(() => props.steps.findIndex((s) => s.id === props.activeStep))
 
 const tabs = [
   { key: 'chat', label: '对话' },
@@ -35,16 +38,20 @@ const style = computed(() => ({
         <h1 :data-tip="subtitle || null" data-tip-align="start">{{ title }}</h1>
       </div>
 
-      <ol v-if="steps.length" class="steps" aria-label="阶段进度">
-        <li
-          v-for="s in steps"
-          :key="s.id"
-          :class="{ 'is-active': s.id === activeStep }"
-        >
-          <span class="dot" aria-hidden="true"></span>
-          {{ s.label }}
-        </li>
-      </ol>
+      <div v-if="steps.length" class="flow">
+        <ol class="steps" aria-label="实验流程进度">
+          <li
+            v-for="(s, i) in steps"
+            :key="s.id"
+            :class="{ 'is-active': s.id === activeStep, 'is-done': i < activeIndex }"
+            :aria-current="s.id === activeStep ? 'step' : undefined"
+          >
+            <span class="dot" aria-hidden="true"></span>
+            <span>{{ s.label }}</span>
+            <span v-if="i < steps.length - 1" class="link" aria-hidden="true"></span>
+          </li>
+        </ol>
+      </div>
 
       <div class="actions">
         <slot name="actions" />
@@ -159,10 +166,12 @@ const style = computed(() => ({
   z-index: var(--z-panel);
 }
 
+/* 三列等宽栅格：左右各占 1fr，中列 auto ——
+   流程指示因此永远落在工具条正中，不受标题/按钮宽度影响（前后页位置一致） */
 .workbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-4);
   padding: 0 var(--space-4);
   border-bottom: 1px solid var(--border-subtle);
@@ -174,18 +183,29 @@ const style = computed(() => ({
   align-items: baseline;
   gap: var(--space-3);
   min-width: 0;
+  overflow: hidden;
 }
 .titles h1 {
   font: var(--text-xl);
   font-weight: 600;
   letter-spacing: var(--tracking-tight);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.flow {
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
 }
 
 .steps {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-2);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -193,9 +213,10 @@ const style = computed(() => ({
 .steps li {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
   font: var(--text-xs);
   color: var(--text-tertiary);
+  white-space: nowrap;
 }
 .steps .dot {
   width: 6px;
@@ -203,12 +224,23 @@ const style = computed(() => ({
   border-radius: var(--radius-full);
   background: currentColor;
 }
+/* 步骤之间用细线连起来，表达先后顺序 */
+.steps .link {
+  width: 14px;
+  height: 1px;
+  margin-left: var(--space-1);
+  background: var(--border-strong);
+}
+.steps li.is-done {
+  color: var(--text-secondary);
+}
 .steps li.is-active {
   color: var(--accent);
   font-weight: 500;
 }
 
 .actions {
+  justify-self: end;
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -283,7 +315,7 @@ const style = computed(() => ({
   .panes[data-tab='inspector'] .pane--inspector {
     display: flex;
   }
-  .steps {
+  .flow {
     display: none;
   }
   .tabs {

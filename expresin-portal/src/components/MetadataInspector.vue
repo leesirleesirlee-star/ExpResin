@@ -3,15 +3,14 @@
  * 实验元数据录入页专用右边栏。
  *
  * 与识别页的 MappingInspector 刻意分开：录入阶段根本不存在「列映射」这件事，
- * 因此这里不显示待确认/低置信度列，而是回答录入阶段真正要回答的三个问题：
+ * 因此这里不显示待确认/低置信度列，也不做字段级溯源（溯源只在识别阶段出现），
+ * 而是回答录入阶段真正要回答的两个问题：
  *   1. 还差什么才能归档？（阻塞项 + 一键定位 / 稍后补）
- *   2. 哪些已填的值值得核对？（低置信度、单位异常）
- *   3. 这个值从哪来？（对话抽取 / 手动 / 模板默认 + 原始表达）
+ *   2. 哪些已填的值值得核对？（低置信度、单位异常，点击可定位到表单字段）
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import PanelHead from './PanelHead.vue'
 import StatGrid from './StatGrid.vue'
-import TraceList from './TraceList.vue'
 import MiniButton from './MiniButton.vue'
 
 const props = defineProps({
@@ -19,10 +18,9 @@ const props = defineProps({
   drafts: { type: Object, default: () => ({}) },
   missing: { type: Array, default: () => [] },
   deferred: { type: Array, default: () => [] },
-  selected: { type: Object, default: null },
 })
 
-defineEmits(['focus', 'defer', 'select', 'confirm'])
+defineEmits(['focus', 'defer', 'confirm'])
 
 const draftOf = (path) => props.drafts[path] || {}
 
@@ -96,28 +94,13 @@ const sources = computed(() => {
   ]
 })
 
-const SOURCE_LABEL = {
-  conversation: '来自对话',
-  manual: '手动填写',
-  template_default: '模板默认',
-  upload: '来自上传',
-  upload_derived: '由上传数据推导',
-}
-
-const traceSource = computed(() => {
-  if (!props.selected) return []
-  const d = draftOf(props.selected.path)
-  return [
-    { k: '当前值', v: String(d.value ?? '').trim() || '（空）' },
-    { k: '来源', v: SOURCE_LABEL[d.source_type] || d.source_type || '未知' },
-    { k: '原始表达', v: d.raw_text || '—' },
-    { k: '置信度', v: typeof d.confidence === 'number' ? d.confidence.toFixed(2) : '—' },
-    { k: '状态', v: d.status || '—' },
-    { k: '单位', v: d.unit || '—' },
-  ]
-})
-
 const blocking = computed(() => props.missing.length)
+
+/**
+ * 归档前的小字说明收进「提示」里：
+ * 触发器只占一行，点击后弹出卡片，避免按钮下方长期堆着一行灰字。
+ */
+const hintOpen = ref(false)
 </script>
 
 <template>
@@ -179,7 +162,7 @@ const blocking = computed(() => props.missing.length)
 
         <ul v-else class="list">
           <li v-for="a in attention" :key="a.path">
-            <button class="row row--attention" type="button" @click="$emit('select', a)">
+            <button class="row row--attention" type="button" @click="$emit('focus', a.path)">
               <span class="row-main">
                 <span class="row-title">
                   {{ a.label }}
@@ -212,24 +195,30 @@ const blocking = computed(() => props.missing.length)
         <span class="caps">字段来源</span>
         <StatGrid :items="sources" :columns="2" />
       </section>
-
-      <!-- 6. 字段溯源 -->
-      <section class="block">
-        <span class="caps">字段溯源</span>
-        <p v-if="!selected" class="empty muted">
-          在中间表单点击任意字段，查看它由谁填入、原始表达是什么。
-        </p>
-        <TraceList v-else :title="selected.label" :rows="traceSource" />
-      </section>
     </div>
 
     <div class="foot">
       <button class="btn btn-primary block-btn" type="button" @click="$emit('confirm')">
         确认并归档
       </button>
-      <p v-if="blocking" class="foot-hint muted">
-        还需补全 {{ blocking }} 项必填信息（可点「稍后补」跳过并说明）。
-      </p>
+      <div v-if="blocking" class="hintbar">
+        <button
+          type="button"
+          class="hint-trigger"
+          :aria-expanded="hintOpen"
+          :aria-label="`提示：还需补全 ${blocking} 项必填信息`"
+          @click="hintOpen = !hintOpen"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 16v-4m0-4h.01" />
+          </svg>
+          提示
+        </button>
+        <div v-if="hintOpen" class="hint-card" role="note">
+          <p>还需补全 {{ blocking }} 项必填信息（可点「稍后补」跳过并说明）。</p>
+        </div>
+      </div>
     </div>
   </aside>
 </template>
@@ -377,10 +366,62 @@ const blocking = computed(() => props.missing.length)
 .block-btn {
   width: 100%;
 }
-.foot-hint {
-  font: var(--text-xs);
+/* 「提示」触发器 + 点击向上弹出的说明卡片（与对话栏提示同款式，收窄适配边栏） */
+.hintbar {
+  position: relative;
+  display: flex;
+  justify-content: flex-start;
   margin-top: var(--space-2);
-  line-height: 1.4;
+}
+.hint-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-tertiary);
+  font: var(--text-xs);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard);
+}
+.hint-trigger:hover,
+.hint-trigger[aria-expanded='true'] {
+  color: var(--accent-hover);
+  background: var(--accent-subtle);
+}
+.hint-trigger svg {
+  width: 14px;
+  height: 14px;
+}
+.hint-card {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  width: 100%;
+  z-index: var(--z-toast);
+  margin-bottom: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-md);
+  color: var(--text-secondary);
+  font: var(--text-sm);
+  line-height: 1.55;
+  animation: hint-pop var(--duration-fast) var(--ease-standard);
+}
+@keyframes hint-pop {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 1024px) {

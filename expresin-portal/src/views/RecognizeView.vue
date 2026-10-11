@@ -28,9 +28,9 @@ const route = useRoute()
 const { show } = useToast()
 
 const STEPS = [
-  { id: 'pre', label: '实验前 · 录入' },
-  { id: 'post', label: '实验后 · 识别' },
-  { id: 'archive', label: '归档 · 调用' },
+  { id: 'pre', label: '录入' },
+  { id: 'post', label: '识别' },
+  { id: 'archive', label: '归档' },
 ]
 
 const fileInput = ref(null)
@@ -302,7 +302,7 @@ function goSetup() {
       <ChatPanel
         :messages="messages"
         :streaming="streaming"
-        placeholder="说明某列的含义，或提问识别结果"
+        placeholder="说明列含义，或提问识别结果"
         hint="上传后系统会反向解析并填充映射；低置信度的列会在右侧列出，可在那里确认、改判或忽略。"
         show-upload
         @send="onSend"

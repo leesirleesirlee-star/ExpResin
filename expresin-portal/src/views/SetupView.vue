@@ -24,13 +24,12 @@ const router = useRouter()
 const { show } = useToast()
 
 const streaming = ref(false)
-const selected = ref(null)
 const archiving = ref(false)
 
 const STEPS = [
-  { id: 'pre', label: '实验前 · 录入' },
-  { id: 'post', label: '实验后 · 识别' },
-  { id: 'archive', label: '归档 · 调用' },
+  { id: 'pre', label: '录入' },
+  { id: 'post', label: '识别' },
+  { id: 'archive', label: '归档' },
 ]
 
 onMounted(initSession)
@@ -113,7 +112,7 @@ function onSave() {
       <ChatPanel
         :messages="session.messages"
         :streaming="streaming"
-        placeholder="例如：今天用 120 mg 的 A600 树脂和 50 mL 溶液做 SO4 吸附"
+        placeholder="例：120 mg A600 树脂 + 50 mL 溶液做 SO4 吸附"
         hint="支持中文自然语言。Jarvis 只负责记录与校验，不做科学推理。"
         @send="onSend"
       />
@@ -135,7 +134,6 @@ function onSave() {
           :focus-path="focusPath"
           @change="({ field_path, value }) => setField(field_path, value)"
           @defer="(field) => deferField(field.path)"
-          @focus-field="selected = { label: $event.label, path: $event.path }"
         />
       </div>
     </template>
@@ -146,10 +144,8 @@ function onSave() {
         :drafts="session.drafts"
         :missing="missingFields"
         :deferred="deferredFields"
-        :selected="selected"
         @focus="onFocusField"
         @defer="(path) => deferField(path)"
-        @select="selected = $event"
         @confirm="onConfirm"
       />
     </template>
