@@ -278,6 +278,9 @@ function goSetup() {
 </script>
 
 <template>
+  <!-- 单一元素根：路由级 <Transition> 要求子树是可动画的元素，
+       BaseModal 不能裸露为第二根节点（Fragment 根会打断 out-in 过渡链，导致整页空白） -->
+  <div class="route-root">
   <WorkbenchLayout
     title="数据识别"
     subtitle="上传原始表格，识别列与单位，逐列确认"
@@ -401,9 +404,15 @@ function goSetup() {
       <button class="btn btn-primary" type="button" @click="goSetup">去补全</button>
     </template>
   </BaseModal>
+  </div>
 </template>
 
 <style scoped>
+/* 单一元素根：作为 .app 网格行项被拉伸，页面过渡动画作用在它上面 */
+.route-root {
+  height: 100%;
+  min-height: 0;
+}
 .head-right {
   display: flex;
   align-items: center;

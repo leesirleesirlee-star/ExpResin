@@ -86,10 +86,10 @@
   /* ======================================================================
      2.2 字体
      ====================================================================== */
-  /* 全局字体：宋体（衬线）为主，西文回退 Times New Roman；
+  /* 全局字体：Segoe UI（Windows 自带），中文回退雅黑/苹方；
      数值/代码仍用等宽 --font-mono，不受此影响 */
-  --font-sans: "Songti SC", SimSun, "宋体", "Noto Serif CJK SC",
-    "Times New Roman", serif;
+  --font-sans: "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC",
+    sans-serif;
   --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Consolas, monospace;
 
   --text-xs: 400 12px/1.4 var(--font-sans);

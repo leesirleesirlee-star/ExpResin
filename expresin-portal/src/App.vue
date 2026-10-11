@@ -8,8 +8,13 @@ const { toasts, dismiss } = useToast()
 <template>
   <div class="app">
     <AppHeader />
-    <router-view v-slot="{ Component }">
-      <component :is="Component" />
+    <router-view v-slot="{ Component, route }">
+      <!-- 默认模式（新旧页同时过渡）：新页挂载不依赖旧页 afterLeave，
+           避免 out-in 在含 Teleport/Modal 的页面上交换子节点时死锁导致整页空白；
+           旧页用 .page-leave-active 绝对定位浮在上层淡出，形成真·交叉淡入 -->
+      <Transition name="page">
+        <component :is="Component" :key="route.path" />
+      </Transition>
     </router-view>
 
     <TransitionGroup name="toast" tag="div" class="toast-stack">

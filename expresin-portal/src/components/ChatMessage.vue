@@ -56,14 +56,19 @@ function textOf(m) {
   word-break: break-word;
 }
 .msg--jarvis .bubble {
+  /* Jarvis 回复无气泡：直接平铺在对话页面上 */
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  line-height: 1.65;
+}
+.msg--user .bubble {
   background: var(--chat-bubble);
   color: var(--text-primary);
   border: 1px solid var(--border-subtle);
-  border-top-left-radius: var(--radius-sm);
-}
-.msg--user .bubble {
-  background: var(--chat-bubble-user);
-  color: var(--on-accent);
   border-top-right-radius: var(--radius-sm);
 }
 .msg--error .bubble {

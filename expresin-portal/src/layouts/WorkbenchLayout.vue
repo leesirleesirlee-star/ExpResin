@@ -271,6 +271,30 @@ const style = computed(() => ({
   min-width: 0;
 }
 
+/* 三列入场：从左到右依次显现 —— 每列轻微左滑 + 淡入，延迟 0/80/160ms，
+   与整页交叉淡入叠加出「列级节奏」；只在挂载时播放一次，不影响折叠的 grid 过渡 */
+@media (prefers-reduced-motion: no-preference) {
+  .pane--chat {
+    animation: pane-in var(--duration-normal) var(--ease-decelerate) both;
+  }
+  .pane--form {
+    animation: pane-in var(--duration-normal) var(--ease-decelerate) 80ms both;
+  }
+  .pane--inspector {
+    animation: pane-in var(--duration-normal) var(--ease-decelerate) 160ms both;
+  }
+}
+@keyframes pane-in {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 /* 折叠态：保留 48px 图标条，而不是整栏消失（规范 §3.3 / changelog §2）。
    轨道与工作台同色系（暖米/暖炭），去阴影使其后退为「框架」而非白色卡片 */
 .pane--collapsed {

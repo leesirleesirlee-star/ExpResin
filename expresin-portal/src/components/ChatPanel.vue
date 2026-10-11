@@ -119,11 +119,6 @@ watch(
   flex-direction: column;
   gap: var(--space-4);
 }
-/* 消息底部锚定：少量消息时对话贴着输入区，空白收拢到顶部（对话界面惯例），
-   避免「消息在顶、输入在底、中间一大段空」的割裂感 */
-.thread > :first-child {
-  margin-top: auto;
-}
 
 .composer {
   flex: none;

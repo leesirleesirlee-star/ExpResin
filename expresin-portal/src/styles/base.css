@@ -392,6 +392,47 @@ h1[data-tip] {
   width: fit-content;
 }
 
+/* ---- 页面切换过渡：真·交叉淡入（新旧页并存，旧页浮层淡出 + 轻微上浮） ----
+   默认模式下新旧组件同时过渡；旧页脱离文档流绝对定位盖在新页之上，
+   不透明底色保证淡出过程即「揭示」新页；配合 :key="route.path" 保证每个路由独立过渡 */
+.page-enter-active {
+  transition:
+    opacity var(--duration-normal) var(--ease-decelerate),
+    transform var(--duration-normal) var(--ease-decelerate);
+}
+.page-leave-active {
+  transition:
+    opacity var(--duration-fast) var(--ease-accelerate),
+    transform var(--duration-fast) var(--ease-accelerate);
+  position: absolute;
+  top: var(--topbar-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  background: var(--bg-canvas);
+  overflow: hidden;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+@media (max-width: 480px) {
+  .page-leave-active {
+    top: var(--topbar-h-mobile);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-active,
+  .page-leave-active {
+    transition: none;
+  }
+}
+
 /* ---- 骨架屏（5.1） ---- */
 .skeleton {
   background: linear-gradient(
