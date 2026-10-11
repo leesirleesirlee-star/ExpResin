@@ -7,8 +7,9 @@
 
 ## 0. 本日结论（一句话）
 
-公开仓库 `leesirleesirlee-star/ExpResin` 现在只含源码与文档（107 个文件、约 0.83 MB）；
-真实实验数据既不在 HEAD、也不在任何历史提交中；全部真实实验标识已替换为示例值。
+公开仓库 `leesirleesirlee-star/ExpResin` 现在只含源码与文档（108 个文件、约 0.83 MB）；
+真实实验数据既不在 HEAD、也不在任何历史提交中；全部真实实验标识已替换为示例值
+（含第二轮历史重写后对 22 个提交的全量复核：0 命中）。
 
 ---
 
@@ -63,7 +64,7 @@
 - 结果：23 → **19** 个提交；`.git` 3.69 MB → 0.41 MB；公开历史可达对象 331 个。
 - 重写前备份：`C:\Users\Lenovo\AppData\Local\Temp\opencode\ExpResin-git-backup-20261011\.git`
   （HEAD `c26a241`，含重写前的完整历史；**仅本机，勿入库**）。
-- 强推后远端 `main` = `13a6cd5`。
+- 强推后远端 `main` = `13a6cd5`（该哈希已被 1.5 的第二轮重写取代）。
 - 端到端验证：全新 clone 公开仓库 → 19 提交 / 107 文件 / 0.39 MB，
   `git rev-list --all --objects` 中不含 `nas_mirror`、`expresin.db`、`uploads/`、
   `analysis.json`、`materials/data|guides`、以及真实工作簿名与项目代号。
@@ -85,6 +86,23 @@
 删除后复查：`.deepworks/` 全域剩余 154 个文件，用真实工作簿名、项目代号、旧 sheet 代号检索均为 0 命中。
 副作用：识别缓存清空后，下次对同一工作簿识别会重新走 L1/L2 + LLM 映射，不再秒回缓存结果。
 
+### 1.5 第二轮历史重写：清除残留的裸 sheet 代号（已强推）
+
+- 触发：1.4 之后复查发现**两处未被反引号/引号包裹**的旧 sheet 代号残留 ——
+  `docs/benchmark-v0.md` 的标定块标注行、`docs/research-opportunities.md` 的截距表格行。
+  第一轮替换模式要求代号被包裹，故裸文本 `code#region` 形态漏网；该代号自初始提交起即存在于这两份文档。
+  （同类检索注意：`package-lock.json` 的 base64 校验串中可能出现数字巧合，属误报，勿改。）
+- 处理：
+  1. 先修正工作区两处（提交 `docs: sanitize residual raw block codes in benchmark and research notes`）；
+  2. 重建脱敏脚本（新增裸形态 `code#region → sheet-0x#region` 规则，其余替换表同 1.2），
+     做第二遍 `--tree-filter` 全历史脱敏；本次**不加 `--prune-empty`**，提交数保持 22。
+- 结果：22 个提交；`.git` 仍 0.41 MB；历史哈希再次全部变化；强推后远端 `main` = `2c098aa`。
+- 验证：22 个提交 × 全部文件，用真实工作簿名 / 项目名 / 项目编号 / 7 个旧 sheet 代号（含裸形态）检索 = **0 命中**；
+  全新 clone = 22 提交 / 108 文件 / 0.41 MB，无数据路径，HEAD `2c098aa`。
+- 重写前备份：`C:\Users\Lenovo\AppData\Local\Temp\opencode\ExpResin-git-backup2-20261011\.git`（**仅本机，勿入库**）。
+- ⚠️ 重建的脚本内含真实原值，暂存于 `%LOCALAPPDATA%\Temp\opencode\expr-clean\`（仓库外，未入库）；
+  如需彻底清理，删除该目录即可（本会话未自动删除，留待确认）。
+
 ## 2. 遗留与注意
 
 1. **GitHub 侧延迟 GC**：旧 commit 已从分支历史不可达，但按旧 SHA 直接访问可能在短时间内仍可命中；
@@ -96,3 +114,5 @@
 6. 服务状态：本日会话末已按要求关闭前后端 —— 前端 Vite 进程已停止、5173 空闲；后端本来就未启动、8000 空闲。
    重启方法见 `session-log-2026-09-24.md` 第 0 节。
 7. 本日清理不可逆：`.deepworks/tmp/` 中 9 月的调试/探测脚本与数据 dump 已删除，如需同类排查请重新编写。
+8. 脱敏检索教训：只匹配「被反引号/引号包裹」的代号会漏掉裸文本形态。复查时应对每个真实标识
+   （工作簿名、项目名、项目编号、sheet 代号）单独检索裸形态，并注意 base64 校验串的数字巧合误报。
