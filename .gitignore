@@ -18,6 +18,7 @@ dist-ssr/
 # ---- deepworks tooling & session scratch (kept local, not part of the repo) ----
 .deepworks/
 .opencode/
+.opencode-router/
 opencode.jsonc
 
 # ---- editor / os ----
@@ -26,11 +27,18 @@ opencode.jsonc
 .DS_Store
 Thumbs.db
 
-# ---- uploaded images (session screenshots / pasted pictures: stay local) ----
-# 会话上传的截图与粘贴图片不入库；上传的表格/文档等非图片文件仍可提交
-uploads/**/*.png
-uploads/**/*.jpg
-uploads/**/*.jpeg
-uploads/**/*.webp
-uploads/**/*.gif
-uploads/**/*.bmp
+# ---- session uploads (screenshots, pasted text: kept local) ----
+uploads/
+
+# ---- local experiment data: never published ----
+# raw workbooks uploaded per session, recognition caches, the local sqlite
+# archive, the per-experiment NAS mirror, and advisor source documents
+expresin-pipeline/data/raw/
+expresin-pipeline/data/cache/
+expresin-pipeline/data/nas_mirror/
+expresin-pipeline/data/*.db
+materials/data/
+materials/guides/
+
+# real recognition output copied into the portal as demo/fallback data
+expresin-portal/public/data/analysis.json
