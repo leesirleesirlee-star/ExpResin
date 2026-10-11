@@ -1,7 +1,7 @@
 # ExpResin 会话日志 · 2026-10-11
 
 > 用途：记录当日工作状态、启动/停止方法与遗留事项，供下次接手时快速恢复上下文。
-> 本日主题：**仓库可发布化 —— 停止分发实验数据、脱敏实验标识、重写公开历史**。
+> 本日主题：**仓库可发布化 —— 停止分发实验数据、脱敏实验标识、重写公开历史，并清理本日缓存与临时物**。
 
 ---
 
@@ -32,9 +32,10 @@
 
 ### 1.2 标识脱敏（真实实验标识 → 示例值）
 
-脚本：`.deepworks/tmp/sanitize_identifiers.py`（用法 `python sanitize_identifiers.py <root> [--apply]`；
-逐文件探测编码并原样写回，幂等，历史重写时复用）。
-⚠️ 该脚本内含真实原值，只存在于本机 `.deepworks/tmp/`（已被 `.gitignore` 忽略），**不得入库或外发**。
+脚本（一次性工具，完成使命后已按会话末清理要求删除，见 1.4）：
+`.deepworks/tmp/sanitize_identifiers.py` —— 用法 `python sanitize_identifiers.py <root> [--apply]`；
+逐文件探测编码（utf-8 / gbk）并原样写回，幂等，历史重写时复用。
+如需再次执行同类脱敏，按下方替换表重建一份即可；⚠️ 重建的脚本内含真实原值，**不得入库或外发**。
 
 | 类别 | 替换为 | 出现处 |
 |---|---|---|
@@ -44,7 +45,7 @@
 | 真实 sheet 代号（7 个） | `sheet-01` … `sheet-07` | demo.js、export_web.py、docs |
 | 真实 `project_id` | `"DEMO"` | server/app.py、server/store.py、session.js、ApiDocsView |
 
-> 原值不在本文档中复现（避免二次泄露）；需要对照时看本机脚本的替换表。
+> 原值不在本文档中复现（避免二次泄露）；脱敏脚本已验证并删除，不再留存替换表。
 
 未替换（领域词汇，非真实实验标识）：树脂型号 A600 / A520 / C104 / WAC / SBA / SAC 等 ——
 它们是 `standard_schema.json` 与 `experiment_template_v1.json` 的枚举别名。
@@ -67,6 +68,23 @@
   `git rev-list --all --objects` 中不含 `nas_mirror`、`expresin.db`、`uploads/`、
   `analysis.json`、`materials/data|guides`、以及真实工作簿名与项目代号。
 
+### 1.4 本日缓存与临时物清理（会话末）
+
+| 类别 | 内容 | 结果 |
+|---|---|---|
+| 识别缓存 | `expresin-pipeline/data/cache/*.json` × 6（37 KB，本日生成） | 已删，空目录保留 |
+| Python 字节码缓存 | `expresin-pipeline/scripts/__pycache__`（6）+ `server/__pycache__`（3），本日语法检查产生 | 已删 |
+| 会话临时物 | `.deepworks/tmp/` 本日文件 45 个（306.73 KB）：CDP 验证脚本、截图、提交信息 txt、脱敏脚本 | 已删 |
+| 外部临时副本 | `%LOCALAPPDATA%\Temp\opencode\expr-clean\`（脱敏脚本 + filter `.sh`） | 已删 |
+| 历史遗留临时物 | `.deepworks/tmp/` 中 9/19–9/24 的 29 个文件（1033 KB），含真实实验数据与真实标识（L1/mapping 输出、w7 报告、探测脚本等） | 已删 |
+
+保留未动：`expresin-portal/dist/`（本日构建产物，可 `npm run build` 重建）、
+`expresin-portal/node_modules/.vite`（9/19）、`expresin-pipeline/src/__pycache__`（10/10）、
+以及 1.3 的 Git 历史备份。
+
+删除后复查：`.deepworks/` 全域剩余 154 个文件，用真实工作簿名、项目代号、旧 sheet 代号检索均为 0 命中。
+副作用：识别缓存清空后，下次对同一工作簿识别会重新走 L1/L2 + LLM 映射，不再秒回缓存结果。
+
 ## 2. 遗留与注意
 
 1. **GitHub 侧延迟 GC**：旧 commit 已从分支历史不可达，但按旧 SHA 直接访问可能在短时间内仍可命中；
@@ -75,4 +93,6 @@
 3. **历史哈希已全部变化**：协作者需重新 clone，或 `git fetch --all && git reset --hard origin/main`。
 4. 本地真实数据仍在磁盘（见 1.1 表），日常运行不受影响；`uploads/` 已删除，需要时由上传流程自动重建。
 5. 后续若重新生成 `analysis.json` 等导出物，**不要** `git add -f`，它们默认被忽略。
-6. 服务状态：本日未启动前后端（纯仓库治理会话）；重启方法见 `session-log-2026-09-24.md` 第 0 节。
+6. 服务状态：本日会话末已按要求关闭前后端 —— 前端 Vite 进程已停止、5173 空闲；后端本来就未启动、8000 空闲。
+   重启方法见 `session-log-2026-09-24.md` 第 0 节。
+7. 本日清理不可逆：`.deepworks/tmp/` 中 9 月的调试/探测脚本与数据 dump 已删除，如需同类排查请重新编写。
