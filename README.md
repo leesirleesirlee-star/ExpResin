@@ -125,8 +125,10 @@ The full endpoint specification lives in `docs/` and the in-app API Docs page.
 
 ## License
 
-No license yet — all rights reserved by the author. Do not redistribute the
-experiment data referenced above.
+Source code is released under the [MIT License](LICENSE). Note that the
+license covers the code and documents in this repository only — experiment
+data stays local (see [Data & Local Files](#data--local-files-not-published))
+and is not part of the distribution.
 
 ## Status
 
