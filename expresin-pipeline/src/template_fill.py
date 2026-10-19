@@ -1,7 +1,15 @@
-"""ExpResin 模板填充（template_fill_v1）。
+"""ExpResin 模板填充（template_fill_v2）。
 
 把「识别结果 + 原始文件 + 实验元数据 + 引擎复算」组织成老师提供的三套实验模板
 （Batch / Column / Electrochemical），供 template_export 导出 Excel。
+
+v2 变更（2026-10-17，多室电化学重设计）：
+  - 分组维度从「离子」扩展为「室 × 离子」：室名从块标题方括号前缀解析
+    （「【阴极室】Cl 测量数据」→ 阴极室），无此前缀时与旧行为一致；
+  - B 区支持行级 Initial Concentration 列（角色 initial_concentration）；
+  - C 区派生按「轮次」拆分：识别到行级初始浓度列时，以 C₀ 变化或时间回退
+    切分子序列，逐轮调用 derive（每轮的 C₀ 覆盖元数据标量），分组小标题写入
+    行上的 group 字段；无该列时保持旧的单轮行为。
 
 数据来源与口径（重要）：
   - B 区逐行数据**从 Raw 原始文件重读**：识别快照只含列映射，不存数据值；
@@ -29,13 +37,17 @@ from canonical import _field_columns, _locate, _read_column, _sheet_of, _to_floa
 from derive import DERIVE_VERSION, derive_all
 from l1_structure import parse_sheet
 
-FILL_VERSION = "template_fill_v1"
+FILL_VERSION = "template_fill_v2"
 
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "config" / "templates"
 TEMPLATE_FILES = {
     "batch": "batch_template_v1.json",
     "column": "column_template_v1.json",
     "electrochemical": "electrochemical_template_v1.json",
+    # 电化学分支（两室 / 三室 / 双极膜）：由电化学模板扩展，A 区增加膜与各室溶液字段
+    "electrochemical_two_chamber": "electrochemical_two_chamber_template_v1.json",
+    "electrochemical_three_chamber": "electrochemical_three_chamber_template_v1.json",
+    "electrochemical_bipolar": "electrochemical_bipolar_template_v1.json",
 }
 
 # 不参与 B 区时序数据的块类型（标定表/容量汇总表不是测量序列）
@@ -45,6 +57,7 @@ EXCLUDED_KINDS = {"calibration", "capacity"}
 FIELD_CANDIDATES: dict[str, list[str]] = {
     "time": ["contact_time", "time", "run_time", "elapsed_time"],
     "concentration": ["concentration_mg_l", "concentration_ppm"],
+    "initial_concentration": ["initial_concentration_mg_l"],
     "ph": ["ph", "effluent_ph"],
     "potential": ["potential_v", "voltage_v", "potential"],
     "current": ["current_a", "current"],
@@ -99,6 +112,10 @@ META_ALIASES: dict[str, list[str]] = {
     "electrolyte": ["electrolyte", "supporting_electrolyte"],
     "cell_configuration": ["cell_configuration", "cell"],
     "electrode_area": ["electrode_area", "area_cm2", "electrode_area_cm2"],
+    "membrane_type": ["membrane_type", "membrane", "separator"],
+    "anolyte": ["anolyte", "anode_chamber_solution"],
+    "catholyte": ["catholyte", "cathode_chamber_solution"],
+    "middle_chamber_solution": ["middle_chamber_solution", "middle_solution", "desalting_chamber_solution"],
 }
 
 
@@ -199,20 +216,69 @@ def _blocks_of(recognized: dict | None) -> list[dict]:
     return out
 
 
-def _group_by_analyte(items: list[dict]) -> list[tuple[str | None, str | None, list[dict]]]:
-    """按目标离子分组，保持首次出现顺序（多离子 → 多个 Excel sheet）。
+_CHAMBER_TITLE_RE = re.compile(r"^[【\[]\s*([^】\]]+?)\s*[】\]]\s*(.*)$")
 
-    返回 [(分组键, 展示名, items)]：分组键大写仅用于合并大小写变体，
-    展示名一律保留原始表写法（"Cl" 不写成 "CL"）。
+
+def _chamber_of(title: str | None) -> str | None:
+    """从块标题解析室名（「【阴极室】Cl 测量数据」→「阴极室」）。
+
+    只认以「室」结尾的方括号前缀（全角【】或半角 []），其余标题返回 None；
+    不在标题里的室信息绝不猜测。
     """
-    groups: dict[str | None, list[dict]] = {}
-    display: dict[str | None, str | None] = {}
+    match = _CHAMBER_TITLE_RE.match((title or "").strip())
+    if match and match.group(1).strip().endswith("室"):
+        return match.group(1).strip()
+    return None
+
+
+def _group_blocks(items: list[dict]) -> list[dict]:
+    """按「室 × 目标离子」分组，保持首次出现顺序（每组 → 导出一个 sheet）。
+
+    室名来自块标题的方括号前缀（多室电化学记录表，如「【阴极室】Cl 测量数据」）；
+    无前缀时退化为仅按离子分组，与旧行为一致。
+    展示名保留原始表写法（"Cl" 不写成 "CL"）。
+    """
+    groups: dict[tuple[str | None, str | None], dict] = {}
     for item in items:
+        chamber = _chamber_of(item.get("region_title"))
         raw = (item["block"].get("analyte") or "").strip()
-        key = raw.upper() or None
-        groups.setdefault(key, []).append(item)
-        display.setdefault(key, raw or None)
-    return [(key, display[key], groups[key]) for key in groups]
+        key = (chamber, raw.upper() or None)
+        entry = groups.setdefault(
+            key, {"chamber": chamber, "analyte": raw or None, "items": []}
+        )
+        entry["items"].append(item)
+    return list(groups.values())
+
+
+def _split_runs(
+    row_numbers: list[int],
+    c0_of,
+    time_of,
+) -> list[dict]:
+    """把一组行拆成「轮次」子序列：Initial Concentration 变化，或时间回退
+    （新一轮从 0 开始计时）即视为新一轮。
+
+    仅在识别到行级初始浓度列时调用；同一轮内保持 Excel 原始行顺序。
+    输入数据本身不做任何修改，切分结果可逐行回溯。
+    """
+    runs: list[dict] = []
+    prev_c0: float | None = None
+    prev_t: float | None = None
+    for rn in row_numbers:
+        c0 = c0_of(rn)
+        t = time_of(rn)
+        boundary = (
+            not runs
+            or c0 != prev_c0
+            or (t is not None and prev_t is not None and t < prev_t)
+        )
+        if boundary:
+            runs.append({"c0": c0, "rows": []})
+        runs[-1]["rows"].append(rn)
+        prev_c0 = c0
+        if t is not None:
+            prev_t = t
+    return runs
 
 
 # --------------------------------------------------------------------------- #
@@ -340,7 +406,7 @@ def build_template_data(
     """生成模板填充结果（尚未导出为 Excel）。"""
     template = load_template(experiment_type)
     items = _blocks_of(recognized)
-    groups = _group_by_analyte(items)
+    groups = _group_blocks(items)
     engine_conc = _engine_conc_index(canonical)
     normalized_meta = _normalize_metadata(metadata)
     meta_ctx = _meta_context(normalized_meta)
@@ -352,12 +418,15 @@ def build_template_data(
     if not groups:
         global_notes.append("未找到可用于模板填充的测量块（标定/容量块不参与 B 区）")
 
-    for _analyte_key, analyte, group_items in groups:
+    for group in groups:
+        display = " ".join(p for p in (group["chamber"], group["analyte"]) if p) or None
         sheet, sheet_notes = _fill_group(
             template=template,
             experiment_type=experiment_type,
-            analyze=analyte,
-            group_items=group_items,
+            analyze=group["analyte"],
+            chamber=group["chamber"],
+            display_name=display,
+            group_items=group["items"],
             raw_path=raw_path,
             experiment_id=experiment_id,
             metadata=normalized_meta,
@@ -366,7 +435,7 @@ def build_template_data(
             fills=fills,
         )
         sheets.append(sheet)
-        global_notes.extend(f"{analyte or '未知离子'}：{n}" for n in sheet_notes)
+        global_notes.extend(f"{display or '未知离子'}：{n}" for n in sheet_notes)
 
     return {
         "experiment_id": experiment_id,
@@ -394,6 +463,8 @@ def _fill_group(
     template: dict,
     experiment_type: str,
     analyze: str | None,
+    chamber: str | None,
+    display_name: str | None,
     group_items: list[dict],
     raw_path: str | Path,
     experiment_id: str,
@@ -449,6 +520,7 @@ def _fill_group(
     # ---- 浓度序列（引擎复算优先，回退原表记录值）----
     conc_series: list[float | None] = []
     time_values_s: list[float | None] = []
+    c0_values: list[float | None] = []
     ph_values: list[float | None] = []
     potential_values: list[float | None] = []
     current_values: list[float | None] = []
@@ -456,6 +528,8 @@ def _fill_group(
     # ppm 回退路径需要显式标注"稀水溶液 ≈ mg/L"假设（不静默等同）
     conc_field = role_fields.get("concentration") or ""
     reported_tag = "reported(ppm≈mg/L)" if "ppm" in conc_field else "reported"
+
+    c0_field = role_fields.get("initial_concentration")
 
     for row_no in row_numbers:
         t = _to_float(raw_of("time", row_no))
@@ -473,11 +547,12 @@ def _fill_group(
                 fills.setdefault("concentration", reported_tag)
         conc_series.append(conc)
 
+        c0_values.append(_to_float(raw_of("initial_concentration", row_no)) if c0_field else None)
         ph_values.append(_to_float(raw_of("ph", row_no)))
         potential_values.append(_to_float(raw_of("potential", row_no)))
         current_values.append(_to_float(raw_of("current", row_no)))
 
-    series_internal = {
+    series_by_row = {
         "time_s": time_values_s,
         "concentration_mg_l": conc_series,
         "ph": ph_values,
@@ -515,6 +590,8 @@ def _fill_group(
                 row.append(None if seconds is None else seconds / (out_factor or 1.0))
             elif role == "concentration":
                 row.append(conc_series[i])
+            elif role == "initial_concentration":
+                row.append(c0_values[i])
             elif role == "ph":
                 row.append(ph_values[i])
             elif role == "potential":
@@ -525,30 +602,78 @@ def _fill_group(
                 row.append(None)
         b_rows.append(row)
 
-    # ---- C 区（派生计算）----
-    derived = derive_all(experiment_type, series_internal, meta_ctx)
-    c_rows: list[dict] = []
-    for field in (_section(template, "C") or {}).get("fields") or []:
-        item = derived.get(field.get("derive")) or {}
-        value = item.get("value")
-        # 时间类派生量：内部秒 → 模板单位
-        if value is not None and item.get("unit") == "s":
-            value = round(value / (out_factor or 1.0), 6)
-        c_rows.append(
-            {
-                "key": field.get("key"),
-                "label": field.get("label"),
-                "value": value,
-                "unit": field.get("unit") or item.get("unit"),
-                "reason": item.get("reason"),
-                "method": item.get("method"),
-            }
+    # ---- C 区（派生计算；识别到行级初始浓度列时按「轮次」逐轮派生）----
+    if c0_field:
+        pos = {rn: i for i, rn in enumerate(row_numbers)}
+        runs = _split_runs(
+            row_numbers,
+            c0_of=lambda rn: c0_values[pos[rn]],
+            time_of=lambda rn: time_values_s[pos[rn]],
         )
+    else:
+        # 无行级初始浓度列：整组一轮，与旧行为一致（C₀ 来自元数据标量）
+        runs = [{"c0": None, "rows": list(row_numbers)}]
 
-    sheet_name = (analyze or "Data")[:31]
+    multi = len(runs) > 1
+    if multi:
+        notes.append(f"按行级初始浓度/时间回退拆分为 {len(runs)} 轮实验，C 区逐轮派生")
+
+    # 相同 C₀ 的多轮加 run 序号，避免分组小标题撞名
+    c0_total: dict[float | None, int] = {}
+    for run in runs:
+        c0_total[run["c0"]] = c0_total.get(run["c0"], 0) + 1
+    c0_seen: dict[float | None, int] = {}
+
+    c_rows: list[dict] = []
+    pos_all = {rn: i for i, rn in enumerate(row_numbers)}
+    for run in runs:
+        run_c0 = run["c0"]
+        eff_c0 = run_c0 if run_c0 is not None else meta_ctx.get("initial_concentration")
+
+        # 分组小标题只在「行级初始浓度列」模式下产生；
+        # 无该列（旧文件）时 group 保持 None，导出渲染与旧版完全一致
+        label: str | None = None
+        if c0_field:
+            if eff_c0 is not None:
+                label = f"Initial Concentration C₀ = {eff_c0:g} mg/L"
+                if run_c0 is None:
+                    label += " (from metadata)"
+            if multi:
+                c0_seen[run_c0] = c0_seen.get(run_c0, 0) + 1
+                if label is not None and c0_total.get(run_c0, 0) > 1:
+                    label = f"{label} · run {c0_seen[run_c0]}"
+                elif label is None:
+                    label = f"Run {c0_seen[run_c0]}"
+
+        idx = [pos_all[rn] for rn in run["rows"]]
+        sub_series = {name: [values[i] for i in idx] for name, values in series_by_row.items()}
+        run_meta = dict(meta_ctx)
+        if run_c0 is not None:
+            run_meta["initial_concentration"] = run_c0
+        derived = derive_all(experiment_type, sub_series, run_meta)
+        for field in (_section(template, "C") or {}).get("fields") or []:
+            item = derived.get(field.get("derive")) or {}
+            value = item.get("value")
+            # 时间类派生量：内部秒 → 模板单位
+            if value is not None and item.get("unit") == "s":
+                value = round(value / (out_factor or 1.0), 6)
+            c_rows.append(
+                {
+                    "key": field.get("key"),
+                    "label": field.get("label"),
+                    "value": value,
+                    "unit": field.get("unit") or item.get("unit"),
+                    "reason": item.get("reason"),
+                    "method": item.get("method"),
+                    "group": label,
+                }
+            )
+
+    sheet_name = (display_name or analyze or "Data")[:31]
     return (
         {
             "analyte": analyze,
+            "chamber": chamber,
             "sheet_name": sheet_name,
             "sections": {
                 "A": {"label": (_section(template, "A") or {}).get("label"), "kind": "fields", "rows": a_rows},

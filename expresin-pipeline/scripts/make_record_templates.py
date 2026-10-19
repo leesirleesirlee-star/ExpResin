@@ -3,8 +3,11 @@
 设计依据：docs/record-template-design.md
   - 一个实验一个 .xlsx，单数据 sheet（sheet 名 Record）；
   - 顶部实验信息区：每行单格、供人读与追溯、不参与自动识别；
-  - 数据块：块标题行（写明离子名）+ 单行表头（英文列名 + 括号单位）+ 连续数据行；
-  - 多离子 = 多块垂直堆叠，块间保留 3 行空行（L1 以连续 3 空行判定块边界）；
+  - 数据块：块标题行（写明离子名；多室电化学为「【室名】【离子名】测量数据」）
+    + 单行表头（英文列名 + 括号单位）+ 连续数据行；
+  - 多离子（及多室）= 多块垂直堆叠，块间保留 3 行空行（L1 以连续 3 空行判定块边界）；
+  - 电化学模板含 Initial Concentration (mg/L) 行级初始浓度列：同一数据块内
+    多个初始浓度（多轮实验）按轮次连排，块内不留空行；
   - 表头行正下方必须紧跟数据（L1 表头判定要求「下一行非空」）。
 
 生成后立即用 L1 结构解析自检：
@@ -39,6 +42,10 @@ FILE_PREFIX = {
     "batch": "Batch_Record_Template_v1",
     "column": "Column_Record_Template_v1",
     "electrochemical": "Electrochemical_Record_Template_v1",
+    # 电化学分支（两室 / 三室 / 双极膜）
+    "electrochemical_two_chamber": "Electrochemical_TwoChamber_Record_Template_v1",
+    "electrochemical_three_chamber": "Electrochemical_ThreeChamber_Record_Template_v1",
+    "electrochemical_bipolar": "Electrochemical_BipolarMembrane_Record_Template_v1",
 }
 
 # 信息区 / 数据块 / 说明区之间的空行数（L1 以连续 3 空行判定块边界，不得小于 3）
@@ -77,7 +84,10 @@ def build_sheet(ws, spec: dict, filled: bool) -> None:
 
     blocks = ((spec.get("example") or {}).get("blocks") or []) if filled else []
     if not blocks:
-        blocks = [{"title": spec["block_template"]["title"], "rows": []}]
+        # 空白模板：优先使用 spec.blank_blocks（多室电化学每室一个占位块），
+        # 否则退化为单一 block_template 占位块。
+        titles = spec.get("blank_blocks") or [spec["block_template"]["title"]]
+        blocks = [{"title": title, "rows": []} for title in titles]
 
     for block_index, block in enumerate(blocks):
         if block_index > 0:

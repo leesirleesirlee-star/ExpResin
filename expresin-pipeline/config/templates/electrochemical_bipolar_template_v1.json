@@ -1,0 +1,260 @@
+{
+  "template_id": "electrochemical_bipolar_template_v1",
+  "experiment_type": "electrochemical_bipolar",
+  "title": "ELECTROCHEMICAL EXPERIMENT (BIPOLAR MEMBRANE)",
+  "version": "1.1",
+  "source": "由 electrochemical_template_v1 扩展（2026-10-13）：双极膜（BPM 水解离产酸/碱）电化学实验分支",
+  "description": "双极膜电化学实验模板。A 区实验信息（含双极膜与各室电解液）、B 区逐行时序测量数据、C 区派生结果。v1.1：B 区 Time 后新增 Initial Concentration 行级初始浓度列（多初始浓度长表）。",
+  "data_policy": {
+    "concentration": "engine_first",
+    "concentration_note": "浓度优先取引擎复算值，缺失时回退原始表记录值，并在导出中标注口径"
+  },
+  "sections": [
+    {
+      "id": "A",
+      "label": "Experiment Information",
+      "kind": "fields",
+      "fields": [
+        {
+          "key": "experiment_id",
+          "label": "Experiment ID",
+          "type": "string",
+          "from": [
+            "meta.experiment_id"
+          ]
+        },
+        {
+          "key": "date",
+          "label": "Date",
+          "type": "string",
+          "from": [
+            "meta.date_start",
+            "meta.date"
+          ]
+        },
+        {
+          "key": "researcher",
+          "label": "Researcher",
+          "type": "string",
+          "from": [
+            "meta.operator",
+            "meta.researcher"
+          ]
+        },
+        {
+          "key": "technique",
+          "label": "Technique",
+          "type": "string",
+          "from": [
+            "meta.technique"
+          ]
+        },
+        {
+          "key": "working_electrode",
+          "label": "Working electrode",
+          "type": "string",
+          "from": [
+            "meta.working_electrode"
+          ]
+        },
+        {
+          "key": "reference_electrode",
+          "label": "Reference electrode",
+          "type": "string",
+          "from": [
+            "meta.reference_electrode"
+          ]
+        },
+        {
+          "key": "counter_electrode",
+          "label": "Counter electrode",
+          "type": "string",
+          "from": [
+            "meta.counter_electrode"
+          ]
+        },
+        {
+          "key": "electrolyte",
+          "label": "Electrolyte",
+          "type": "string",
+          "from": [
+            "meta.electrolyte",
+            "meta.matrix"
+          ]
+        },
+        {
+          "key": "membrane_type",
+          "label": "Bipolar membrane",
+          "type": "string",
+          "from": [
+            "meta.membrane_type"
+          ]
+        },
+        {
+          "key": "anolyte",
+          "label": "Anolyte",
+          "type": "string",
+          "from": [
+            "meta.anolyte"
+          ]
+        },
+        {
+          "key": "catholyte",
+          "label": "Catholyte",
+          "type": "string",
+          "from": [
+            "meta.catholyte"
+          ]
+        },
+        {
+          "key": "target",
+          "label": "Target substance",
+          "type": "string",
+          "from": [
+            "meta.target_analyte",
+            "meta.adsorbate"
+          ]
+        },
+        {
+          "key": "initial_concentration",
+          "label": "Initial concentration",
+          "type": "number",
+          "unit": "mg/L",
+          "from": [
+            "meta.initial_concentration"
+          ]
+        },
+        {
+          "key": "temperature",
+          "label": "Temperature",
+          "type": "number",
+          "unit": "degC",
+          "from": [
+            "meta.temperature"
+          ]
+        },
+        {
+          "key": "cell_configuration",
+          "label": "Cell configuration",
+          "type": "string",
+          "from": [
+            "meta.cell_configuration"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Experimental Data",
+      "kind": "series",
+      "columns": [
+        {
+          "key": "time",
+          "label": "Time",
+          "unit": "s",
+          "role": "time",
+          "from": [
+            "series.contact_time",
+            "series.time",
+            "series.run_time"
+          ]
+        },
+        {
+          "key": "c0",
+          "label": "Initial Concentration",
+          "unit": "mg/L",
+          "role": "initial_concentration",
+          "from": [
+            "series.initial_concentration_mg_l"
+          ]
+        },
+        {
+          "key": "potential",
+          "label": "Potential / Voltage",
+          "unit": "V",
+          "role": "potential",
+          "from": [
+            "series.potential_v",
+            "series.voltage_v"
+          ]
+        },
+        {
+          "key": "current",
+          "label": "Current",
+          "unit": "A",
+          "role": "current",
+          "from": [
+            "series.current_a"
+          ]
+        },
+        {
+          "key": "concentration",
+          "label": "Concentration",
+          "unit": "mg/L",
+          "role": "concentration",
+          "from": [
+            "series.concentration_mg_l",
+            "series.concentration_ppm"
+          ]
+        },
+        {
+          "key": "ph",
+          "label": "pH",
+          "unit": "",
+          "role": "ph",
+          "from": [
+            "series.ph"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "label": "Optional Results",
+      "kind": "derived",
+      "fields": [
+        {
+          "key": "current_density",
+          "label": "Current density",
+          "unit": "A/cm²",
+          "derive": "current_density"
+        },
+        {
+          "key": "final_concentration",
+          "label": "Final concentration",
+          "unit": "mg/L",
+          "derive": "final_concentration"
+        },
+        {
+          "key": "removal_efficiency",
+          "label": "Removal efficiency",
+          "unit": "%",
+          "derive": "removal_efficiency"
+        },
+        {
+          "key": "charge_passed",
+          "label": "Charge passed",
+          "unit": "C",
+          "derive": "charge_passed"
+        },
+        {
+          "key": "energy_consumption",
+          "label": "Energy consumption",
+          "unit": "",
+          "derive": "energy_consumption"
+        }
+      ]
+    }
+  ],
+  "rules": [
+    "One row represents one measurement/time point.",
+    "`Time` = elapsed experimental time.",
+    "`Potential / Voltage` = measured cell voltage across the BPM stack unless noted otherwise.",
+    "`Current` = measured current.",
+    "`Concentration` = measured concentration of the target substance (acid/base/product chamber as applicable).",
+    "`pH` = measured pH of the sampled chamber.",
+    "Concentration and pH may be left as `NA` at time points where they were not measured.",
+    "Do not manually calculate derived quantities in the raw-data table.",
+    "Bipolar membrane (BPM): water dissociation at the BPM junction generates H+/OH-; record which chamber (acid/base/salt) is sampled."
+  ]
+}

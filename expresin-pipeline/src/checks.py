@@ -24,12 +24,19 @@ TYPE_FORBIDDEN_FIELDS: dict[str, set[str]] = {
     "batch": {"bed_volume", "potential_v", "current_a"},
     "column": {"potential_v", "current_a"},
     "electrochemical": {"bed_volume"},
+    # 电化学分支（两室 / 三室 / 双极膜）与电化学同族，禁用柱实验特征字段
+    "electrochemical_two_chamber": {"bed_volume"},
+    "electrochemical_three_chamber": {"bed_volume"},
+    "electrochemical_bipolar": {"bed_volume"},
 }
 
 _TYPE_LABELS = {
     "batch": "静态批次",
     "column": "动态柱",
     "electrochemical": "电化学",
+    "electrochemical_two_chamber": "两室电化学",
+    "electrochemical_three_chamber": "三室电化学",
+    "electrochemical_bipolar": "双极膜电化学",
     "regeneration": "再生",
 }
 

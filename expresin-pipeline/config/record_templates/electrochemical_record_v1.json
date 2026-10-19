@@ -1,74 +1,86 @@
 {
   "record_id": "electrochemical_record_v1",
   "experiment_type": "electrochemical",
-  "version": "1.0",
+  "version": "2.0",
   "title": "ELECTROCHEMICAL EXPERIMENT 实验记录表",
-  "subtitle": "Electrochemical experiment record · 按导师模板 B 区设计（详见 docs/record-template-design.md）",
+  "subtitle": "电化学（无分室）实验记录 · 行级初始浓度长表（2026-10-17 重设计）",
   "sheet_name": "Record",
   "info_section": {
     "fields": [
-      { "label": "实验编号 (Experiment ID)", "example": "RES-20260929-003" },
-      { "label": "实验日期 (Date)", "example": "2026-09-29" },
+      { "label": "实验编号 (Experiment ID)", "example": "RES-20261017-001" },
+      { "label": "实验日期 (Date)", "example": "2026-10-17" },
       { "label": "实验员 (Researcher)", "example": "Li Wei" },
       { "label": "电化学技术 (Technique)", "example": "Electrosorption" },
       { "label": "工作电极 (Working electrode)", "example": "Activated carbon electrode" },
       { "label": "参比电极 (Reference electrode)", "example": "Ag/AgCl" },
       { "label": "对电极 (Counter electrode)", "example": "Pt mesh" },
-      { "label": "电解液 (Electrolyte)", "example": "NaCl 500 mg/L" },
+      { "label": "电解液 (Electrolyte)", "example": "NaCl 100-300 mg/L" },
       { "label": "目标离子 (Target)", "example": "Cl" },
-      { "label": "初始浓度 (mg/L)", "example": "100" },
       { "label": "温度 (degC)", "example": "25" },
-      { "label": "电解池配置 (Cell configuration)", "example": "Single cell, 2 cm spacing" },
+      { "label": "电解池配置 (Cell configuration)", "example": "Single undivided cell, 2 cm spacing" },
       { "label": "备注 / 检测仪器", "example": "IC (Dionex Aquion)" }
     ]
   },
   "block_template": {
     "title": "【离子名】测量数据"
   },
+  "blank_blocks": [
+    "【离子名】测量数据"
+  ],
   "data_columns": [
     { "key": "time", "header": "Time (s)", "unit": "s", "target_field": "contact_time" },
+    { "key": "c0", "header": "Initial Concentration (mg/L)", "unit": "mg/L", "target_field": "initial_concentration_mg_l" },
     { "key": "potential", "header": "Potential (V)", "unit": "V", "target_field": "potential_v" },
     { "key": "current", "header": "Current (A)", "unit": "A", "target_field": "current_a" },
     { "key": "concentration", "header": "Concentration (mg/L)", "unit": "mg/L", "target_field": "concentration_mg_l" },
     { "key": "ph", "header": "pH", "unit": "pH", "target_field": "ph" }
   ],
   "fill_rules": [
-    "1) 把数据块标题中的【离子名】替换为实际目标离子（如 SO4、Cl、Na）。",
-    "2) 数据从表头下方第一行开始连续填写，不要留空行；未测量的点留空（不要写 NA/ND）。",
-    "3) 多离子实验：复制整个数据块（标题行 + 表头行 + 数据行），每离子一块，块间保留 3 行空行。",
-    "4) 实验信息区每行只写在最左侧一格内，不要拆到多列。",
-    "5) 时间单位为秒 (s)；只记录原始测量值；电流密度、电荷量等由系统自动计算。"
+    "1) 把数据块标题中的【离子名】替换为实际目标离子（如 SO4、Cl、Na），保留【】括号。",
+    "2) 同一数据块记录多个初始浓度（多轮实验）的结果：按轮次顺序连排，Initial Concentration 列每行填写该轮初始浓度；同一轮的时间序列从 0 开始连续记录。",
+    "3) 块内不要留空行；不要把不同初始浓度并列成多列；未测量的点留空（不要写 NA/ND）。",
+    "4) 多离子实验：复制整个数据块（标题行 + 表头行 + 数据行），每离子一块，块间保留 3 行空行。",
+    "5) 实验信息区每行只写在最左侧一格内，不要拆到多列。",
+    "6) 时间单位为秒 (s)；只记录原始测量值；终浓度、去除率、电荷量、能耗等由系统按「离子 × 初始浓度」分组自动计算。",
+    "7) 本表为无分室电解池设计；若实验有膜分室，请改用两室 / 三室 / 双极膜记录表。"
   ],
   "example": {
     "info_values": [
-      "RES-20260929-003",
-      "2026-09-29",
+      "RES-20261017-001",
+      "2026-10-17",
       "Li Wei",
       "Electrosorption",
       "Activated carbon electrode",
       "Ag/AgCl",
       "Pt mesh",
-      "NaCl 500 mg/L",
+      "NaCl 100-300 mg/L",
       "Cl",
-      "100",
       "25",
-      "Single cell, 2 cm spacing",
+      "Single undivided cell, 2 cm spacing",
       "IC (Dionex Aquion)"
     ],
     "blocks": [
       {
         "title": "Cl 测量数据",
         "rows": [
-          [0, 1.20, 0.52, 100.0, 6.50],
-          [60, 1.20, 0.50, 88.0, 6.80],
-          [120, 1.20, 0.47, 74.0, 7.20],
-          [180, 1.20, 0.44, 61.0, 7.60],
-          [240, 1.20, 0.41, 49.0, 8.00],
-          [300, 1.20, 0.39, 38.0, 8.40],
-          [360, 1.20, 0.36, 29.0, 8.70],
-          [420, 1.20, 0.34, 21.0, 8.90],
-          [480, 1.20, 0.32, 15.0, 9.10],
-          [600, 1.20, 0.30, 9.5, 9.30]
+          [0, 100, 1.20, 0.52, 100.0, 6.50],
+          [60, 100, 1.20, 0.50, 78.0, 6.80],
+          [120, 100, 1.20, 0.47, 60.0, 7.10],
+          [180, 100, 1.20, 0.44, 46.0, 7.40],
+          [240, 100, 1.20, 0.42, 35.0, 7.70],
+          [300, 100, 1.20, 0.40, 27.0, 7.90],
+          [0, 200, 1.20, 0.58, 200.0, 6.40],
+          [60, 200, 1.20, 0.55, 165.0, 6.60],
+          [120, 200, 1.20, 0.52, 136.0, 6.90],
+          [180, 200, 1.20, 0.49, 112.0, 7.10],
+          [240, 200, 1.20, 0.47, 93.0, 7.30],
+          [300, 200, 1.20, 0.45, 78.0, 7.50],
+          [0, 300, 1.25, 0.63, 300.0, 6.30],
+          [60, 300, 1.25, 0.60, 256.0, 6.50],
+          [120, 300, 1.25, 0.57, 218.0, 6.70],
+          [180, 300, 1.25, 0.54, 186.0, 6.90],
+          [240, 300, 1.25, 0.52, 160.0, 7.10],
+          [300, 300, 1.25, 0.50, 138.0, 7.30]
         ]
       }
     ]

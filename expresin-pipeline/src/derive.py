@@ -1,6 +1,10 @@
-"""ExpResin 模板派生计算（derive_v1）。
+"""ExpResin 模板派生计算（derive_v2）。
 
 模板 C 区（Optional Results / Automatically Calculated Data）里的自动计算量在此实现。
+
+v2 变更（2026-10-17）：电化学去除率增加累积室判定——终浓度高于初始浓度时
+（如阳极室 / 酸室 / 碱室等离子迁入室），去除率物理上不适用，返回 value=None +
+明确 reason，不输出负的"去除率"数字。
 
 科学不变量：
   - 只做确定性计算，不调用 LLM（LLM 不参与数值计算）；
@@ -19,7 +23,7 @@ from typing import Any, Sequence
 
 from compute import adsorption_capacity_mg_g, removal_rate
 
-DERIVE_VERSION = "derive_v1"
+DERIVE_VERSION = "derive_v2"
 
 # ---- 判据阈值（集中定义，便于评审与版本化）----
 BREAKTHROUGH_THRESHOLD = 0.05  # 穿透时间：Cₜ/C₀ 首次 ≥ 5%
@@ -239,6 +243,10 @@ def derive_electrochemical(series: dict, meta: dict) -> dict:
     )
 
     rate, rate_reason = removal_rate(c0, final_c)
+    if rate is not None and rate < 0:
+        # 终浓度高于初始浓度：该室为离子迁入/生成室（如阳极室、酸室、碱室），
+        # "去除率"在此物理上不适用，给明确原因而不输出负值。
+        rate, rate_reason = None, "终浓度高于初始浓度（该室为累积/生成室），去除率不适用，请关注终浓度"
     removal_item = _item(
         None if rate is None else round(rate * 100, 2),
         "%",
@@ -277,6 +285,10 @@ DERIVERS = {
     "batch": derive_batch,
     "column": derive_column,
     "electrochemical": derive_electrochemical,
+    # 电化学分支（两室 / 三室 / 双极膜）复用电化学派生：电流密度/终浓度/去除率/电荷量/能耗
+    "electrochemical_two_chamber": derive_electrochemical,
+    "electrochemical_three_chamber": derive_electrochemical,
+    "electrochemical_bipolar": derive_electrochemical,
 }
 
 

@@ -1,6 +1,6 @@
 {
-  "schema_version": "0.2.0",
-  "description": "ExpResin 标准科学数据 Schema。定义异构实验表格需要映射到的统一字段，供 L2 候选生成与 L3/L4 LLM 映射使用。v0.2 为 sample_measurement 增补 pH/电位/电流字段，覆盖 Batch/Column/Electrochemical 三类标准记录表。",
+  "schema_version": "0.3.0",
+  "description": "ExpResin 标准科学数据 Schema。定义异构实验表格需要映射到的统一字段，供 L2 候选生成与 L3/L4 LLM 映射使用。v0.2 为 sample_measurement 增补 pH/电位/电流字段；v0.3 增补行级初始浓度字段 initial_concentration_mg_l，支撑多室电化学「一表多初始浓度」长表记录。",
   "block_kinds": {
     "calibration": {
       "label": "标定曲线",
@@ -110,6 +110,14 @@
           "unit": "mg/L",
           "required": false,
           "aliases": ["mg/l", "质量浓度", "mg l-1"]
+        },
+        {
+          "key": "initial_concentration_mg_l",
+          "label": "初始浓度(行级)",
+          "type": "number",
+          "unit": "mg/L",
+          "required": false,
+          "aliases": ["initial concentration", "initial concentration (mg/l)", "initial concentration, mg/l", "c0", "c0 (mg/l)", "c0, mg/l", "initial conc", "起始浓度", "初始浓度"]
         },
         {
           "key": "ph",
@@ -244,7 +252,7 @@
           "key": "experiment_type",
           "label": "实验类型",
           "type": "string",
-          "aliases": ["batch", "column", "electrochemical", "regeneration", "characterization"]
+          "aliases": ["batch", "column", "electrochemical", "electrochemical_two_chamber", "electrochemical_three_chamber", "electrochemical_bipolar", "regeneration", "characterization"]
         }
     ]
   },

@@ -18,7 +18,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
-EXPORT_VERSION = "template_export_v1"
+EXPORT_VERSION = "template_export_v2"
 
 _INVALID_SHEET_CHARS = set('[]:*?/\\')
 
@@ -67,7 +67,8 @@ def _write_sheet(ws, data: dict, sheet: dict) -> None:
     row += 1
     subtitle = (
         f"Experiment {data.get('experiment_id')} · "
-        f"analyte {sheet.get('analyte') or '—'} · "
+        f"analyte {sheet.get('analyte') or '—'}"
+        f"{(' · chamber ' + sheet['chamber']) if sheet.get('chamber') else ''} · "
         f"template {data.get('template_id')} v{data.get('template_version')} · "
         f"generated {data.get('generated_at')}"
     )
@@ -110,7 +111,19 @@ def _write_sheet(ws, data: dict, sheet: dict) -> None:
     ws.cell(row=row, column=1, value=f"C. {section_c.get('label')}").font = _SECTION_FONT
     row += 1
     row = _write_headers(ws, row, ["Parameter", "Value", "Unit", "Note"])
+    last_group: str | None = None
     for item in section_c.get("rows") or []:
+        group = item.get("group")
+        if group != last_group:
+            last_group = group
+            if group:
+                # 多轮实验的分组小标题（如 "— Initial Concentration C₀ = 100 mg/L —"）
+                for col_index in range(1, 5):
+                    cell = ws.cell(row=row, column=col_index)
+                    cell.font = _HEAD_FONT
+                    cell.fill = _HEAD_FILL
+                ws.cell(row=row, column=1, value=f"— {group} —")
+                row += 1
         ws.cell(row=row, column=1, value=item.get("label"))
         ws.cell(row=row, column=2, value=_as_cell(item.get("value")))
         ws.cell(row=row, column=3, value=item.get("unit") or None)

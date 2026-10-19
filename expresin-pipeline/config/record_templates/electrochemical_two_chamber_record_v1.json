@@ -1,0 +1,117 @@
+{
+  "record_id": "electrochemical_two_chamber_record_v1",
+  "experiment_type": "electrochemical_two_chamber",
+  "version": "2.0",
+  "title": "ELECTROCHEMICAL EXPERIMENT (TWO-CHAMBER) 实验记录表",
+  "subtitle": "两室电化学实验记录 · 分室×行级初始浓度长表（2026-10-17 重设计）",
+  "sheet_name": "Record",
+  "info_section": {
+    "fields": [
+      { "label": "实验编号 (Experiment ID)", "example": "RES-20261017-002" },
+      { "label": "实验日期 (Date)", "example": "2026-10-17" },
+      { "label": "实验员 (Researcher)", "example": "Li Wei" },
+      { "label": "电化学技术 (Technique)", "example": "Membrane electrolysis" },
+      { "label": "工作电极/阳极 (Anode)", "example": "Ti/IrO2 anode" },
+      { "label": "参比电极 (Reference electrode)", "example": "Ag/AgCl" },
+      { "label": "对电极/阴极 (Cathode)", "example": "Stainless steel cathode" },
+      { "label": "膜/隔膜 (Membrane)", "example": "Nafion 117" },
+      { "label": "阳极液 (Anolyte)", "example": "Na2SO4 0.05 M" },
+      { "label": "阴极液/进料 (Catholyte feed)", "example": "NaCl 100-300 mg/L" },
+      { "label": "目标离子 (Target)", "example": "Cl" },
+      { "label": "温度 (degC)", "example": "25" },
+      { "label": "电解池配置 (Cell configuration)", "example": "Two-compartment H-cell, Nafion 117 separator" },
+      { "label": "备注 / 检测仪器", "example": "IC (Dionex Aquion)" }
+    ]
+  },
+  "block_template": {
+    "title": "【室名】【离子名】测量数据"
+  },
+  "blank_blocks": [
+    "【阳极室】【离子名】测量数据",
+    "【阴极室】【离子名】测量数据"
+  ],
+  "data_columns": [
+    { "key": "time", "header": "Time (s)", "unit": "s", "target_field": "contact_time" },
+    { "key": "c0", "header": "Initial Concentration (mg/L)", "unit": "mg/L", "target_field": "initial_concentration_mg_l" },
+    { "key": "potential", "header": "Potential (V)", "unit": "V", "target_field": "potential_v" },
+    { "key": "current", "header": "Current (A)", "unit": "A", "target_field": "current_a" },
+    { "key": "concentration", "header": "Concentration (mg/L)", "unit": "mg/L", "target_field": "concentration_mg_l" },
+    { "key": "ph", "header": "pH", "unit": "pH", "target_field": "ph" }
+  ],
+  "fill_rules": [
+    "1) 数据块标题格式为「【室名】【离子名】测量数据」：把【室名】替换为实际取样室（阳极室 / 阴极室）、【离子名】替换为目标离子（如 Cl、Na），保留【】括号。",
+    "2) 每个「室 × 离子」一个数据块（如【阴极室】Cl、【阳极室】Cl 各一块）；块与块之间保留 3 行空行（系统以此判定块边界）。",
+    "3) 同一数据块记录多个初始浓度（多轮实验）的结果：按轮次顺序连排，Initial Concentration 列每行填写该轮该室此离子的初始浓度；同一轮的时间序列从 0 开始连续记录。",
+    "4) 块内不要留空行；不要把不同初始浓度并列成多列；未测量的点留空（不要写 NA/ND）。",
+    "5) 各室的块请按相同的实验轮次顺序填写，以便对照；进料室各轮初始浓度不同，非进料室每轮通常从 0 开始累积。",
+    "6) 实验信息区每行只写在最左侧一格内，不要拆到多列。",
+    "7) 时间单位为秒 (s)；只记录原始测量值；终浓度、去除率、电荷量、能耗等由系统按「室 × 离子 × 初始浓度」分组自动计算（累积室去除率不适用时会自动注明）。",
+    "8) 两室电解池：阳极室与阴极室由膜分隔；如目标离子有多种，每个室逐离子各建一块。"
+  ],
+  "example": {
+    "info_values": [
+      "RES-20261017-002",
+      "2026-10-17",
+      "Li Wei",
+      "Membrane electrolysis",
+      "Ti/IrO2 anode",
+      "Ag/AgCl",
+      "Stainless steel cathode",
+      "Nafion 117",
+      "Na2SO4 0.05 M",
+      "NaCl 100-300 mg/L",
+      "Cl",
+      "25",
+      "Two-compartment H-cell, Nafion 117 separator",
+      "IC (Dionex Aquion)"
+    ],
+    "blocks": [
+      {
+        "title": "【阴极室】Cl 测量数据",
+        "rows": [
+          [0, 100, 1.50, 0.61, 100.0, 6.40],
+          [60, 100, 1.50, 0.58, 80.0, 6.80],
+          [120, 100, 1.50, 0.55, 63.0, 7.20],
+          [180, 100, 1.50, 0.52, 49.0, 7.60],
+          [240, 100, 1.50, 0.49, 38.0, 7.90],
+          [300, 100, 1.50, 0.47, 29.0, 8.20],
+          [0, 200, 1.50, 0.68, 200.0, 6.30],
+          [60, 200, 1.50, 0.64, 171.0, 6.60],
+          [120, 200, 1.50, 0.61, 145.0, 6.90],
+          [180, 200, 1.50, 0.58, 122.0, 7.20],
+          [240, 200, 1.50, 0.55, 102.0, 7.40],
+          [300, 200, 1.50, 0.53, 85.0, 7.60],
+          [0, 300, 1.50, 0.74, 300.0, 6.20],
+          [60, 300, 1.50, 0.70, 265.0, 6.40],
+          [120, 300, 1.50, 0.66, 233.0, 6.70],
+          [180, 300, 1.50, 0.63, 204.0, 6.90],
+          [240, 300, 1.50, 0.60, 178.0, 7.10],
+          [300, 300, 1.50, 0.58, 155.0, 7.30]
+        ]
+      },
+      {
+        "title": "【阳极室】Cl 测量数据",
+        "rows": [
+          [0, 0, 1.50, 0.61, 0.0, 6.90],
+          [60, 0, 1.50, 0.58, 19.0, 6.80],
+          [120, 0, 1.50, 0.55, 35.0, 6.70],
+          [180, 0, 1.50, 0.52, 48.0, 6.60],
+          [240, 0, 1.50, 0.49, 58.0, 6.50],
+          [300, 0, 1.50, 0.47, 66.0, 6.40],
+          [0, 0, 1.50, 0.68, 0.0, 6.90],
+          [60, 0, 1.50, 0.64, 27.0, 6.80],
+          [120, 0, 1.50, 0.61, 51.0, 6.65],
+          [180, 0, 1.50, 0.58, 72.0, 6.50],
+          [240, 0, 1.50, 0.55, 90.0, 6.40],
+          [300, 0, 1.50, 0.53, 105.0, 6.30],
+          [0, 0, 1.50, 0.74, 0.0, 6.90],
+          [60, 0, 1.50, 0.70, 33.0, 6.75],
+          [120, 0, 1.50, 0.66, 62.0, 6.60],
+          [180, 0, 1.50, 0.63, 88.0, 6.45],
+          [240, 0, 1.50, 0.60, 110.0, 6.35],
+          [300, 0, 1.50, 0.58, 128.0, 6.25]
+        ]
+      }
+    ]
+  }
+}

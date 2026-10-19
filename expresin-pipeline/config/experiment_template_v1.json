@@ -32,15 +32,24 @@
           "path": "01_Metadata.experiment_type",
           "label": "实验类型",
           "type": "enum",
-          "options": ["batch", "column", "electrochemical"],
+          "options": ["batch", "column", "electrochemical", "electrochemical_two_chamber", "electrochemical_three_chamber", "electrochemical_bipolar"],
           "option_labels": {
             "batch": "批次实验",
             "column": "柱实验",
-            "electrochemical": "电化学实验"
+            "electrochemical": "电化学实验（通用）",
+            "electrochemical_two_chamber": "两室电化学实验",
+            "electrochemical_three_chamber": "三室电化学实验",
+            "electrochemical_bipolar": "双极膜电化学实验"
           },
+          "option_groups": [
+            {
+              "label": "电化学实验",
+              "options": ["electrochemical", "electrochemical_two_chamber", "electrochemical_three_chamber", "electrochemical_bipolar"]
+            }
+          ],
           "required": true,
           "default": "batch",
-          "comment": "与 materials/record-templates/ 三个 Excel 模板一一对应；新增实验类型时在此追加 option 与 label，并在 record_templates/ 补对应模板"
+          "comment": "与 materials/record-templates/ 记录模板一一对应；电化学分支（通用/两室/三室/双极膜）经 option_groups 在类型选择中展示为子栏。新增实验类型时在此追加 option 与 label，并在 record_templates/ 补对应模板"
         },
         {
           "path": "01_Metadata.operator",
@@ -179,7 +188,7 @@
           "label": "电化学技术",
           "type": "string",
           "required": false,
-          "show_for": ["electrochemical"],
+          "show_for": ["electrochemical", "electrochemical_two_chamber", "electrochemical_three_chamber", "electrochemical_bipolar"],
           "placeholder": "例如：Electrosorption / Electrodialysis / CDI"
         },
         {
@@ -187,7 +196,7 @@
           "label": "工作电极",
           "type": "string",
           "required": false,
-          "show_for": ["electrochemical"],
+          "show_for": ["electrochemical", "electrochemical_two_chamber", "electrochemical_three_chamber", "electrochemical_bipolar"],
           "placeholder": "例如：Activated carbon electrode"
         },
         {
@@ -195,7 +204,7 @@
           "label": "参比电极",
           "type": "string",
           "required": false,
-          "show_for": ["electrochemical"],
+          "show_for": ["electrochemical", "electrochemical_two_chamber", "electrochemical_three_chamber", "electrochemical_bipolar"],
           "placeholder": "例如：Ag/AgCl"
         },
         {
@@ -203,7 +212,7 @@
           "label": "对电极",
           "type": "string",
           "required": false,
-          "show_for": ["electrochemical"],
+          "show_for": ["electrochemical", "electrochemical_two_chamber", "electrochemical_three_chamber", "electrochemical_bipolar"],
           "placeholder": "例如：Pt mesh"
         },
         {
@@ -211,7 +220,7 @@
           "label": "电解液",
           "type": "string",
           "required": false,
-          "show_for": ["electrochemical"],
+          "show_for": ["electrochemical", "electrochemical_two_chamber", "electrochemical_three_chamber", "electrochemical_bipolar"],
           "placeholder": "例如：Na2SO4 0.05 M"
         },
         {
@@ -219,7 +228,7 @@
           "label": "电解池配置",
           "type": "string",
           "required": false,
-          "show_for": ["electrochemical"],
+          "show_for": ["electrochemical", "electrochemical_two_chamber", "electrochemical_three_chamber", "electrochemical_bipolar"],
           "placeholder": "例如：Two-compartment cell / Single cell"
         },
         {
@@ -229,8 +238,40 @@
           "unit": "cm2",
           "required": false,
           "canonical_unit": "cm2",
-          "show_for": ["electrochemical"],
+          "show_for": ["electrochemical", "electrochemical_two_chamber", "electrochemical_three_chamber", "electrochemical_bipolar"],
           "hint": "用于 C 区电流密度计算；缺失时该派生量留空"
+        },
+        {
+          "path": "02_Method_Materials.membrane_type",
+          "label": "离子交换膜 / 隔膜型号",
+          "type": "string",
+          "required": false,
+          "show_for": ["electrochemical_two_chamber", "electrochemical_three_chamber", "electrochemical_bipolar"],
+          "placeholder": "例如：Nafion 117 / AMI-7001；双极膜实验填 BPM 型号"
+        },
+        {
+          "path": "02_Method_Materials.anolyte",
+          "label": "阳极室电解液",
+          "type": "string",
+          "required": false,
+          "show_for": ["electrochemical_two_chamber", "electrochemical_three_chamber", "electrochemical_bipolar"],
+          "placeholder": "例如：Na2SO4 0.05 M"
+        },
+        {
+          "path": "02_Method_Materials.catholyte",
+          "label": "阴极室电解液",
+          "type": "string",
+          "required": false,
+          "show_for": ["electrochemical_two_chamber", "electrochemical_three_chamber", "electrochemical_bipolar"],
+          "placeholder": "例如：Na2SO4 0.05 M"
+        },
+        {
+          "path": "02_Method_Materials.middle_chamber_solution",
+          "label": "中间室溶液",
+          "type": "string",
+          "required": false,
+          "show_for": ["electrochemical_three_chamber"],
+          "placeholder": "三室实验的中间（淡化/浓缩）室溶液"
         },
         {
           "path": "02_Method_Materials.method_sop",
