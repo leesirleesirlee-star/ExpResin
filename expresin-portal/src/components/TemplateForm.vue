@@ -76,6 +76,15 @@ function optionLabel(field, option) {
   return field.option_labels?.[option] ?? field.value_labels?.[option] ?? option
 }
 
+/**
+ * 未进入 option_groups 分组的选项：保持 options 原顺序渲染在分组之前。
+ * 用于实验类型的「电化学实验」子栏（optgroup），其余类型平铺在前。
+ */
+function ungroupedOptions(field) {
+  const grouped = new Set((field.option_groups || []).flatMap((g) => g.options || []))
+  return (field.options || []).filter((o) => !grouped.has(o))
+}
+
 function emitChange(field, value) {
   emit('change', { field_path: field.path, value })
 }
@@ -121,9 +130,21 @@ function emitChange(field, value) {
               @change="emitChange(field, $event.target.value)"
             >
               <option value="">请选择</option>
-              <option v-for="o in field.options || []" :key="o" :value="o">
-                {{ optionLabel(field, o) }}
-              </option>
+              <template v-if="field.option_groups?.length">
+                <option v-for="o in ungroupedOptions(field)" :key="o" :value="o">
+                  {{ optionLabel(field, o) }}
+                </option>
+                <optgroup v-for="g in field.option_groups" :key="g.label" :label="g.label">
+                  <option v-for="o in g.options" :key="o" :value="o">
+                    {{ optionLabel(field, o) }}
+                  </option>
+                </optgroup>
+              </template>
+              <template v-else>
+                <option v-for="o in field.options || []" :key="o" :value="o">
+                  {{ optionLabel(field, o) }}
+                </option>
+              </template>
             </select>
 
             <textarea

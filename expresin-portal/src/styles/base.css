@@ -392,18 +392,36 @@ h1[data-tip] {
   width: fit-content;
 }
 
-/* ---- 页面切换过渡：真·交叉淡入（新旧页并存，旧页浮层淡出 + 轻微上浮） ----
-   默认模式下新旧组件同时过渡；旧页脱离文档流绝对定位盖在新页之上，
-   不透明底色保证淡出过程即「揭示」新页；配合 :key="route.path" 保证每个路由独立过渡 */
-.page-enter-active {
-  transition:
-    opacity var(--duration-normal) var(--ease-decelerate),
-    transform var(--duration-normal) var(--ease-decelerate);
+/* ---- 页面切换过渡：方向感知滑动 + 先后衔接 ----
+   page-right：向前（顶栏右移）旧页向左出、新页从右入
+   page-left ：返回（顶栏左移）旧页向右出、新页从左入
+   page-fade ：同级或未知方向，纯淡入淡出
+   过渡类全部落在 App.vue 的 .page-stage 包装层上（而非视图根元素），
+   视图 scoped 样式无法覆盖这里的定位规则；离开页 absolute 脱离文档流盖在上层，
+   不透明底色保证淡出过程即「揭示」新页；配合 :key="route.path" 保证每个路由独立过渡。
+   编排：旧页先出（200ms 加速曲线），新页延迟 160ms 入场（260ms 减速曲线），
+   首尾保留少量重叠 —— 视觉上是「本页先消失、第二页随后出现」，
+   非线性缓动、前后衔接、无空白窗段；滑动方向与顶栏指示条一致，形成「动画链接」。 */
+/* 包装层是 .app 网格第二行的行项；内部单格 minmax(0, 1fr) 让页面根元素
+   （.page / .workbench / .route-root / .docs）像原来一样被拉伸并内部滚动 */
+.page-stage {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
 }
-.page-leave-active {
+.page-right-enter-active,
+.page-left-enter-active,
+.page-fade-enter-active {
   transition:
-    opacity var(--duration-fast) var(--ease-accelerate),
-    transform var(--duration-fast) var(--ease-accelerate);
+    opacity 260ms var(--ease-decelerate) 160ms,
+    transform 260ms var(--ease-decelerate) 160ms;
+}
+.page-right-leave-active,
+.page-left-leave-active,
+.page-fade-leave-active {
+  transition:
+    opacity 200ms var(--ease-accelerate),
+    transform 200ms var(--ease-accelerate);
   position: absolute;
   top: var(--topbar-h);
   left: 0;
@@ -413,22 +431,62 @@ h1[data-tip] {
   background: var(--bg-canvas);
   overflow: hidden;
 }
-.page-enter-from {
+/* 过渡期间提升为合成层：transform/opacity 由合成器执行，
+   重 DOM 页面挂载阻塞主线程时动画也不掉帧 */
+.page-right-enter-active,
+.page-right-leave-active,
+.page-left-enter-active,
+.page-left-leave-active,
+.page-fade-enter-active,
+.page-fade-leave-active {
+  will-change: opacity, transform;
+}
+/* 滚动条槽位常驻：离开页 overflow 切换为 hidden 时不回收滚动条宽度，
+   避免旧页内容在脱离文档流瞬间横向跳动（切换顿挫来源之一） */
+.page {
+  scrollbar-gutter: stable;
+}
+/* 向前：新页从右入，旧页向左出 */
+.page-right-enter-from {
+  opacity: 0;
+  transform: translateX(24px);
+}
+.page-right-leave-to {
+  opacity: 0;
+  transform: translateX(-16px);
+}
+/* 返回：新页从左入，旧页向右出 */
+.page-left-enter-from {
+  opacity: 0;
+  transform: translateX(-24px);
+}
+.page-left-leave-to {
+  opacity: 0;
+  transform: translateX(16px);
+}
+/* 无方向：轻微上浮淡入 */
+.page-fade-enter-from {
   opacity: 0;
   transform: translateY(8px);
 }
-.page-leave-to {
+.page-fade-leave-to {
   opacity: 0;
   transform: translateY(-4px);
 }
 @media (max-width: 480px) {
-  .page-leave-active {
+  .page-right-leave-active,
+  .page-left-leave-active,
+  .page-fade-leave-active {
     top: var(--topbar-h-mobile);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .page-enter-active,
-  .page-leave-active {
+  .page-right-enter-active,
+  .page-right-leave-active,
+  .page-left-enter-active,
+  .page-left-leave-active,
+  .page-fade-enter-active,
+  .page-fade-leave-active {
     transition: none;
   }
 }

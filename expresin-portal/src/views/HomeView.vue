@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { loadArchive, session } from '../data/session.js'
+import { experimentTypeLabel } from '../domain/experimentTypes.js'
 
 const entries = [
   {
@@ -33,7 +34,7 @@ onMounted(loadArchive)
       <header class="hero">
         <h1
           class="stagger-in"
-          style="--stagger: 100ms"
+          style="--stagger: 60ms"
           data-tip="三步：实验前录入、实验后识别、归档调用；Raw 只读，Processed 可追溯"
           data-tip-align="start"
         >ExpResin 实验数据工作台</h1>
@@ -45,7 +46,7 @@ onMounted(loadArchive)
           :key="e.to"
           :to="e.to"
           class="entry stagger-in"
-          :style="{ '--stagger': `${300 + i * 50}ms` }"
+          :style="{ '--stagger': `${120 + i * 40}ms` }"
         >
           <span class="step mono">{{ e.step }}</span>
           <h2>{{ e.title }}</h2>
@@ -53,7 +54,7 @@ onMounted(loadArchive)
         </RouterLink>
       </section>
 
-      <section class="recent stagger-in" style="--stagger: 500ms">
+      <section class="recent stagger-in" style="--stagger: 220ms">
         <header class="section-head">
           <h2>近期实验</h2>
           <RouterLink to="/archive" class="btn btn-ghost">查看全部</RouterLink>
@@ -81,7 +82,7 @@ onMounted(loadArchive)
             <RouterLink :to="`/archive/${exp.id}`" class="row">
               <span class="rid mono">{{ exp.id }}</span>
               <span class="rtitle">{{ exp.title || '（未命名实验）' }}</span>
-              <span class="badge badge-neutral">{{ exp.experiment_type || '—' }}</span>
+              <span class="badge badge-neutral">{{ experimentTypeLabel(exp.experiment_type) }}</span>
             </RouterLink>
           </li>
         </ul>

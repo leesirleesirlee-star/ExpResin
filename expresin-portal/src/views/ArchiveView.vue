@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { loadArchive, session } from '../data/session.js'
+import { experimentTypeLabel } from '../domain/experimentTypes.js'
 
 const keyword = ref('')
 const loading = ref(true)
@@ -59,7 +60,7 @@ function targetOf(row) {
 <template>
   <main class="page">
     <div class="wrap">
-      <header class="head">
+      <header class="head stagger-in" style="--stagger: 40ms">
         <div>
           <h1 data-tip="归档规范文档，供复用与 Public API 调用" data-tip-align="start">实验档案</h1>
         </div>
@@ -86,24 +87,29 @@ function targetOf(row) {
         </div>
       </header>
 
-      <p v-if="isDemo" class="notice">
+      <p v-if="isDemo" class="notice stagger-in" style="--stagger: 100ms">
         后端服务未连接，以下为识别链路已跑通的示例档案（数据真实，尚未经人工确认入库）。
       </p>
 
-      <p v-else-if="!loading && session.lastArchiveError" class="empty empty--error">
+      <p v-else-if="!loading && session.lastArchiveError" class="empty empty--error stagger-in" style="--stagger: 100ms">
         档案加载失败：{{ session.lastArchiveError }}
       </p>
 
-      <ul v-if="loading" class="cards" aria-hidden="true">
+      <ul v-if="loading" class="cards stagger-in" style="--stagger: 120ms" aria-hidden="true">
         <li v-for="n in 3" :key="n" class="skeleton skeleton-card"></li>
       </ul>
 
-      <p v-else-if="!rows.length" class="empty muted">
+      <p v-else-if="!rows.length" class="empty muted stagger-in" style="--stagger: 120ms">
         没有匹配的实验档案。先到「新建实验」录入一次实验的初始信息。
       </p>
 
       <ul v-else class="cards">
-        <li v-for="row in rows" :key="row.id">
+        <li
+          v-for="(row, i) in rows"
+          :key="row.id"
+          class="stagger-in"
+          :style="{ '--stagger': `${140 + Math.min(i, 6) * 40}ms` }"
+        >
           <RouterLink :to="targetOf(row)" class="card-item">
             <div class="card-top">
               <span class="rid mono">{{ row.id }}</span>
@@ -115,7 +121,7 @@ function targetOf(row) {
             <dl class="meta">
               <div>
                 <dt>类型</dt>
-                <dd>{{ row.experiment_type || '—' }}</dd>
+                <dd>{{ experimentTypeLabel(row.experiment_type) }}</dd>
               </div>
               <div>
                 <dt>实验员</dt>
