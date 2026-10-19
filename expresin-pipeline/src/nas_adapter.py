@@ -1,7 +1,7 @@
 """NAS 汇总适配器（nas_adapter_v1）。
 
 导师要求：识别归档后的实验数据要"汇总到 NAS 服务器"。
-当前阶段（NAS 连接信息未补齐）：本地目录镜像实现 + 远程适配器接口预留。
+实现：本地目录镜像（默认/过渡）+ SMB 直连（NAS_MODE=smb，smbprotocol）+ 其余远程模式接口预留。
 
 每个实验发布为一个目录：
     <NAS_ROOT>/<experiment_id>/
@@ -13,6 +13,12 @@
 配置（环境变量，可写入根目录 .env 或进程环境）：
     NAS_MODE = local | smb | http   （默认 local）
     NAS_ROOT = 镜像根目录           （默认 expresin-pipeline/data/nas_mirror）
+
+过渡路径（NAS 连接信息未补齐时）：
+    - NAS_MODE=local + NAS_ROOT 指向已映射的盘符或 UNC 路径（如 Z:/share 或
+      \\\\192.168.x.x\\share）即可让 LocalDirAdapter 直接写局域网共享；
+      Windows 需先 net use 映射或保证进程账号对 UNC 有写权限。
+    - NAS_MODE=smb 走 smbprotocol 直连（见 SmbAdapter），不依赖系统映射。
 """
 
 from __future__ import annotations
@@ -109,8 +115,112 @@ class LocalDirAdapter:
         return manifest
 
 
+class SmbAdapter:
+    """SMB 远程发布（NAS_MODE=smb）：经 smbprotocol 直连，无需系统映射盘。
+
+    每个实验发布为 <server>/<share>/<path_prefix>/<experiment_id>/ 目录，
+    目录结构与 manifest 格式与 LocalDirAdapter 完全一致。
+
+    环境变量：
+        NAS_SMB_SERVER       服务器主机名或 IP（必填）
+        NAS_SMB_SHARE        共享名（必填）
+        NAS_SMB_USERNAME     账号（可空，匿名/来客共享时留空）
+        NAS_SMB_PASSWORD     密码（可空）
+        NAS_SMB_PORT         端口（默认 445）
+        NAS_SMB_PATH_PREFIX  共享内子目录前缀（默认 ""）
+
+    依赖：pip install smbprotocol；未安装时抛出带安装提示的 RuntimeError。
+    注意：尚未在真实 NAS 上联调（连接信息待补），目录写入语义与本地镜像对齐。
+    """
+
+    def __init__(
+        self,
+        server: str,
+        share: str,
+        *,
+        username: str | None = None,
+        password: str | None = None,
+        port: int = 445,
+        path_prefix: str = "",
+    ) -> None:
+        self.server = server
+        self.share = share
+        self.username = username or None
+        self.password = password or None
+        self.port = port
+        self.path_prefix = path_prefix.strip("/\\")
+
+    def _unc(self, *parts: str) -> str:
+        return "\\\\" + "\\".join(
+            p.replace("/", "\\")
+            for p in (self.server, self.share, self.path_prefix, *parts)
+            if p
+        )
+
+    def publish_experiment(
+        self,
+        experiment_id: str,
+        *,
+        raw_path: Path | None = None,
+        raw_name: str | None = None,
+        processed: dict | None = None,
+    ) -> dict:
+        try:
+            import smbclient
+        except ImportError as exc:
+            raise RuntimeError(
+                "NAS_MODE=smb 需要 smbprotocol 依赖：pip install smbprotocol"
+            ) from exc
+
+        smbclient.register_session(
+            self.server, username=self.username, password=self.password, port=self.port
+        )
+        target = self._unc(experiment_id)
+        smbclient.makedirs(target, exist_ok=True)
+
+        files: list[dict[str, Any]] = []
+
+        def _write(rel: str, data: bytes) -> None:
+            dest = self._unc(experiment_id, rel.replace("/", "\\"))
+            parent = dest.rsplit("\\", 1)[0]
+            if parent != target:
+                smbclient.makedirs(parent, exist_ok=True)
+            with smbclient.open_file(dest, mode="wb") as fp:
+                fp.write(data)
+            files.append(
+                {"path": rel, "size": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+            )
+
+        if raw_path is not None and Path(raw_path).exists():
+            _write(f"raw/{raw_name or Path(raw_path).name}", Path(raw_path).read_bytes())
+
+        if processed is not None:
+            _write(
+                "processed.json",
+                json.dumps(processed, ensure_ascii=False, indent=2).encode("utf-8"),
+            )
+            canonical = (processed or {}).get("canonical") or {}
+            if canonical.get("rows"):
+                from canonical import render_csv  # 局部导入，避免 server 侧循环依赖
+
+                _write("canonical.csv", render_csv(canonical).encode("utf-8"))
+
+        manifest = {
+            "adapter_version": ADAPTER_VERSION,
+            "adapter": "smb",
+            "server": self.server,
+            "share": self.share,
+            "path_prefix": self.path_prefix,
+            "experiment_id": experiment_id,
+            "published_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "files": files,
+        }
+        _write("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2).encode("utf-8"))
+        return manifest
+
+
 class _RemoteAdapterStub:
-    """远程适配器占位：等待 NAS 连接信息（SMB / HTTP 等）后实现。"""
+    """远程适配器占位：等待 NAS 连接信息（HTTP / rsync 等）后实现。"""
 
     def __init__(self, mode: str) -> None:
         self.mode = mode
@@ -125,4 +235,17 @@ def get_adapter() -> NasAdapter:
     if mode == "local":
         root = os.environ.get("NAS_ROOT") or str(DEFAULT_ROOT)
         return LocalDirAdapter(Path(root))
+    if mode == "smb":
+        server = (os.environ.get("NAS_SMB_SERVER") or "").strip()
+        share = (os.environ.get("NAS_SMB_SHARE") or "").strip()
+        if not server or not share:
+            raise RuntimeError("NAS_MODE=smb 需要配置 NAS_SMB_SERVER 与 NAS_SMB_SHARE")
+        return SmbAdapter(
+            server,
+            share,
+            username=os.environ.get("NAS_SMB_USERNAME"),
+            password=os.environ.get("NAS_SMB_PASSWORD"),
+            port=int(os.environ.get("NAS_SMB_PORT") or "445"),
+            path_prefix=os.environ.get("NAS_SMB_PATH_PREFIX") or "",
+        )
     return _RemoteAdapterStub(mode)

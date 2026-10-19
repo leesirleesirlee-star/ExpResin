@@ -99,6 +99,48 @@ function warningLabel(code) {
   return { type_field_mismatch: '类型一致性' }[code] || '数据提示'
 }
 
+// ---------------------------------------------------------------- NAS 汇总
+// nas 随 detail 接口落库返回：manifest（files）/ skipped / error / null（未发布过）
+const publishing = ref(false)
+
+const nas = computed(() => record.value?.nas || null)
+
+const nasState = computed(() => {
+  const n = nas.value
+  if (!n) return 'none'
+  if (n.files?.length) return 'ok'
+  if (n.error) return 'error'
+  return 'skipped'
+})
+
+const NAS_STATE_LABEL = { ok: '已发布', error: '发布失败', skipped: '已跳过', none: '未发布' }
+const NAS_STATE_BADGE = { ok: 'badge-success', error: 'badge-error', skipped: 'badge-warning', none: 'badge-neutral' }
+
+function fmtSize(bytes) {
+  const n = Number(bytes) || 0
+  if (n >= 1 << 20) return `${(n / (1 << 20)).toFixed(1)} MB`
+  if (n >= 1 << 10) return `${(n / (1 << 10)).toFixed(1)} KB`
+  return `${n} B`
+}
+
+async function republish() {
+  publishing.value = true
+  try {
+    const res = await api.republishNas(route.params.id)
+    const result = res?.nas || null
+    record.value = { ...record.value, nas: result }
+    if (result?.files?.length) {
+      show(`已发布 ${result.files.length} 个文件到 NAS（${result.adapter || 'local'}）`)
+    } else {
+      show(`NAS 发布未完成：${result?.error || result?.skipped || '未知原因'}`, { tone: 'error' })
+    }
+  } catch (e) {
+    show(e.message || 'NAS 发布失败，请稍后重试', { tone: 'error' })
+  } finally {
+    publishing.value = false
+  }
+}
+
 /** 规范长表的列清单由后端给出，避免前端硬编码列顺序造成漂移。 */
 const canonicalColumns = computed(() => canonical.value?.columns || [])
 /** 单页最多渲染的行数：列多（24+）时全量渲染会明显拖慢，故截断并提示导出 CSV。 */
@@ -274,6 +316,42 @@ function fillText(col) {
               </p>
             </div>
           </div>
+        </section>
+
+        <section
+          v-if="session.online && record.status !== 'demo'"
+          class="nas"
+          aria-label="NAS 汇总"
+        >
+          <header class="nas-head">
+            <h2>NAS 汇总</h2>
+            <span class="badge" :class="NAS_STATE_BADGE[nasState]">
+              {{ NAS_STATE_LABEL[nasState] }}
+            </span>
+            <button
+              class="btn btn-secondary btn-compact"
+              :disabled="publishing"
+              @click="republish"
+            >
+              {{ publishing ? '正在发布…' : nasState === 'ok' ? '重新发布' : '发布到 NAS' }}
+            </button>
+          </header>
+
+          <p v-if="nasState === 'ok'" class="muted hint">
+            适配器 {{ nas.adapter || 'local' }} · 发布于 {{ nas.published_at || '—' }}
+          </p>
+          <ul v-if="nasState === 'ok'" class="nas-files">
+            <li v-for="f in nas.files" :key="f.path" class="mono">
+              <span class="nas-path">{{ f.path }}</span>
+              <span class="dim">{{ fmtSize(f.size) }}</span>
+              <span class="dim nas-sha" :title="f.sha256">sha256:{{ String(f.sha256).slice(0, 12) }}…</span>
+            </li>
+          </ul>
+          <p v-else-if="nasState === 'error'" class="nas-msg">{{ nas.error }}</p>
+          <p v-else-if="nasState === 'skipped'" class="nas-msg">{{ nas.skipped }}</p>
+          <p v-else class="muted hint">
+            该档案尚无 NAS 发布记录（可能早于 NAS 落库功能归档），可点击右上按钮补发。
+          </p>
         </section>
 
         <nav
@@ -617,6 +695,56 @@ function fillText(col) {
 }
 .warn-cols {
   font-size: 12px;
+}
+
+/* NAS 汇总：与 .block 同族的卡片；文件清单用 mono 紧凑排列 */
+.nas {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.nas-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.nas-head h2 {
+  font: var(--text-lg);
+}
+.nas-files {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+.nas-files li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.nas-path {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nas-sha {
+  flex: none;
+  font-size: 11px;
+}
+.nas-msg {
+  font: var(--text-xs);
+  line-height: 1.5;
+  color: var(--text-primary);
+  word-break: break-all;
 }
 
 .region-head {
