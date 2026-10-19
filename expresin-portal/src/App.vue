@@ -1,19 +1,42 @@
 <script setup>
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import AppHeader from './components/AppHeader.vue'
 import { useToast } from './composables/useToast.js'
+import { navDirection } from './router/index.js'
 
 const { toasts, dismiss } = useToast()
+const route = useRoute()
+
+/* bare 路由（欢迎页 / 登录页）：无顶栏的全屏页，App.vue 网格也要让出顶栏行 */
+const bare = computed(() => Boolean(route.meta.bare))
+
+/* 页面过渡名跟随导航方向：顶栏右移 → page-right（新页从右入），
+   左移 → page-left（新页从左入），同级/未知 → page-fade（纯淡入淡出）。
+   滑动方向与顶栏指示条一致，形成「动画链接」。 */
+const transitionName = computed(() =>
+  navDirection.value === 'forward'
+    ? 'page-right'
+    : navDirection.value === 'back'
+      ? 'page-left'
+      : 'page-fade',
+)
 </script>
 
 <template>
-  <div class="app">
-    <AppHeader />
+  <div class="app" :class="{ 'app--bare': bare }">
+    <AppHeader v-if="!bare" />
     <router-view v-slot="{ Component, route }">
       <!-- 默认模式（新旧页同时过渡）：新页挂载不依赖旧页 afterLeave，
-           避免 out-in 在含 Teleport/Modal 的页面上交换子节点时死锁导致整页空白；
-           旧页用 .page-leave-active 绝对定位浮在上层淡出，形成真·交叉淡入 -->
-      <Transition name="page">
-        <component :is="Component" :key="route.path" />
+           避免 out-in 在含 Teleport/Modal 的页面上交换子节点时死锁导致整页空白。
+           过渡类落在 .page-stage 包装层而非视图根元素：视图 scoped 样式
+           （如 .page { position: relative }）曾覆盖 leave-active 的 absolute
+           定位，旧页滞留文档流把新页挤到网格外，旧页移除时新页突然上跳；
+           包装层样式由全局 base.css 控制，视图无法意外覆盖。 -->
+      <Transition :name="transitionName">
+        <div :key="route.path" class="page-stage">
+          <component :is="Component" />
+        </div>
       </Transition>
     </router-view>
 
@@ -43,6 +66,11 @@ const { toasts, dismiss } = useToast()
   height: 100%;
   background: var(--bg-canvas);
   overflow: hidden;
+}
+
+/* bare 页（欢迎/登录）无顶栏，网格让出第一行 */
+.app--bare {
+  grid-template-rows: minmax(0, 1fr);
 }
 
 /* 5.1 允许的微妙径向渐变，透明度 ≤ 0.1 */
@@ -150,7 +178,7 @@ const { toasts, dismiss } = useToast()
 }
 
 @media (max-width: 480px) {
-  .app {
+  .app:not(.app--bare) {
     grid-template-rows: var(--topbar-h-mobile) minmax(0, 1fr);
   }
   .toast-stack {

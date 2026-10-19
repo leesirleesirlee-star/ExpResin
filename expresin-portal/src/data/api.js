@@ -5,6 +5,27 @@
 
 const BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8000'
 
+/* 与 data/auth.js 共用同一 localStorage 键。这里直接读存储而不是 import auth.js，
+   避免 api.js ↔ auth.js 循环依赖（auth.js 的每个动作都要走 api）。 */
+const AUTH_STORAGE_KEY = 'expresin-auth'
+
+function authHeaders() {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY)
+    const token = raw ? JSON.parse(raw).token : ''
+    return token ? { Authorization: `Bearer ${token}` } : {}
+  } catch {
+    return {}
+  }
+}
+
+/** 带令牌仍被 401：令牌过期/被吊销（如改密踢出），通知全局清会话回登录页。 */
+function notifyUnauthorized() {
+  if (localStorage.getItem(AUTH_STORAGE_KEY)) {
+    window.dispatchEvent(new CustomEvent('expresin:unauthorized'))
+  }
+}
+
 async function req(path, options = {}, timeoutMs = 0) {
   const isForm = options.body instanceof FormData
   const controller = new AbortController()
@@ -16,6 +37,7 @@ async function req(path, options = {}, timeoutMs = 0) {
       signal: controller.signal,
       headers: {
         ...(isForm ? {} : { 'Content-Type': 'application/json' }),
+        ...authHeaders(),
         ...(options.headers || {}),
       },
     })
@@ -49,6 +71,7 @@ async function req(path, options = {}, timeoutMs = 0) {
     } catch {
       /* 保留默认信息 */
     }
+    if (res.status === 401) notifyUnauthorized()
     const err = new Error(detail)
     err.status = res.status
     err.payload = payload
@@ -64,7 +87,7 @@ async function req(path, options = {}, timeoutMs = 0) {
 async function download(path, fallbackName) {
   let res
   try {
-    res = await fetch(`${BASE}${path}`)
+    res = await fetch(`${BASE}${path}`, { headers: authHeaders() })
   } catch {
     const err = new Error('无法连接后端服务（也可能是后端返回了未处理的错误，请查看后端日志）')
     err.status = 0
@@ -81,6 +104,7 @@ async function download(path, fallbackName) {
     } catch {
       /* 保留默认信息 */
     }
+    if (res.status === 401) notifyUnauthorized()
     const err = new Error(detail)
     err.status = res.status
     throw err
@@ -95,6 +119,18 @@ export const api = {
   base: BASE,
 
   health: () => req('/api/health'),
+
+  /* ---- 认证与用户（auth_v1） ---- */
+  register: (payload) => req('/auth/register', { method: 'POST', body: JSON.stringify(payload) }),
+  login: (payload) => req('/auth/login', { method: 'POST', body: JSON.stringify(payload) }),
+  logout: () => req('/auth/logout', { method: 'POST' }),
+  me: () => req('/auth/me'),
+  changePassword: (payload) =>
+    req('/auth/change-password', { method: 'POST', body: JSON.stringify(payload) }),
+
+  /* ---- 管理员（需 admin 角色） ---- */
+  adminUsers: () => req('/admin/users'),
+  adminExperiments: () => req('/admin/experiments'),
 
   getTemplate: (templateId = 'expresin_template_v1') =>
     req(`/portal/assistant/templates/${templateId}`),
@@ -146,6 +182,10 @@ export const api = {
   listExperiments: () => req('/v1/experiments'),
 
   getExperiment: (id) => req(`/v1/experiments/${id}`),
+
+  /** 重新发布到 NAS（归档时失败补发 / NAS 配置变更后重发）；返回 {experiment_id, nas}。 */
+  republishNas: (id) =>
+    req(`/v1/experiments/${id}/nas/publish`, { method: 'POST' }, 120000),
 
   getProcessed: (id) => req(`/v1/experiments/${id}/data/processed`),
 

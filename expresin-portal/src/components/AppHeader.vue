@@ -1,10 +1,12 @@
 <script setup>
-import { ref, reactive, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useTheme } from '../composables/useTheme.js'
+import { auth, isAdmin, logout } from '../data/auth.js'
 
 const { theme, toggleTheme } = useTheme()
 const route = useRoute()
+const router = useRouter()
 
 const links = [
   { to: '/', label: '工作台' },
@@ -15,6 +17,32 @@ const links = [
 
 function isActive(to) {
   return to === '/' ? route.path === '/' : route.path.startsWith(to)
+}
+
+/* ---- 用户菜单（auth_v1）：头像首字符 + 下拉（改密 / 数据管理 / 退出） ---- */
+const displayName = computed(() => auth.user?.display_name || auth.user?.username || '')
+const initial = computed(() => (displayName.value || '?').slice(0, 1).toUpperCase())
+const menuOpen = ref(false)
+const menuWrap = ref(null)
+
+function closeMenuOnOutside(e) {
+  if (menuWrap.value && !menuWrap.value.contains(e.target)) menuOpen.value = false
+}
+
+function goChangePassword() {
+  menuOpen.value = false
+  router.push({ name: 'auth', query: { mode: 'change' } })
+}
+
+function goAdmin() {
+  menuOpen.value = false
+  router.push({ name: 'admin' })
+}
+
+async function onLogout() {
+  menuOpen.value = false
+  await logout()
+  router.push({ name: 'welcome' })
 }
 
 /* 分段控件滑块：测量激活链接的位置与宽度，transform 平移过去 */
@@ -39,8 +67,12 @@ watch(() => route.path, updateSlider)
 onMounted(() => {
   updateSlider()
   window.addEventListener('resize', updateSlider)
+  document.addEventListener('click', closeMenuOnOutside)
 })
-onBeforeUnmount(() => window.removeEventListener('resize', updateSlider))
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateSlider)
+  document.removeEventListener('click', closeMenuOnOutside)
+})
 </script>
 
 <template>
@@ -96,7 +128,39 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateSlider))
 
       <RouterLink to="/api-docs" class="btn btn-ghost docs">API Docs</RouterLink>
 
-      <span class="avatar" aria-hidden="true">J</span>
+      <div ref="menuWrap" class="user-menu-wrap">
+        <button
+          class="avatar avatar-btn"
+          type="button"
+          :aria-label="`账号菜单：${displayName}`"
+          :aria-expanded="menuOpen"
+          @click.stop="menuOpen = !menuOpen"
+        >
+          {{ initial }}
+        </button>
+        <Transition name="menu">
+          <div v-if="menuOpen" class="menu" role="menu">
+            <div class="menu-head">
+              <span class="menu-name">{{ displayName }}</span>
+              <span class="menu-role">{{ isAdmin ? '管理员' : '实验员' }}</span>
+            </div>
+            <button class="menu-item" type="button" role="menuitem" @click="goChangePassword">
+              修改密码
+            </button>
+            <button v-if="isAdmin" class="menu-item" type="button" role="menuitem" @click="goAdmin">
+              数据管理
+            </button>
+            <button
+              class="menu-item menu-item--danger"
+              type="button"
+              role="menuitem"
+              @click="onLogout"
+            >
+              退出登录
+            </button>
+          </div>
+        </Transition>
+      </div>
     </div>
   </header>
 </template>
@@ -225,6 +289,88 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateSlider))
   color: var(--accent);
   font: var(--text-sm);
   font-weight: 600;
+}
+
+/* ---- 用户菜单 ---- */
+.user-menu-wrap {
+  position: relative;
+}
+
+.avatar-btn {
+  border: none;
+  cursor: pointer;
+  transition: box-shadow var(--duration-fast) var(--ease-standard);
+}
+.avatar-btn:hover {
+  box-shadow: var(--focus-ring);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 168px;
+  padding: var(--space-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-dropdown, 60);
+}
+
+.menu-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-1);
+}
+
+.menu-name {
+  font: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.menu-role {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  font: var(--text-sm);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+.menu-item:hover {
+  background: var(--bg-tertiary);
+}
+.menu-item--danger {
+  color: var(--error);
+}
+
+.menu-enter-active {
+  transition: opacity var(--duration-fast) var(--ease-decelerate),
+    transform var(--duration-fast) var(--ease-decelerate);
+}
+.menu-leave-active {
+  transition: opacity var(--duration-instant) var(--ease-accelerate);
+}
+.menu-enter-from,
+.menu-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 @media (max-width: 1024px) {

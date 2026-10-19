@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS experiments (
     processed_json TEXT,
     raw_file       TEXT,
     raw_sha256     TEXT,
+    nas_json       TEXT,
     created_at     TEXT NOT NULL,
     updated_at     TEXT NOT NULL
 );
@@ -94,9 +95,29 @@ CREATE TABLE IF NOT EXISTS confirmation_log (
     timestamp  TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS users (
+    id            TEXT PRIMARY KEY,             -- 'admin' 或 usr_<uuid12>
+    username      TEXT NOT NULL UNIQUE,
+    display_name  TEXT,
+    password_hash TEXT NOT NULL,
+    role          TEXT NOT NULL DEFAULT 'user', -- admin | user
+    must_change_password INTEGER NOT NULL DEFAULT 0,
+    created_at    TEXT NOT NULL,
+    updated_at    TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS auth_tokens (
+    token      TEXT PRIMARY KEY,
+    user_id    TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    revoked    INTEGER NOT NULL DEFAULT 0
+);
+
 CREATE INDEX IF NOT EXISTS idx_drafts_session ON form_drafts (session_id);
 CREATE INDEX IF NOT EXISTS idx_messages_session ON messages (session_id);
 CREATE INDEX IF NOT EXISTS idx_assets_session ON session_assets (session_id);
+CREATE INDEX IF NOT EXISTS idx_tokens_user ON auth_tokens (user_id);
 """
 
 
@@ -111,7 +132,19 @@ class Store:
         self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
         self._conn.executescript(SCHEMA)
+        self._migrate()
         self._conn.commit()
+
+    def _migrate(self) -> None:
+        """轻量迁移：为既有库补列（CREATE TABLE IF NOT EXISTS 不会给老表加新列）。"""
+        cols = {row[1] for row in self._conn.execute("PRAGMA table_info(experiments)")}
+        if "nas_json" not in cols:
+            # NAS 发布结果（manifest / skipped / error），2026-10-13 引入
+            self._conn.execute("ALTER TABLE experiments ADD COLUMN nas_json TEXT")
+        if "owner_user_id" not in cols:
+            # 数据归属：每个实验属于一个用户（2026-10-17 引入用户体系）；
+            # 历史数据由 app 启动时的 backfill_ownership 挂到 admin 名下
+            self._conn.execute("ALTER TABLE experiments ADD COLUMN owner_user_id TEXT")
 
     # ------------------------------------------------------------------ 会话
     def create_session(
@@ -297,17 +330,19 @@ class Store:
         raw_file: str | None,
         raw_sha256: str | None,
         tenant_id: str = "lab_default",
+        owner_user_id: str | None = None,
     ) -> dict[str, Any]:
         now = _now()
         # 幂等归档：同一编号重复归档时更新既有记录，而不是抛主键冲突。
         # created_at 保持不变，只刷新 updated_at，保证创建时间可追溯。
+        # owner_user_id 不在冲突更新列表中：重复归档不改归属，保留原主。
         self._conn.execute(
             """
             INSERT INTO experiments
                 (id, session_id, tenant_id, project_id, title, experiment_type, operator,
                  date_start, status, meta_json, processed_json, raw_file, raw_sha256,
-                 created_at, updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                 owner_user_id, created_at, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             ON CONFLICT(id) DO UPDATE SET
                 session_id=excluded.session_id,
                 project_id=excluded.project_id,
@@ -327,7 +362,7 @@ class Store:
                 operator, date_start, "archived",
                 json.dumps(meta, ensure_ascii=False),
                 json.dumps(processed, ensure_ascii=False),
-                raw_file, raw_sha256, now, now,
+                raw_file, raw_sha256, owner_user_id, now, now,
             ),
         )
         self._conn.commit()
@@ -342,12 +377,120 @@ class Store:
         item = dict(row)
         item["meta"] = json.loads(item.pop("meta_json") or "{}")
         item["processed"] = json.loads(item.pop("processed_json") or "{}")
+        item["nas"] = json.loads(item.pop("nas_json") or "null")
         return item
 
-    def list_experiments(self, limit: int = 100) -> list[dict[str, Any]]:
-        rows = self._conn.execute(
+    def update_experiment_nas(self, experiment_id: str, nas: dict | None) -> None:
+        """写入 NAS 发布结果（manifest / skipped / error），随 detail 接口返回。"""
+        self._conn.execute(
+            "UPDATE experiments SET nas_json=?, updated_at=? WHERE id=?",
+            (json.dumps(nas, ensure_ascii=False) if nas is not None else None, _now(), experiment_id),
+        )
+        self._conn.commit()
+
+    def list_experiments(self, limit: int = 100, owner_user_id: str | None = None) -> list[dict[str, Any]]:
+        sql = (
             "SELECT id, project_id, title, experiment_type, operator, date_start, status,"
-            " raw_file, session_id, created_at FROM experiments ORDER BY created_at DESC LIMIT ?",
-            (limit,),
+            " raw_file, session_id, created_at, owner_user_id FROM experiments"
+        )
+        params: list = []
+        if owner_user_id:
+            sql += " WHERE owner_user_id = ?"
+            params.append(owner_user_id)
+        sql += " ORDER BY created_at DESC LIMIT ?"
+        params.append(limit)
+        rows = self._conn.execute(sql, params).fetchall()
+        return [dict(r) for r in rows]
+
+    # ------------------------------------------------------------------ 用户与令牌
+    def create_user(
+        self,
+        user_id: str,
+        username: str,
+        password_hash: str,
+        display_name: str | None = None,
+        role: str = "user",
+        must_change_password: bool = False,
+    ) -> dict[str, Any]:
+        now = _now()
+        self._conn.execute(
+            "INSERT INTO users (id, username, display_name, password_hash, role,"
+            " must_change_password, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)",
+            (user_id, username, display_name or username, password_hash, role,
+             1 if must_change_password else 0, now, now),
+        )
+        self._conn.commit()
+        return self.get_user(user_id)
+
+    def get_user(self, user_id: str) -> dict[str, Any] | None:
+        row = self._conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+        return dict(row) if row else None
+
+    def get_user_by_username(self, username: str) -> dict[str, Any] | None:
+        row = self._conn.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
+        return dict(row) if row else None
+
+    def list_users(self) -> list[dict[str, Any]]:
+        """管理员视图：全部用户 + 各自归档实验数（不返回密码哈希）。"""
+        rows = self._conn.execute(
+            "SELECT u.id, u.username, u.display_name, u.role, u.must_change_password,"
+            " u.created_at, u.updated_at, COUNT(e.id) AS experiment_count"
+            " FROM users u LEFT JOIN experiments e ON e.owner_user_id = u.id"
+            " GROUP BY u.id ORDER BY u.created_at"
         ).fetchall()
         return [dict(r) for r in rows]
+
+    def set_user_password(self, user_id: str, password_hash: str) -> None:
+        self._conn.execute(
+            "UPDATE users SET password_hash=?, must_change_password=0, updated_at=? WHERE id=?",
+            (password_hash, _now(), user_id),
+        )
+        self._conn.commit()
+
+    def get_admin(self) -> dict[str, Any] | None:
+        row = self._conn.execute(
+            "SELECT * FROM users WHERE role='admin' ORDER BY created_at LIMIT 1"
+        ).fetchone()
+        return dict(row) if row else None
+
+    def create_token(self, token: str, user_id: str, expires_at: str) -> None:
+        self._conn.execute(
+            "INSERT INTO auth_tokens (token, user_id, created_at, expires_at, revoked)"
+            " VALUES (?,?,?,?,0)",
+            (token, user_id, _now(), expires_at),
+        )
+        self._conn.commit()
+
+    def get_token_user(self, token: str) -> dict[str, Any] | None:
+        """校验令牌（未吊销、未过期）并返回其用户；无效返回 None。"""
+        row = self._conn.execute(
+            "SELECT u.* FROM auth_tokens t JOIN users u ON u.id = t.user_id"
+            " WHERE t.token=? AND t.revoked=0 AND t.expires_at > ?",
+            (token, _now()),
+        ).fetchone()
+        return dict(row) if row else None
+
+    def revoke_token(self, token: str) -> None:
+        self._conn.execute("UPDATE auth_tokens SET revoked=1 WHERE token=?", (token,))
+        self._conn.commit()
+
+    def revoke_user_tokens(self, user_id: str, except_token: str | None = None) -> None:
+        """踢掉该用户其他会话（改密后调用）；except_token 保留当前会话。"""
+        if except_token:
+            self._conn.execute(
+                "UPDATE auth_tokens SET revoked=1 WHERE user_id=? AND token<>?",
+                (user_id, except_token),
+            )
+        else:
+            self._conn.execute("UPDATE auth_tokens SET revoked=1 WHERE user_id=?", (user_id,))
+        self._conn.commit()
+
+    def backfill_ownership(self, admin_id: str) -> None:
+        """历史数据归属迁移：无归属实验挂到 admin 名下，占位会话同样归 admin。"""
+        self._conn.execute(
+            "UPDATE experiments SET owner_user_id=? WHERE owner_user_id IS NULL", (admin_id,)
+        )
+        self._conn.execute(
+            "UPDATE sessions SET user_id=? WHERE user_id='default_user'", (admin_id,)
+        )
+        self._conn.commit()

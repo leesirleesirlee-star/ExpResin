@@ -17,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
@@ -48,8 +48,9 @@ from services import (  # noqa: E402
     render_markdown,
 )
 from store import Store  # noqa: E402
+import auth  # noqa: E402
 
-DATA_DIR = PIPELINE / "data"
+DATA_DIR = Path(os.environ.get("EXPRESIN_DATA_DIR") or (PIPELINE / "data"))
 RAW_DIR = DATA_DIR / "raw"
 DB_PATH = DATA_DIR / "expresin.db"
 SCHEMA_PATH = PIPELINE / "config" / "standard_schema.json"
@@ -88,6 +89,48 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.state.store = store
+
+
+def _seed_admin() -> None:
+    """启动时保证存在 admin 账号；初始密码取自 EXPRESIN_ADMIN_PASSWORD（默认 admin123）。
+
+    种子账号带 must_change_password 标记，前端在首次登录后强制改密。
+    历史数据（无归属实验 / 占位 default_user 会话）挂到 admin 名下，
+    避免升级后出现任何账号都看不到的「无主」数据。
+    """
+    admin = store.get_admin()
+    if not admin:
+        initial = os.environ.get("EXPRESIN_ADMIN_PASSWORD") or "admin123"
+        admin = store.create_user(
+            "admin",
+            "admin",
+            auth.hash_password(initial),
+            display_name="管理员",
+            role="admin",
+            must_change_password=True,
+        )
+    store.backfill_ownership(admin["id"])
+
+
+_seed_admin()
+
+
+def _owned_session(sid: str, user: dict) -> dict:
+    """会话归属检查：非本人且非管理员一律按「不存在」处理，不泄露资源存在性。"""
+    sess = store.get_session(sid)
+    if not sess or (sess.get("user_id") != user["id"] and user.get("role") != "admin"):
+        raise HTTPException(status_code=404, detail="会话不存在")
+    return sess
+
+
+def _owned_experiment(experiment_id: str, user: dict) -> dict:
+    """实验归属检查，语义同 _owned_session；owner 为空（历史残留）视为可见。"""
+    exp = store.get_experiment(experiment_id)
+    owner = (exp or {}).get("owner_user_id")
+    if not exp or (owner and owner != user["id"] and user.get("role") != "admin"):
+        raise HTTPException(status_code=404, detail="实验不存在")
+    return exp
 
 
 def llm_client() -> LLMClient:
@@ -371,7 +414,6 @@ def analyze_workbook(path: Path, sheet_name: str | None = None) -> dict:
 class SessionCreate(BaseModel):
     template_id: str = "expresin_template_v1"
     project_id: str = "DEMO"
-    user_id: str = "default_user"
 
 
 class MessageIn(BaseModel):
@@ -398,6 +440,105 @@ class ColumnReviewIn(BaseModel):
     action: str
     target_field: str | None = None
     note: str | None = None
+
+
+class RegisterIn(BaseModel):
+    username: str
+    password: str
+    display_name: str | None = None
+
+
+class LoginIn(BaseModel):
+    username: str
+    password: str
+
+
+class ChangePasswordIn(BaseModel):
+    old_password: str
+    new_password: str
+
+
+# --------------------------------------------------------------------------- #
+# 认证与用户（auth_v1）
+# --------------------------------------------------------------------------- #
+
+
+@app.post("/auth/register", status_code=201)
+def register(payload: RegisterIn) -> dict:
+    """开放注册：注册即登录，直接返回令牌。"""
+    err = auth.validate_username(payload.username) or auth.validate_password(payload.password)
+    if err:
+        raise HTTPException(status_code=400, detail=err)
+    if store.get_user_by_username(payload.username):
+        raise HTTPException(status_code=400, detail="用户名已被占用")
+    user = store.create_user(
+        auth.new_user_id(),
+        payload.username,
+        auth.hash_password(payload.password),
+        display_name=(payload.display_name or "").strip() or payload.username,
+    )
+    token = auth.issue_token(store, user["id"])
+    return {"token": token, "user": auth.public_user(user)}
+
+
+@app.post("/auth/login")
+def login(payload: LoginIn) -> dict:
+    user = store.get_user_by_username(payload.username)
+    # 用户名不存在与密码错误返回同一提示，避免枚举有效用户名
+    if not user or not auth.verify_password(payload.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="用户名或密码错误")
+    token = auth.issue_token(store, user["id"])
+    return {"token": token, "user": auth.public_user(user)}
+
+
+@app.post("/auth/logout")
+def logout(user: dict = Depends(auth.get_current_user)) -> dict:
+    store.revoke_token(user["_token"])
+    return {"ok": True}
+
+
+@app.get("/auth/me")
+def me(user: dict = Depends(auth.get_current_user)) -> dict:
+    return {"user": auth.public_user(user)}
+
+
+@app.post("/auth/change-password")
+def change_password(
+    payload: ChangePasswordIn, user: dict = Depends(auth.get_current_user)
+) -> dict:
+    if not auth.verify_password(payload.old_password, user["password_hash"]):
+        raise HTTPException(status_code=400, detail="原密码不正确")
+    err = auth.validate_password(payload.new_password)
+    if err:
+        raise HTTPException(status_code=400, detail=err)
+    store.set_user_password(user["id"], auth.hash_password(payload.new_password))
+    # 改密后踢掉该账号在其他设备的会话，当前会话保留
+    store.revoke_user_tokens(user["id"], except_token=user["_token"])
+    return {"user": auth.public_user(store.get_user(user["id"]))}
+
+
+# --------------------------------------------------------------------------- #
+# 管理员
+# --------------------------------------------------------------------------- #
+
+
+@app.get("/admin/users")
+def admin_list_users(admin: dict = Depends(auth.require_admin)) -> dict:
+    return {"users": store.list_users()}
+
+
+@app.get("/admin/experiments")
+def admin_list_experiments(
+    limit: int = 500, admin: dict = Depends(auth.require_admin)
+) -> dict:
+    """全部用户的实验列表（附归属用户名），供管理员「数据管理」页使用。"""
+    experiments = store.list_experiments(limit)
+    users = {u["id"]: u for u in store.list_users()}
+    for exp in experiments:
+        owner = users.get(exp.get("owner_user_id") or "")
+        exp["owner_username"] = (owner or {}).get("username")
+        exp["owner_display_name"] = (owner or {}).get("display_name")
+    return {"experiments": experiments}
 
 
 # --------------------------------------------------------------------------- #
@@ -464,12 +605,14 @@ def get_template(template_id: str) -> dict:
 
 
 @app.post("/portal/assistant/sessions")
-def create_session(payload: SessionCreate) -> dict:
+def create_session(
+    payload: SessionCreate, user: dict = Depends(auth.get_current_user)
+) -> dict:
     template_of(payload.template_id)
     sess = store.create_session(
         template_id=payload.template_id,
         project_id=payload.project_id,
-        user_id=payload.user_id,
+        user_id=user["id"],
     )
     suggestion = store.next_experiment_id()
     store.add_message(
@@ -481,24 +624,19 @@ def create_session(payload: SessionCreate) -> dict:
 
 
 @app.get("/portal/assistant/sessions/{sid}")
-def get_session(sid: str) -> dict:
-    sess = store.get_session(sid)
-    if not sess:
-        raise HTTPException(status_code=404, detail="会话不存在")
-    return sess
+def get_session(sid: str, user: dict = Depends(auth.get_current_user)) -> dict:
+    return _owned_session(sid, user)
 
 
 @app.get("/portal/assistant/sessions/{sid}/form-state")
-def get_form_state(sid: str) -> dict:
-    if not store.get_session(sid):
-        raise HTTPException(status_code=404, detail="会话不存在")
+def get_form_state(sid: str, user: dict = Depends(auth.get_current_user)) -> dict:
+    _owned_session(sid, user)
     return form_state(sid)
 
 
 @app.get("/portal/assistant/sessions/{sid}/missing-fields")
-def get_missing_fields(sid: str) -> dict:
-    if not store.get_session(sid):
-        raise HTTPException(status_code=404, detail="会话不存在")
+def get_missing_fields(sid: str, user: dict = Depends(auth.get_current_user)) -> dict:
+    _owned_session(sid, user)
     drafts = store.get_draft_map(sid)
     template = TEMPLATES["expresin_template_v1"]
     return {
@@ -508,9 +646,10 @@ def get_missing_fields(sid: str) -> dict:
 
 
 @app.post("/portal/assistant/sessions/{sid}/messages")
-def post_message(sid: str, payload: MessageIn) -> dict:
-    if not store.get_session(sid):
-        raise HTTPException(status_code=404, detail="会话不存在")
+def post_message(
+    sid: str, payload: MessageIn, user: dict = Depends(auth.get_current_user)
+) -> dict:
+    _owned_session(sid, user)
     template = TEMPLATES["expresin_template_v1"]
     index = field_index(template)
 
@@ -561,9 +700,9 @@ async def upload(
     file: UploadFile = File(...),
     analyze: bool = Form(True),
     sheet: str | None = Form(None),
+    user: dict = Depends(auth.get_current_user),
 ) -> dict:
-    if not store.get_session(sid):
-        raise HTTPException(status_code=404, detail="会话不存在")
+    _owned_session(sid, user)
 
     data = await file.read()
     sha = hashlib.sha256(data).hexdigest()
@@ -713,14 +852,15 @@ def _review_block_analyte(sid: str, snapshot: dict, asset: dict, block: dict, pa
 
 
 @app.patch("/portal/assistant/sessions/{sid}/recognized-columns")
-def review_recognized_column(sid: str, payload: ColumnReviewIn) -> dict:
+def review_recognized_column(
+    sid: str, payload: ColumnReviewIn, user: dict = Depends(auth.get_current_user)
+) -> dict:
     """记录人工对某一列映射的判定。
 
     遵循「Raw 不可覆盖、Processed 可追溯」：不原地篡改历史资产，
     而是把修正后的完整快照作为新版本追加，并写入审计消息与确认日志。
     """
-    if not store.get_session(sid):
-        raise HTTPException(status_code=404, detail="会话不存在")
+    _owned_session(sid, user)
 
     asset = store.latest_asset(sid, "recognized_blocks")
     if not asset:
@@ -819,11 +959,40 @@ def review_recognized_column(sid: str, payload: ColumnReviewIn) -> dict:
     return {"recognized": snapshot, "review": review}
 
 
+def _publish_to_nas(
+    experiment_id: str,
+    session_id: str | None,
+    raw_name: str | None,
+    processed: dict | None,
+) -> dict:
+    """发布到 NAS 并把结果（manifest / skipped / error）落库。
+
+    raw 原始文件按上传落盘约定（data/raw/<session_id>__<文件名>）重建路径；
+    发布失败返回 {"skipped"/"error": ...}，不抛出——归档本身不因 NAS 故障失败。
+    """
+    raw_path = None
+    if session_id and raw_name:
+        candidate = RAW_DIR / f"{session_id}__{raw_name}"
+        if candidate.exists():
+            raw_path = candidate
+    try:
+        result = get_nas_adapter().publish_experiment(
+            experiment_id,
+            raw_path=raw_path,
+            raw_name=raw_name,
+            processed=processed,
+        )
+    except NotImplementedError as exc:
+        result = {"skipped": str(exc)}
+    except Exception as exc:  # noqa: BLE001
+        result = {"error": str(exc)[:200]}
+    store.update_experiment_nas(experiment_id, result)
+    return result
+
+
 @app.post("/portal/assistant/sessions/{sid}/confirm")
-def confirm(sid: str, payload: ConfirmIn) -> dict:
-    sess = store.get_session(sid)
-    if not sess:
-        raise HTTPException(status_code=404, detail="会话不存在")
+def confirm(sid: str, payload: ConfirmIn, user: dict = Depends(auth.get_current_user)) -> dict:
+    sess = _owned_session(sid, user)
 
     template = TEMPLATES["expresin_template_v1"]
     index = field_index(template)
@@ -893,23 +1062,19 @@ def confirm(sid: str, payload: ConfirmIn) -> dict:
         processed=processed,
         raw_file=raw_asset["name"] if raw_asset else None,
         raw_sha256=raw_asset["sha256"] if raw_asset else None,
+        owner_user_id=user["id"],
     )
     store.set_session_experiment(sid, experiment_id)
     store.add_message(sid, "assistant", f"实验已归档，编号 {experiment_id}。")
 
-    # NAS 汇总（预留实现）：归档成功后发布原始文件与规范文档到镜像目录；
-    # 发布失败不影响归档本身（与识别/计算链路一致的降级策略）。
-    try:
-        experiment["nas"] = get_nas_adapter().publish_experiment(
-            experiment_id,
-            raw_path=Path(raw_path) if raw_path else None,
-            raw_name=(raw_asset or {}).get("name"),
-            processed=processed,
-        )
-    except NotImplementedError as exc:
-        experiment["nas"] = {"skipped": str(exc)}
-    except Exception as exc:  # noqa: BLE001
-        experiment["nas"] = {"error": str(exc)[:200]}
+    # NAS 汇总：归档成功后发布原始文件与规范文档；发布失败不影响归档本身
+    # （与识别/计算链路一致的降级策略），结果落库并随 detail 接口返回。
+    experiment["nas"] = _publish_to_nas(
+        experiment_id,
+        sid,
+        (raw_asset or {}).get("name"),
+        processed,
+    )
 
     return experiment
 
@@ -920,33 +1085,53 @@ def confirm(sid: str, payload: ConfirmIn) -> dict:
 
 
 @app.get("/v1/experiments")
-def list_experiments(limit: int = 100) -> dict:
-    return {"experiments": store.list_experiments(limit)}
+def list_experiments(limit: int = 100, user: dict = Depends(auth.get_current_user)) -> dict:
+    # 管理员看全部；普通用户只看自己的归档
+    owner = None if user.get("role") == "admin" else user["id"]
+    return {"experiments": store.list_experiments(limit, owner_user_id=owner)}
 
 
 @app.get("/v1/experiments/{experiment_id}")
-def get_experiment(experiment_id: str) -> dict:
-    exp = store.get_experiment(experiment_id)
-    if not exp:
-        raise HTTPException(status_code=404, detail="实验不存在")
+def get_experiment(
+    experiment_id: str, user: dict = Depends(auth.get_current_user)
+) -> dict:
+    exp = _owned_experiment(experiment_id, user)
     # 确定性数据质量警告（类型一致性等，checks.py），随取随算、不落库
     exp["warnings"] = experiment_warnings(exp)
     return exp
 
 
+@app.post("/v1/experiments/{experiment_id}/nas/publish")
+def republish_nas(
+    experiment_id: str, user: dict = Depends(auth.get_current_user)
+) -> dict:
+    """重新发布到 NAS：归档时发布失败补发、NAS 配置变更后重发。
+
+    与归档流程共用 _publish_to_nas；结果覆盖落库并原样返回。
+    """
+    exp = _owned_experiment(experiment_id, user)
+    result = _publish_to_nas(
+        experiment_id,
+        exp.get("session_id"),
+        exp.get("raw_file"),
+        exp.get("processed") or {},
+    )
+    return {"experiment_id": experiment_id, "nas": result}
+
+
 @app.get("/v1/experiments/{experiment_id}/data/processed")
-def get_processed(experiment_id: str) -> dict:
-    exp = store.get_experiment(experiment_id)
-    if not exp:
-        raise HTTPException(status_code=404, detail="实验不存在")
+def get_processed(
+    experiment_id: str, user: dict = Depends(auth.get_current_user)
+) -> dict:
+    exp = _owned_experiment(experiment_id, user)
     return {"experiment_id": experiment_id, "processed": exp["processed"]}
 
 
 @app.get("/v1/experiments/{experiment_id}/data/processed/markdown")
-def get_processed_markdown(experiment_id: str) -> dict:
-    exp = store.get_experiment(experiment_id)
-    if not exp:
-        raise HTTPException(status_code=404, detail="实验不存在")
+def get_processed_markdown(
+    experiment_id: str, user: dict = Depends(auth.get_current_user)
+) -> dict:
+    exp = _owned_experiment(experiment_id, user)
     return {
         "experiment_id": experiment_id,
         "markdown": render_markdown(exp["processed"]),
@@ -954,11 +1139,11 @@ def get_processed_markdown(experiment_id: str) -> dict:
 
 
 @app.get("/v1/experiments/{experiment_id}/data/canonical")
-def get_canonical(experiment_id: str) -> dict:
+def get_canonical(
+    experiment_id: str, user: dict = Depends(auth.get_current_user)
+) -> dict:
     """规范长表（结构化 JSON），供后续 Evidence Package / 推送复用。"""
-    exp = store.get_experiment(experiment_id)
-    if not exp:
-        raise HTTPException(status_code=404, detail="实验不存在")
+    exp = _owned_experiment(experiment_id, user)
     canonical = (exp.get("processed") or {}).get("canonical") or {}
     if not canonical.get("rows"):
         raise HTTPException(status_code=404, detail="该实验尚未生成规范表格")
@@ -966,11 +1151,11 @@ def get_canonical(experiment_id: str) -> dict:
 
 
 @app.get("/v1/experiments/{experiment_id}/data/canonical/csv")
-def get_canonical_csv(experiment_id: str) -> Response:
+def get_canonical_csv(
+    experiment_id: str, user: dict = Depends(auth.get_current_user)
+) -> Response:
     """规范长表 CSV 下载（utf-8-sig，Excel 可直接打开）。"""
-    exp = store.get_experiment(experiment_id)
-    if not exp:
-        raise HTTPException(status_code=404, detail="实验不存在")
+    exp = _owned_experiment(experiment_id, user)
     canonical = (exp.get("processed") or {}).get("canonical") or {}
     if not canonical.get("rows"):
         raise HTTPException(status_code=404, detail="该实验尚未生成规范表格")
@@ -982,15 +1167,15 @@ def get_canonical_csv(experiment_id: str) -> Response:
 
 
 @app.get("/v1/experiments/{experiment_id}/export/template")
-def export_experiment_template(experiment_id: str) -> Response:
+def export_experiment_template(
+    experiment_id: str, user: dict = Depends(auth.get_current_user)
+) -> Response:
     """按指导老师模板导出 Excel（每个目标离子一个工作表，A/B/C 三段结构）。
 
     数据口径见 template_fill / template_export 模块文档：
     B 区从 Raw 重读，浓度引擎复算优先；C 区由 derive 确定性计算，缺输入带 reason。
     """
-    exp = store.get_experiment(experiment_id)
-    if not exp:
-        raise HTTPException(status_code=404, detail="实验不存在")
+    exp = _owned_experiment(experiment_id, user)
     processed = exp.get("processed") or {}
     recognized = processed.get("recognized_data")
     if not recognized or not recognized.get("regions"):
