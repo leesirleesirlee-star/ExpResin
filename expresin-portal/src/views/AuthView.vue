@@ -1,12 +1,14 @@
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { auth, changePassword, login, register } from '../data/auth.js'
 import { useToast } from '../composables/useToast.js'
+import { useTheme } from '../composables/useTheme.js'
 
 const router = useRouter()
 const route = useRoute()
 const { show } = useToast()
+const { theme, toggleTheme } = useTheme()
 
 /* mode: login | register | change
    change 有两种触发：URL ?mode=change（守卫强制改密 / 头像菜单主动改密）
@@ -30,8 +32,45 @@ const error = ref('')
 const pending = ref(false)
 
 function switchMode(next) {
+  /* 方向感知滑动：注册在登录右侧，向前切换从右滑入，后退从左滑入 */
+  const ORDER = { login: 0, register: 1, change: 2 }
+  formTransition.value = (ORDER[next] ?? 0) >= (ORDER[mode.value] ?? 0) ? 'form-next' : 'form-prev'
   mode.value = next
   error.value = ''
+}
+
+/* ---- 表单切换过渡：方向滑动（CSS）+ 高度平滑（WAAPI，新旧表单高度不同） ---- */
+const formTransition = ref('form-next')
+const formStage = ref(null)
+let prevStageH = 0
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+function onFormBeforeLeave() {
+  const el = formStage.value
+  if (el) prevStageH = el.offsetHeight
+}
+
+function onFormEnter(enterEl) {
+  const stage = formStage.value
+  if (!stage || !prevStageH || reduceMotion) return
+  nextTick(() => {
+    const from = prevStageH
+    const to = enterEl.offsetHeight
+    prevStageH = 0
+    if (!from || !to || from === to) return
+    /* 快速连续切换时取消上一轮高度动画，避免 overflow 被提前清掉 */
+    stage.getAnimations().forEach((a) => a.cancel())
+    stage.style.overflow = 'hidden'
+    const anim = stage.animate(
+      [{ height: `${from}px` }, { height: `${to}px` }],
+      { duration: 250, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+    )
+    const done = () => {
+      stage.style.overflow = ''
+    }
+    anim.onfinish = done
+    anim.oncancel = done
+  })
 }
 
 function goHome() {
@@ -111,21 +150,33 @@ async function submitChange() {
 <template>
   <main class="auth">
     <div class="card">
+      <!-- 深浅色切换（与顶栏同款，登录页无 AppHeader，需自带入口） -->
+      <button
+        class="icon-btn theme-toggle"
+        type="button"
+        :aria-label="theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'"
+        @click="toggleTheme"
+      >
+        <svg v-if="theme === 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+        </svg>
+        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
+        </svg>
+      </button>
+
       <RouterLink to="/welcome" class="brand" aria-label="返回欢迎页">
-        <span class="logo" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linejoin="round">
-            <path d="M12 3 20 7.5v9L12 21 4 16.5v-9L12 3Z" />
-            <path d="M12 12 20 7.5M12 12v9M12 12 4 7.5" />
-          </svg>
-        </span>
+        <img class="logo" src="/logo.png" alt="ExpResin" />
         <span class="brand-name">ExpResin</span>
       </RouterLink>
 
       <p v-if="expired" class="notice notice--warn">登录已过期，请重新登录</p>
       <p v-if="forced" class="notice notice--warn">首次登录请先修改初始密码</p>
 
-      <!-- 登录 / 注册 切换（改密模式下隐藏） -->
+      <!-- 登录 / 注册 切换（改密模式下隐藏）；.tab-slider 滑动胶囊指示当前页 -->
       <div v-if="mode !== 'change'" class="tabs" role="tablist">
+        <span class="tab-slider" :class="{ 'is-right': mode === 'register' }" aria-hidden="true"></span>
         <button
           class="tab"
           :class="{ 'is-active': mode === 'login' }"
@@ -148,8 +199,11 @@ async function submitChange() {
         </button>
       </div>
 
-      <!-- 登录 -->
-      <form v-if="mode === 'login'" class="form" @submit.prevent="submitLogin">
+      <!-- 表单区：三个表单同一位置切换，方向滑动 + 高度平滑过渡 -->
+      <div ref="formStage" class="form-stage">
+        <Transition :name="formTransition" @before-leave="onFormBeforeLeave" @enter="onFormEnter">
+          <!-- 登录 -->
+          <form v-if="mode === 'login'" key="login" class="form" @submit.prevent="submitLogin">
         <label class="field">
           <span class="label">用户名</span>
           <input v-model="form.username" class="input" type="text" autocomplete="username" placeholder="字母、数字或 _ . -" />
@@ -159,13 +213,13 @@ async function submitChange() {
           <input v-model="form.password" class="input" type="password" autocomplete="current-password" placeholder="请输入密码" />
         </label>
         <p v-if="error" class="error" role="alert">{{ error }}</p>
-        <button class="btn btn-primary submit" type="submit" :disabled="pending">
+        <button class="btn btn-primary btn-liquid submit" type="submit" :disabled="pending">
           {{ pending ? '登录中…' : '登录' }}
         </button>
       </form>
 
-      <!-- 注册（开放注册，注册即登录） -->
-      <form v-else-if="mode === 'register'" class="form" @submit.prevent="submitRegister">
+          <!-- 注册（开放注册，注册即登录） -->
+          <form v-else-if="mode === 'register'" key="register" class="form" @submit.prevent="submitRegister">
         <label class="field">
           <span class="label">用户名</span>
           <input v-model="form.username" class="input" type="text" autocomplete="username" placeholder="3-32 位字母、数字或 _ . -" />
@@ -183,13 +237,13 @@ async function submitChange() {
           <input v-model="form.confirm" class="input" type="password" autocomplete="new-password" placeholder="再次输入密码" />
         </label>
         <p v-if="error" class="error" role="alert">{{ error }}</p>
-        <button class="btn btn-primary submit" type="submit" :disabled="pending">
+        <button class="btn btn-primary btn-liquid submit" type="submit" :disabled="pending">
           {{ pending ? '注册中…' : '注册并进入' }}
         </button>
       </form>
 
-      <!-- 修改密码（强制或主动） -->
-      <form v-else class="form" @submit.prevent="submitChange">
+          <!-- 修改密码（强制或主动） -->
+          <form v-else key="change" class="form" @submit.prevent="submitChange">
         <label class="field">
           <span class="label">原密码</span>
           <input v-model="form.oldPassword" class="input" type="password" autocomplete="current-password" placeholder="请输入当前密码" />
@@ -203,10 +257,12 @@ async function submitChange() {
           <input v-model="form.newConfirm" class="input" type="password" autocomplete="new-password" placeholder="再次输入新密码" />
         </label>
         <p v-if="error" class="error" role="alert">{{ error }}</p>
-        <button class="btn btn-primary submit" type="submit" :disabled="pending">
+        <button class="btn btn-primary btn-liquid submit" type="submit" :disabled="pending">
           {{ pending ? '提交中…' : '确认修改' }}
         </button>
-      </form>
+          </form>
+        </Transition>
+      </div>
     </div>
   </main>
 </template>
@@ -222,6 +278,7 @@ async function submitChange() {
 }
 
 .card {
+  position: relative;
   width: 100%;
   max-width: 380px;
   padding: var(--space-6);
@@ -229,6 +286,12 @@ async function submitChange() {
   border-radius: var(--radius-xl, 16px);
   background: var(--bg-secondary);
   box-shadow: var(--shadow-lg);
+}
+
+.theme-toggle {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
 }
 
 .brand {
@@ -242,18 +305,9 @@ async function submitChange() {
 }
 
 .logo {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
-  background: var(--accent-subtle);
-  color: var(--accent);
-}
-.logo svg {
-  width: 20px;
-  height: 20px;
-  stroke-width: 1.5;
+  display: block;
+  width: 40px;
+  height: 40px;
 }
 
 .brand-name {
@@ -275,6 +329,7 @@ async function submitChange() {
 }
 
 .tabs {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2px;
@@ -285,7 +340,26 @@ async function submitChange() {
   background: var(--nav-track, var(--bg-tertiary));
 }
 
+/* 滑动胶囊：跟随当前页左右滑动（几何与 .tabs padding/gap 对应） */
+.tab-slider {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(50% - 5px);
+  border-radius: var(--radius-full);
+  background: var(--nav-slider, var(--bg-secondary));
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+  transition: transform var(--duration-normal) var(--ease-standard);
+}
+.tab-slider.is-right {
+  transform: translateX(calc(100% + 2px));
+}
+
 .tab {
+  position: relative;
+  z-index: 1;
   min-height: 32px;
   border: none;
   border-radius: var(--radius-full);
@@ -293,14 +367,51 @@ async function submitChange() {
   font: var(--text-sm);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-standard),
-    color var(--duration-fast) var(--ease-standard);
+  transition: color var(--duration-fast) var(--ease-standard);
 }
 .tab.is-active {
-  background: var(--nav-slider, var(--bg-secondary));
   color: var(--accent);
   font-weight: 500;
-  box-shadow: var(--shadow-sm);
+}
+
+/* 表单舞台：leave 表单 absolute 脱离布局（与工作台路由过渡同一方案），
+   容器高度只由进入表单决定，配合 JS 高度动画——切换不跳动、旧表单不穿帮 */
+.form-stage {
+  position: relative;
+}
+
+/* 方向滑动：前进（登录→注册）新表单从右入，后退从左入 */
+.form-next-enter-active,
+.form-next-leave-active,
+.form-prev-enter-active,
+.form-prev-leave-active {
+  transition: opacity var(--duration-normal) var(--ease-standard),
+    transform var(--duration-normal) var(--ease-standard);
+}
+/* 离开的旧表单脱离文档流：不再撑高容器（否则高表单在切换瞬间裸露，离开结束时高度骤降跳动） */
+.form-next-leave-active,
+.form-prev-leave-active {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+}
+.form-next-enter-from {
+  opacity: 0;
+  transform: translateX(24px);
+}
+.form-next-leave-to {
+  opacity: 0;
+  transform: translateX(-24px);
+}
+.form-prev-enter-from {
+  opacity: 0;
+  transform: translateX(-24px);
+}
+.form-prev-leave-to {
+  opacity: 0;
+  transform: translateX(24px);
 }
 
 .form {

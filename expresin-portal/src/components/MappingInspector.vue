@@ -286,8 +286,7 @@ function resolve(action, targetField) {
   flex-direction: column;
   min-height: 0;
   min-width: 0;
-  background: var(--bg-secondary);
-  border-left: 1px solid var(--border-subtle);
+  /* 透明，让父级 .pane--inspector 的磨砂玻璃透出；竖直分割线由布局层提供 */
 }
 
 .body {

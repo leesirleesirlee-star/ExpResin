@@ -48,6 +48,8 @@ watch(
       <ChatMessage v-if="streaming" :message="{ role: 'jarvis' }" streaming />
     </div>
 
+    <!-- 底部坞：输入区 + 提示按钮 整体包成圆角矩形浮起卡片，消息区融入页面底层色 -->
+    <div class="dock">
     <form class="composer" @submit.prevent="submit">
       <button
         v-if="showUpload"
@@ -96,19 +98,36 @@ watch(
         <p>{{ hint }}</p>
       </div>
     </div>
+    </div>
   </section>
 </template>
 
 <style scoped>
-/* Jarvis 温暖对话区：背景与工作台一致，不再使用冷灰系统面板 */
+/* Jarvis 对话区：消息区完全透明，直接融入页面底层背景；
+   底部输入坞为磨砂玻璃悬浮卡片，前后分层 */
 .chat {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: var(--chat-surface);
-  border-right: 1px solid var(--border-subtle);
+  /* 无背景，让 .app 的 --bg-canvas 与径向渐变自然透出 */
+}
+/* 无框对话区：面板头的分隔线一并去除（仅对话面板；左右栏卡片的 PanelHead 保留分隔线） */
+.chat :deep(.panel-head) {
+  border-bottom: none;
 }
 
+/* 底部坞：composer + hintbar 整体的磨砂玻璃悬浮卡片（Claude Science 式） */
+.dock {
+  flex: none;
+  margin: 0 var(--space-3) var(--space-3);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow: var(--shadow-md), var(--glass-edge);
+  transform: translateZ(0); /* GPU 加速，优化 backdrop-filter 渲染 */
+}
 
 .thread {
   flex: 1;
@@ -121,12 +140,10 @@ watch(
 }
 
 .composer {
-  flex: none;
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  border-top: 1px solid var(--border-subtle);
+  padding: var(--space-2) var(--space-3);
 }
 /* 圆角输入框：比全局 .input（40px）更矮的 36px，聚焦出现琥珀橙高亮 */
 .composer .input {
@@ -209,11 +226,10 @@ watch(
   height: 16px;
 }
 
-/* 「提示」触发器 + 点击弹出的详细信息卡片 */
+/* 「提示」触发器 + 点击弹出的详细信息卡片（在 .dock 卡片内底部） */
 .hintbar {
   position: relative;
-  flex: none;
-  padding: 0 var(--space-4) var(--space-2);
+  padding: 0 var(--space-3) var(--space-2);
 }
 .hint-trigger {
   display: inline-flex;
@@ -241,8 +257,8 @@ watch(
 .hint-card {
   position: absolute;
   bottom: 100%;
-  left: var(--space-4);
-  right: var(--space-4);
+  left: var(--space-3);
+  right: var(--space-3);
   z-index: var(--z-toast);
   margin-bottom: var(--space-1);
   padding: var(--space-3);

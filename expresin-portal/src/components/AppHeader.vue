@@ -79,12 +79,7 @@ onBeforeUnmount(() => {
   <header class="header">
     <div class="left">
       <RouterLink to="/" class="brand-wrap" data-tip="回到工作台" aria-label="回到工作台">
-        <span class="logo" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linejoin="round">
-            <path d="M12 3 20 7.5v9L12 21 4 16.5v-9L12 3Z" />
-            <path d="M12 12 20 7.5M12 12v9M12 12 4 7.5" />
-          </svg>
-        </span>
+        <img class="logo" src="/logo.png" alt="" />
         <span class="brand">ExpResin</span>
       </RouterLink>
 
@@ -177,7 +172,7 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border-bottom: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-xs), var(--glass-edge);
   z-index: var(--z-header);
 }
 
@@ -208,16 +203,9 @@ onBeforeUnmount(() => {
 /* 「回到工作台」悬停提示由 base.css 的全局 [data-tip] 工具承接 */
 
 .logo {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  color: var(--accent);
-}
-.logo svg {
-  width: 24px;
-  height: 24px;
-  stroke-width: 1.5;
+  display: block;
+  width: 28px;
+  height: 28px;
 }
 
 .brand {

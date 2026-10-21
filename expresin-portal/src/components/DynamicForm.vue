@@ -107,7 +107,7 @@ function fillText(col) {
   flex-direction: column;
   min-height: 0;
   min-width: 0;
-  background: var(--bg-primary);
+  /* 透明，让父级 .pane--form 的磨砂玻璃透出 */
 }
 
 .count {

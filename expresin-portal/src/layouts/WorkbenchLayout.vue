@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 
 /**
  * 三栏工作台布局：只服务于真正需要「对话 + 表单 + 检查」的页面。
+ * 栏位（参考 Claude Science）：左 = 表单 · 中 = Jarvis 对话（弹性主栏） · 右 = 检查。
  * 结构：页面工具条（标题/阶段进度/折叠） + 三栏 + 底部状态栏。
  */
 const props = defineProps({
@@ -12,7 +13,7 @@ const props = defineProps({
   activeStep: { type: String, default: '' },
 })
 
-const chatOpen = ref(true)
+const formOpen = ref(true)
 const inspectorOpen = ref(true)
 const tab = ref('form')
 
@@ -20,13 +21,14 @@ const tab = ref('form')
 const activeIndex = computed(() => props.steps.findIndex((s) => s.id === props.activeStep))
 
 const tabs = [
-  { key: 'chat', label: '对话' },
   { key: 'form', label: '表单' },
+  { key: 'chat', label: '对话' },
   { key: 'inspector', label: '检查' },
 ]
 
 const style = computed(() => ({
-  '--chat-col': chatOpen.value ? 'var(--chat-w)' : 'var(--rail-collapsed-w)',
+  /* 左列表单可折叠为 48px 图标轨道；中列 Jarvis 对话为弹性主栏，常驻不折叠、左右栏收起时配合拉伸 */
+  '--form-col': formOpen.value ? 'var(--form-w)' : 'var(--rail-collapsed-w)',
   '--inspector-col': inspectorOpen.value ? 'var(--inspector-w)' : 'var(--rail-collapsed-w)',
 }))
 </script>
@@ -46,7 +48,20 @@ const style = computed(() => ({
             :class="{ 'is-active': s.id === activeStep, 'is-done': i < activeIndex }"
             :aria-current="s.id === activeStep ? 'step' : undefined"
           >
-            <span class="dot" aria-hidden="true"></span>
+            <span class="indicator" aria-hidden="true">
+              <svg
+                v-if="i < activeIndex"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M5 13l4 4L19 7" />
+              </svg>
+              <template v-else>{{ i + 1 }}</template>
+            </span>
             <span>{{ s.label }}</span>
             <span v-if="i < steps.length - 1" class="link" aria-hidden="true"></span>
           </li>
@@ -58,9 +73,9 @@ const style = computed(() => ({
         <button
           class="icon-btn"
           type="button"
-          :aria-pressed="chatOpen"
-          aria-label="折叠或展开对话面板"
-          @click="chatOpen = !chatOpen"
+          :aria-pressed="formOpen"
+          aria-label="折叠或展开表单面板"
+          @click="formOpen = !formOpen"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="4" width="18" height="16" rx="2" />
@@ -83,34 +98,42 @@ const style = computed(() => ({
     </header>
 
     <div class="panes" :data-tab="tab" :style="style">
+      <!-- 左列：表单（固定宽，可折叠为 48px 图标轨道；收起后对话栏弹性拉伸占满） -->
       <div
-        id="pane-chat"
-        class="pane pane--chat"
-        :class="{ 'pane--collapsed': !chatOpen }"
+        id="pane-form"
+        class="pane pane--form"
+        :class="{ 'pane--collapsed': !formOpen }"
         role="tabpanel"
-        aria-labelledby="tab-chat"
+        aria-labelledby="tab-form"
       >
-        <slot v-if="chatOpen" name="chat" />
+        <slot v-if="formOpen" name="form" />
         <div v-else class="rail">
           <button
             class="icon-btn"
             type="button"
-            aria-label="展开对话面板"
-            @click="chatOpen = true"
+            aria-label="展开表单面板"
+            @click="formOpen = true"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="4" width="18" height="16" rx="2" />
               <path d="M9 4v16" />
             </svg>
           </button>
-          <span class="rail-label caps">对话</span>
+          <span class="rail-label caps">表单</span>
         </div>
       </div>
 
-      <div id="pane-form" class="pane pane--form" role="tabpanel" aria-labelledby="tab-form">
-        <slot name="form" />
+      <!-- 中列：Jarvis 对话（弹性主栏，常驻不折叠，左右栏收起时配合拉伸） -->
+      <div
+        id="pane-chat"
+        class="pane pane--chat"
+        role="tabpanel"
+        aria-labelledby="tab-chat"
+      >
+        <slot name="chat" />
       </div>
 
+      <!-- 右列：检查（不变） -->
       <div
         id="pane-inspector"
         class="pane pane--inspector"
@@ -213,30 +236,60 @@ const style = computed(() => ({
 .steps li {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: 6px;
   font: var(--text-xs);
   color: var(--text-tertiary);
   white-space: nowrap;
 }
-.steps .dot {
-  width: 6px;
-  height: 6px;
+/* Step indicator（namethatui Steps 解剖 #1）：编号圆圈，完成态换对勾。
+   20px 直径适配 48px 工具条，大小适中不撑高 */
+.steps .indicator {
+  flex: none;
+  width: 20px;
+  height: 20px;
   border-radius: var(--radius-full);
-  background: currentColor;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--text-tertiary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
 }
-/* 步骤之间用细线连起来，表达先后顺序 */
+.steps .indicator svg {
+  width: 10px;
+  height: 10px;
+}
+/* Step connector（解剖 #2）：身后的连接线染色，前方的保持 muted */
 .steps .link {
-  width: 14px;
+  width: 18px;
   height: 1px;
   margin-left: var(--space-1);
   background: var(--border-strong);
 }
+/* Completed step（解剖 #3）：橄榄绿对勾圆圈，暖色调色板的「通过」色 */
 .steps li.is-done {
   color: var(--text-secondary);
 }
+.steps li.is-done .indicator {
+  border-color: var(--accent-green);
+  background: var(--accent-green);
+  color: #fff;
+}
+.steps li.is-done .link {
+  background: var(--accent);
+}
+/* Current step（解剖 #4）：琥珀橙实心圆圈，与主按钮同色同字色 */
 .steps li.is-active {
   color: var(--accent);
   font-weight: 500;
+}
+.steps li.is-active .indicator {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 .actions {
@@ -248,36 +301,70 @@ const style = computed(() => ({
 
 .panes {
   display: grid;
-  grid-template-columns: var(--chat-col, var(--chat-w)) minmax(0, 1fr) var(--inspector-col, var(--inspector-w));
-  gap: var(--space-3);
-  padding: var(--space-3);
+  /* 左：表单（固定 480px，可折叠为轨道） · 中：Jarvis 对话（弹性主栏，常驻） · 右：检查（固定 320px） */
+  grid-template-columns: var(--form-col, var(--form-w)) minmax(0, 1fr) var(--inspector-col, var(--inspector-w));
+  gap: var(--space-4);
+  padding: var(--space-4);
   min-height: 0;
   transition: grid-template-columns var(--duration-normal) var(--ease-standard);
 }
-/* 每栏独立成卡片：边框 + 圆角 + 细阴影，栏间以画布灰分隔 */
+/* 基础栏位：仅保留布局与圆角，视觉层由具体栏位类型决定 */
 .pane {
   display: flex;
   flex-direction: column;
   min-height: 0;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--surface-card);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-xl);
 }
 .pane > :deep(*) {
   flex: 1;
   min-width: 0;
 }
 
-/* 三列入场：从左到右依次显现 —— 每列轻微左滑 + 淡入，延迟 0/80/160ms，
+/* 左栏表单 / 右栏检查：磨砂玻璃悬浮卡片，非折叠态生效 */
+.pane--form:not(.pane--collapsed),
+.pane--inspector:not(.pane--collapsed) {
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow: var(--shadow-md), var(--glass-edge);
+  transform: translateZ(0); /* GPU 加速，优化 backdrop-filter 渲染 */
+}
+
+/* 中列 Jarvis 对话：完全透明融入页面底层，无任何框线/圆角/裁剪，
+   修复此前 border-radius + overflow:hidden 导致的边缘模糊框线 */
+.pane--chat {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+/* 右栏与 chat 之间的竖直分割线：位于 gap 正中，不穿过圆角 */
+.pane--inspector:not(.pane--collapsed) {
+  position: relative;
+}
+.pane--inspector:not(.pane--collapsed)::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--space-4) / -2);
+  top: var(--space-4);
+  bottom: var(--space-4);
+  width: 1px;
+  background: var(--border-subtle);
+  pointer-events: none;
+}
+
+/* 三列入场：从左到右依次显现（表单 → 对话 → 检查） —— 每列轻微左滑 + 淡入，延迟 0/80/160ms，
    与整页交叉淡入叠加出「列级节奏」；只在挂载时播放一次，不影响折叠的 grid 过渡 */
 @media (prefers-reduced-motion: no-preference) {
-  .pane--chat {
+  .pane--form {
     animation: pane-in var(--duration-normal) var(--ease-decelerate) both;
   }
-  .pane--form {
+  .pane--chat {
     animation: pane-in var(--duration-normal) var(--ease-decelerate) 80ms both;
   }
   .pane--inspector {
@@ -296,10 +383,14 @@ const style = computed(() => ({
 }
 
 /* 折叠态：保留 48px 图标条，而不是整栏消失（规范 §3.3 / changelog §2）。
-   轨道与工作台同色系（暖米/暖炭），去阴影使其后退为「框架」而非白色卡片 */
+   轨道与工作台同色系（暖米/暖炭），去阴影使其后退为「框架」而非白色卡片；
+   同时显式关闭磨砂玻璃效果，避免折叠后仍残留半透明层 */
 .pane--collapsed {
   align-items: center;
+  border: none;
   background: var(--bg-workbench);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   box-shadow: none;
 }
 .rail {

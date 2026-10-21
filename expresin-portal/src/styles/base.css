@@ -114,6 +114,29 @@ select {
   box-shadow: var(--shadow-sm);
 }
 
+/* 磨砂玻璃主按钮·平面版（修饰类，与 .btn-primary 组合）：
+   平面风格：单层半透明琥珀 + 磨砂模糊 + 细边框，无渐变/投影/位移，黑色文字。
+   用于欢迎页 CTA、认证卡片提交等强调场景。 */
+.btn-primary.btn-liquid {
+  background: color-mix(in srgb, var(--accent) 52%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  box-shadow: none;
+  color: #1c1c1e;
+  text-shadow: none;
+  transition: background var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+}
+.btn-primary.btn-liquid:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 62%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 52%, transparent);
+  box-shadow: none;
+}
+.btn-primary.btn-liquid:active:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
 /* 次要按钮：透明背景 + 极淡暖边框；静默保持中性，悬停浮现琥珀橙 */
 .btn-secondary {
   background: transparent;
@@ -473,9 +496,35 @@ h1[data-tip] {
   opacity: 0;
   transform: translateY(-4px);
 }
+/* 向导步骤页互切（新建实验 ↔ 数据识别）：两页共用同一条步骤条且静止位置一致，
+   任何位移都会被读成「步骤条在动」——零位移纯 opacity 交接，
+   步骤条原地固定，仅激活步骤原地推进；编排节奏与其余过渡一致。 */
+.page-none-enter-active {
+  transition: opacity 260ms var(--ease-decelerate) 160ms;
+}
+.page-none-leave-active {
+  transition: opacity 200ms var(--ease-accelerate);
+  position: absolute;
+  top: var(--topbar-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  background: var(--bg-canvas);
+  overflow: hidden;
+}
+.page-none-enter-active,
+.page-none-leave-active {
+  will-change: opacity;
+}
+.page-none-enter-from,
+.page-none-leave-to {
+  opacity: 0;
+}
 @media (max-width: 480px) {
   .page-right-leave-active,
   .page-left-leave-active,
+  .page-none-leave-active,
   .page-fade-leave-active {
     top: var(--topbar-h-mobile);
   }
@@ -485,6 +534,8 @@ h1[data-tip] {
   .page-right-leave-active,
   .page-left-enter-active,
   .page-left-leave-active,
+  .page-none-enter-active,
+  .page-none-leave-active,
   .page-fade-enter-active,
   .page-fade-leave-active {
     transition: none;

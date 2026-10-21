@@ -42,3 +42,6 @@ materials/guides/
 
 # real recognition output copied into the portal as demo/fallback data
 expresin-portal/public/data/analysis.json
+
+# dev server / pipeline runtime logs
+expresin-pipeline/.dev-logs/

@@ -223,9 +223,10 @@ function emitChange(field, value) {
 
 .frow {
   display: grid;
-  grid-template-columns: minmax(140px, 1.1fr) minmax(160px, 1.4fr) minmax(120px, 1fr);
+  /* 480px 左栏内两列布局：标签 + 控件同行，元信息独占一行右对齐，杜绝横向溢出 */
+  grid-template-columns: minmax(112px, 1fr) minmax(140px, 1.3fr);
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2) var(--space-3);
   padding: var(--space-3) var(--space-3);
   border-bottom: 1px solid var(--border-subtle);
 }
@@ -272,6 +273,8 @@ function emitChange(field, value) {
   min-width: 0;
 }
 .fcontrol .input {
+  flex: 1;
+  min-width: 0;
   height: 40px;
   background: var(--bg-primary);
 }
@@ -289,9 +292,11 @@ function emitChange(field, value) {
 }
 
 .fmeta {
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-2);
 }
 .defer {
@@ -305,15 +310,5 @@ function emitChange(field, value) {
 }
 .defer:hover {
   color: var(--accent);
-}
-
-@media (max-width: 1280px) {
-  .frow {
-    grid-template-columns: minmax(120px, 1fr) minmax(140px, 1.3fr);
-  }
-  .fmeta {
-    grid-column: 1 / -1;
-    justify-content: flex-end;
-  }
 }
 </style>

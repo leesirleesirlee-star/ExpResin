@@ -341,9 +341,6 @@ function goSetup() {
           <button class="btn btn-secondary" type="button" :disabled="uploading" @click="fileInput.click()">
             {{ uploading ? `解析中 ${uploadElapsed}s` : '上传原始数据' }}
           </button>
-          <span v-if="uploading" class="upload-hint">
-            列块已并行解析，通常 30–60 秒；同一文件重复上传会命中缓存（＜1 秒）
-          </span>
           </div>
         </template>
       </PanelHead>
@@ -426,11 +423,6 @@ function goSetup() {
   white-space: nowrap;
   max-width: 260px;
 }
-.upload-hint {
-  font-size: 12px;
-  color: var(--text-tertiary);
-}
-
 .sheet-field {
   display: flex;
   align-items: center;
@@ -462,7 +454,7 @@ function goSetup() {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  background: var(--bg-primary);
+  /* 透明，让父级 .pane--form 的磨砂玻璃透出 */
 }
 .visually-hidden {
   position: absolute;

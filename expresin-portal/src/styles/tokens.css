@@ -68,10 +68,18 @@
   /* 聚焦环统一使用琥珀橙 */
   --focus-ring: 0 0 0 3px var(--accent-bg);
 
-  /* 毛玻璃表面：与工作台同源的暖米色调（Claude 风格），不再接近纯白 */
-  --glass-bg: rgba(242, 240, 233, 0.78);
-  --glass-bg-strong: rgba(242, 240, 233, 0.92);
-  --glass-border: rgba(255, 255, 255, 0.6);
+  /* 毛玻璃表面（Apple Liquid Glass 式透镜材质）：
+     背景 = 顶部镜面高光渐变 + 半透明暖米底层，模拟透镜聚光而非平板磨砂；
+     --glass-edge 提供上缘亮边与下缘微光，近似边缘折射（refraction 无 Web API，
+     按 namethatui.com/styles/liquid-glass 的 Web 近似：blur + saturate + 分层内高光） */
+  --glass-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.04) 32%, rgba(255, 255, 255, 0) 55%),
+    rgba(242, 240, 233, 0.66);
+  --glass-bg-strong: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.03) 32%, rgba(255, 255, 255, 0) 55%),
+    rgba(242, 240, 233, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.65);
+  --glass-blur: 18px;
+  --glass-saturate: 180%;
+  --glass-edge: inset 0 1px 1px rgba(255, 255, 255, 0.55), inset 0 -1px 1px rgba(255, 255, 255, 0.16);
   /* 导航分段控件：轨道为暖米灰凹槽，滑块为暖白（明显浮起） */
   --nav-track: #e6e1d3;
   --nav-track-border: #ddd7c6;
@@ -147,6 +155,7 @@
   --topbar-h: 56px;
   --statusbar-h: 48px;
   --chat-w: 360px;
+  --form-w: 480px; /* 表单栏（工作台左列） */
   --inspector-w: 320px;
 
   /* ---- 层级 ---- */
@@ -222,9 +231,15 @@
 
   --focus-ring: 0 0 0 3px var(--accent-bg);
 
-  --glass-bg: rgba(31, 29, 27, 0.72);
-  --glass-bg-strong: rgba(31, 29, 27, 0.88);
-  --glass-border: rgba(255, 255, 255, 0.1);
+  /* Liquid Glass 深色：镜面高光收敛，底层更透以呈现自适应着色感 */
+  --glass-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.02) 32%, rgba(255, 255, 255, 0) 55%),
+    rgba(31, 29, 27, 0.6);
+  --glass-bg-strong: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 32%, rgba(255, 255, 255, 0) 55%),
+    rgba(31, 29, 27, 0.84);
+  --glass-border: rgba(255, 255, 255, 0.16);
+  --glass-blur: 18px;
+  --glass-saturate: 180%;
+  --glass-edge: inset 0 1px 1px rgba(255, 255, 255, 0.18), inset 0 -1px 1px rgba(255, 255, 255, 0.06);
   /* 导航分段控件：轨道比工作台更深，滑块比轨道更亮（避免「凹陷」错觉） */
   --nav-track: #232120;
   --nav-track-border: #2c2926;
@@ -298,9 +313,14 @@
 
     --focus-ring: 0 0 0 3px var(--accent-bg);
 
-    --glass-bg: rgba(31, 29, 27, 0.72);
-    --glass-bg-strong: rgba(31, 29, 27, 0.88);
-    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.02) 32%, rgba(255, 255, 255, 0) 55%),
+      rgba(31, 29, 27, 0.6);
+    --glass-bg-strong: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 32%, rgba(255, 255, 255, 0) 55%),
+      rgba(31, 29, 27, 0.84);
+    --glass-border: rgba(255, 255, 255, 0.16);
+    --glass-blur: 18px;
+    --glass-saturate: 180%;
+    --glass-edge: inset 0 1px 1px rgba(255, 255, 255, 0.18), inset 0 -1px 1px rgba(255, 255, 255, 0.06);
     --nav-track: #232120;
     --nav-track-border: #2c2926;
     --nav-slider: #3b3630;
@@ -314,5 +334,28 @@
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.03);
     --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.04);
     --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.06);
+  }
+}
+
+/* ==========================================================================
+   无障碍：系统开启「减少透明度」时，Liquid Glass 回退为近不透明表面
+   （真实材质由系统自适应；Web 近似需手动兜底，保证任何内容下的可读性）
+   ========================================================================== */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass-bg: rgba(242, 240, 233, 0.97);
+    --glass-bg-strong: rgba(242, 240, 233, 0.99);
+    --glass-blur: 0px;
+    --glass-edge: none;
+  }
+  :root[data-theme="dark"] {
+    --glass-bg: rgba(31, 29, 27, 0.97);
+    --glass-bg-strong: rgba(31, 29, 27, 0.99);
+  }
+}
+@media (prefers-reduced-transparency: reduce) and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --glass-bg: rgba(31, 29, 27, 0.97);
+    --glass-bg-strong: rgba(31, 29, 27, 0.99);
   }
 }

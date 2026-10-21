@@ -12,14 +12,17 @@ const route = useRoute()
 const bare = computed(() => Boolean(route.meta.bare))
 
 /* 页面过渡名跟随导航方向：顶栏右移 → page-right（新页从右入），
-   左移 → page-left（新页从左入），同级/未知 → page-fade（纯淡入淡出）。
+   左移 → page-left（新页从左入），同级/未知 → page-fade（纯淡入淡出），
+   向导步骤组内互切（新建实验 ↔ 数据识别）→ page-none（零位移，步骤条固定）。
    滑动方向与顶栏指示条一致，形成「动画链接」。 */
 const transitionName = computed(() =>
   navDirection.value === 'forward'
     ? 'page-right'
     : navDirection.value === 'back'
       ? 'page-left'
-      : 'page-fade',
+      : navDirection.value === 'none'
+        ? 'page-none'
+        : 'page-fade',
 )
 </script>
 

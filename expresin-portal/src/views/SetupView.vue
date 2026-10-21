@@ -173,6 +173,6 @@ function onSave() {
   min-height: 0;
   overflow-y: auto;
   padding: var(--space-5) var(--space-5) var(--space-7);
-  background: var(--bg-primary);
+  /* 透明，让父级 .pane--form 的磨砂玻璃透出 */
 }
 </style>

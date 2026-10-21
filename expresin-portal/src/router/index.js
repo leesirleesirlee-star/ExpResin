@@ -105,16 +105,27 @@ const router = createRouter({
    详情页 / API 文档视为更深层级（始终在「右」侧）。
    bare 页（欢迎/登录）不参与空间序列，统一淡入淡出。 */
 const NAV_ORDER = ['/', '/setup', '/recognize', '/archive']
+
+/* 向导步骤组：/setup 与 /recognize 共用同一条「录入 → 识别 → 归档」步骤条，
+   且两页静止位置完全一致（WorkbenchLayout 三列等宽栅格居中）。
+   组内互切若沿用方向性滑动，步骤条会随页面横移 ±24px，
+   被用户读成「步骤条位置不同、在动」——组内改用零位移过渡（page-none），
+   步骤条原地固定，仅激活步骤在原地推进。 */
 const navIndex = (path) => {
   const i = NAV_ORDER.indexOf(path)
   return i === -1 ? NAV_ORDER.length : i
 }
-/** @type {import('vue').Ref<'forward'|'back'|'fade'>} */
+/** @type {import('vue').Ref<'forward'|'back'|'fade'|'none'>} */
 export const navDirection = ref('fade')
+
+const WIZARD_STEPS = ['/setup', '/recognize']
 
 router.beforeEach((to, from) => {
   /* 过渡方向（原导航动画逻辑） */
-  if (to.meta.bare || from.meta.bare) {
+  if (WIZARD_STEPS.includes(to.path) && WIZARD_STEPS.includes(from.path)) {
+    /* 步骤向导组内互切：纯淡入淡出，步骤条固定不动 */
+    navDirection.value = 'none'
+  } else if (to.meta.bare || from.meta.bare) {
     navDirection.value = 'fade'
   } else {
     const ti = navIndex(to.path)
