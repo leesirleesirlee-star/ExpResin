@@ -37,6 +37,7 @@ are git-ignored and hold only local copies:
 | `materials/data/` | Original experiment workbooks used by benchmark and pipeline scripts |
 | `materials/guides/` | Research proposal and build/implementation guide documents (docx) |
 | `expresin-portal/public/data/analysis.json` | Recognition output the portal uses as demo/fallback data |
+| `expresin-pipeline/.dev-logs/` | Runtime logs of the local dev server / data-link pipeline |
 | `uploads/` | Session uploads (screenshots, pasted text) |
 
 To reproduce a run locally, drop your own workbooks into `materials/data/` or
@@ -69,6 +70,12 @@ directories are needed to build or start the stack.
   a manifest (sizes, sha256) to a NAS share — local directory/mapped drive or
   direct SMB via `smbprotocol`; failures degrade to `skipped`/`error` without
   blocking the archive, and the archive detail page offers one-click republish.
+- **Portal UI**: warm, token-driven design system
+  (`expresin-portal/src/styles/tokens.css`). The wizard pages share a numbered
+  `录入 → 识别 → 归档` step indicator (numbered circles, completed steps swap
+  to a check mark, current step marked `aria-current="step"`) whose resting
+  position is pixel-identical across pages — hops between the two wizard pages
+  use a zero-translation cross-fade so the bar never slides.
 
 ## Quick Start
 
