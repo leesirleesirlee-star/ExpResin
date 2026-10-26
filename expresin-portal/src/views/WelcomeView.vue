@@ -70,7 +70,10 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  if (timer) window.clearTimeout(timer)
+  if (timer !== null) {
+    window.clearTimeout(timer)
+    timer = null
+  }
 })
 </script>
 
@@ -132,7 +135,7 @@ onBeforeUnmount(() => {
 
       <!-- 6. 主 CTA -->
       <div class="cta reveal" style="--d: 720ms">
-        <button class="btn btn-primary btn-liquid cta-btn" type="button" @click="enter">
+        <button class="btn cta-btn" type="button" @click="enter">
           进入系统
           <svg class="cta-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M5 12h14M13 6l6 6-6 6" />
@@ -155,13 +158,20 @@ onBeforeUnmount(() => {
   z-index: 20;
 }
 /* 视图根元素不设 position / z-index / inset（expresin-ui 规范：
-   过渡几何由 App.vue 的 .page-stage 包装层控制）；
-   背景层次全部用 background-image 分层绘制，无需定位上下文 */
+   过渡几何由 App.vue 的 .page-stage 包装层控制）；背景层次全部用
+   background-image 分层绘制，无需定位上下文。
+   不用 place-items: center 做垂直居中：内容高于视口时居中对齐会把顶部裁到
+   滚动区外的不可达位置（overflow 容器的经典居中 bug）；改为 justify-items: center
+   + .hero 上下 auto 外边距「安全居中」——空间够时居中，不够时从顶部起排、完整可滚动。
+   scrollbar-gutter: stable：滚动条出现/消失时内容不横向跳动。
+   背景 background-attachment: fixed 固定到视口：滚动时网格/光晕不随内容重绘，
+   也与各工作台页「背景固定、内容滚动」的观感一致。 */
 .welcome {
   display: grid;
-  place-items: center;
+  justify-items: center;
   height: 100%;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   padding: var(--space-6) var(--space-4);
   background-image:
     radial-gradient(
@@ -175,6 +185,7 @@ onBeforeUnmount(() => {
     100% 100%,
     44px 44px,
     44px 44px;
+  background-attachment: fixed;
 }
 
 .hero {
@@ -183,6 +194,7 @@ onBeforeUnmount(() => {
   align-items: center;
   width: 100%;
   max-width: 660px;
+  margin-block: auto; /* 安全垂直居中（配合 justify-items: center） */
   text-align: center;
 }
 
@@ -234,8 +246,8 @@ onBeforeUnmount(() => {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-full);
   background: var(--bg-secondary);
-  font: var(--text-sm);
   font-size: 13px;
+  line-height: 1.5;
   color: var(--text-secondary);
 }
 
@@ -257,8 +269,8 @@ onBeforeUnmount(() => {
 /* ---- 4. 副标题 ---- */
 .sub {
   margin: var(--space-3) 0 0;
-  font: var(--text-sm);
   font-size: 14px;
+  line-height: 1.5;
   letter-spacing: 0.14em;
   color: var(--text-tertiary);
 }
@@ -336,6 +348,8 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
+/* 发送键：与主页面（ChatPanel）一致的圆角矩形（squircle）上箭头钮，
+   交互也对齐——hover 不提位移（只换色与阴影），按下 scale(0.92)，更跟手 */
 .send {
   display: grid;
   place-items: center;
@@ -343,13 +357,14 @@ onBeforeUnmount(() => {
   width: 40px;
   height: 40px;
   border: none;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-lg);
   background: var(--accent);
   color: var(--on-accent);
   cursor: pointer;
-  transition: transform var(--duration-fast) var(--ease-standard),
-    background var(--duration-fast) var(--ease-standard),
-    box-shadow var(--duration-fast) var(--ease-standard);
+  box-shadow: var(--shadow-xs);
+  transition: background var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard),
+    transform var(--duration-instant) var(--ease-standard);
 }
 .send svg {
   width: 18px;
@@ -358,11 +373,10 @@ onBeforeUnmount(() => {
 }
 .send:hover {
   background: var(--accent-hover, var(--accent));
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
 }
 .send:active {
-  transform: translateY(0);
+  transform: scale(0.92);
 }
 
 /* ---- 6. 主 CTA ---- */
@@ -370,12 +384,33 @@ onBeforeUnmount(() => {
   margin-top: var(--space-6);
 }
 
+/* 「进入系统」（登录注册主按钮）：中性磨砂玻璃，不使用橙色。
+   与顶栏、对话坞共用同一套 glass token——顶部镜面高光渐变 + 暖米半透明底 + 背后模糊，
+   深浅色主题与「减少透明度」系统偏好都由 token 层自动适配。 */
 .cta-btn {
   min-width: 200px;
   height: 46px;
-  border-radius: var(--radius-full);
-  font-size: 15px;
   gap: var(--space-2);
+  padding: 0 var(--space-5);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow: var(--shadow-md), var(--glass-edge);
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  transform: translateZ(0); /* GPU 合成层，保证 backdrop-filter 渲染稳定 */
+  transition: background var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard),
+    transform var(--duration-instant) var(--ease-standard);
+}
+.cta-btn:hover:not(:disabled) {
+  background: var(--glass-bg-strong);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-lg), var(--glass-edge);
 }
 
 .cta-arrow {

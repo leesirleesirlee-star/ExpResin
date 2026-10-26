@@ -277,6 +277,9 @@ export async function confirmSession() {
 export async function loadArchive() {
   session.archiveLoading = true
   try {
+    /* 首页可能先于任何实验会话挂载，此时 online 仍是初始 false；
+       先探测一次，避免后端正常却被误判成空档案。 */
+    if (!session.online) session.online = await probeBackend()
     if (!session.online) {
       session.archive = []
       return

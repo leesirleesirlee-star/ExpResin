@@ -183,6 +183,10 @@ export const api = {
 
   getExperiment: (id) => req(`/v1/experiments/${id}`),
 
+  /** 基于当前登录用户自己的归档生成 AI 成长报告；长推理请求独立给出 5 分钟预算。 */
+  createGrowthReport: (payload = {}) =>
+    req('/v1/growth-reports', { method: 'POST', body: JSON.stringify(payload) }, 300000),
+
   /** 重新发布到 NAS（归档时失败补发 / NAS 配置变更后重发）；返回 {experiment_id, nas}。 */
   republishNas: (id) =>
     req(`/v1/experiments/${id}/nas/publish`, { method: 'POST' }, 120000),

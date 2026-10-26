@@ -16,7 +16,7 @@ stay on the machine that produced them (see
 | `expresin-pipeline/` | FastAPI backend + core Python pipeline: L1/L2 table recognition, canonical long-table materialization, derived-quantity computation, record-template fill/export, user auth (`server/auth.py`), NAS publishing (`src/nas_adapter.py`) |
 | `expresin-pipeline/config/templates/` | Per-experiment-type metadata/fill JSON configs: batch, column and four electrochemical variants (single-cell, two-chamber, three-chamber, bipolar) |
 | `expresin-pipeline/config/record_templates/` | Record-table layouts; electrochemical variants use one block per chamber × ion with a row-level initial-concentration column |
-| `expresin-portal/` | Vue 3 + Vite frontend workbench: welcome/sign-in, experiment setup, recognition review, experiment archive, admin console, API docs |
+| `expresin-portal/` | Vue 3 + Vite frontend workbench: welcome/sign-in, full-height hover navigation, modular personal workspace, AI growth reports, experiment setup, recognition review, archive, admin console, API docs |
 | `docs/` | Living documents: `ExpResin-PRD.md`, `ExpResin-UI-Design-Spec-v1.0.md`, `ExpResin-UI-Upgrade-Plan-v2.0.md`, `ExpResin-Project-Roadmap-v2.0.md`, `design-changelog.md`, `research-opportunities.md`, `benchmark-v0.md`, `benchmark-hallucination-v0.md` |
 | `docs/session-logs/` | Per-session progress logs (append-only history) |
 | `materials/template-drafts/` | Original experiment template drafts from the advisor (transcribed into JSON configs under `expresin-pipeline/config/templates/`) |
@@ -38,6 +38,7 @@ are git-ignored and hold only local copies:
 | `materials/guides/` | Research proposal and build/implementation guide documents (docx) |
 | `expresin-portal/public/data/analysis.json` | Recognition output the portal uses as demo/fallback data |
 | `expresin-pipeline/.dev-logs/` | Runtime logs of the local dev server / data-link pipeline |
+| `.deepworks/` | Session scratch, runtime logs and isolated growth-test databases; never committed |
 | `uploads/` | Session uploads (screenshots, pasted text) |
 
 To reproduce a run locally, drop your own workbooks into `materials/data/` or
@@ -70,12 +71,27 @@ directories are needed to build or start the stack.
   a manifest (sizes, sha256) to a NAS share — local directory/mapped drive or
   direct SMB via `smbprotocol`; failures degrade to `skipped`/`error` without
   blocking the archive, and the archive detail page offers one-click republish.
+- **Modular workspace & AI growth reports**: the home workbench keeps one clear
+  **Start experiment** action and hosts compact modules instead of duplicating
+  large navigation cards. **Growth summary** is implemented; experiment-creation
+  and curve-generation modules are explicitly marked as placeholders. The growth
+  report reads up to 20 archived experiments belonging to the signed-in user,
+  combines deterministic archive statistics with AI-generated overall analysis,
+  per-experiment growth observations, actionable improvement goals and data-gap
+  notes, and supports copy/Markdown export. Ownership is enforced again on the
+  server for every experiment; even an admin report contains only the admin's own
+  archives. Empty, loading, failure and completed states are all shown honestly.
 - **Portal UI**: warm, token-driven design system
-  (`expresin-portal/src/styles/tokens.css`). The wizard pages share a numbered
-  `录入 → 识别 → 归档` step indicator (numbered circles, completed steps swap
-  to a check mark, current step marked `aria-current="step"`) whose resting
-  position is pixel-identical across pages — hops between the two wizard pages
-  use a zero-translation cross-fade so the bar never slides.
+  (`expresin-portal/src/styles/tokens.css`). The four primary destinations live in
+  a full-height left navigation drawer opened from the ExpResin brand; it overlays
+  content, uses matching right-hand corner radii and a directional shadow, and
+  supports hover, touch and keyboard dismissal. On the two Chat workbench pages,
+  the central Chat scales in for 400 ms while the two floating side panels enter
+  from their respective sides for 800 ms, all starting together with spring easing.
+  The wizard pages share a numbered `录入 → 识别 → 归档` step indicator (numbered
+  circles, completed steps swap to a check mark, current step marked
+  `aria-current="step"`) whose resting position is pixel-identical across pages —
+  route-level transitions add no horizontal translation, so the bar never slides.
 
 ## Quick Start
 
@@ -96,7 +112,10 @@ use; they are local-only and git-ignored.
 On first start the server also seeds an `admin` account
 (`EXPRESIN_ADMIN_PASSWORD`, default `admin123`) that must change its password
 on first login. Set the optional `NAS_*` variables in `.env` to enable NAS
-publishing (see `.env.example` for local and SMB modes).
+publishing (see `.env.example` for local and SMB modes). AI chat and growth
+reports use the configured DeepSeek chat-JSON interface. If its API key or network
+is unavailable, growth-report generation returns 503 and the workbench shows a
+retryable error; it does not fabricate a fallback report.
 
 ### Frontend (port 5173)
 
@@ -108,7 +127,9 @@ npm run dev
 
 Open http://localhost:5173/ — you land on the welcome page; register an
 account or sign in as `admin`, then pick any archived experiment for
-**Export Template Excel** and **Export CSV**.
+**Export Template Excel** and **Export CSV**. On the home workbench, open
+**成长总结** and choose **生成成长报告** to analyze your own archived experiments;
+an optional focus can steer the improvement goals.
 
 ## API Overview
 
@@ -125,10 +146,35 @@ Experiment workflow (all `/v1` endpoints require
 - `GET  /v1/experiments` · `GET /v1/experiments/{id}`
 - `GET  /v1/experiments/{id}/data/canonical[.csv|.json]`
 - `POST /v1/experiments/{id}/archive`
+- `POST /v1/growth-reports` (AI growth summary for the current user's archives)
 - `GET  /v1/experiments/{id}/export/template`
 - `POST /v1/experiments/{id}/nas/publish` (republish to NAS)
 
+Growth reports accept an optional JSON body such as
+`{"focus": "improve data review", "limit": 20}`. `limit` is capped at 20; user
+ownership always comes from the bearer token, never from client-supplied IDs.
+
 The full endpoint specification lives in `docs/` and the in-app API Docs page.
+
+## Verification
+
+From the repository root, run the isolated growth-report smoke test and frontend
+production build:
+
+```bash
+python expresin-pipeline/scripts/smoke_growth_report.py
+python -m compileall -q expresin-pipeline/server/app.py expresin-pipeline/server/services.py
+cd expresin-portal
+npm run build
+```
+
+The smoke test uses a temporary SQLite database under the git-ignored
+`.deepworks/tmp/` directory and a fake structured LLM response, so it neither
+touches the real archive nor incurs model charges. Its 17 checks cover registration,
+empty archives, authentication, deterministic statistics, focus forwarding,
+cross-user isolation, admin self-scope, malformed model output (502) and unavailable
+AI configuration (503). The current suite passes, as does the frontend build.
+Real model latency and report quality still require a configured live-model check.
 
 ## License
 

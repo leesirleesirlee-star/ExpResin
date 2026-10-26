@@ -29,7 +29,7 @@ for extra in (PIPELINE / "src", PIPELINE / "server"):
         sys.path.insert(0, str(extra))
 
 from l1_structure import parse_workbook  # noqa: E402
-from llm import LLMClient, LLMConfig  # noqa: E402
+from llm import LLMClient, LLMConfig, LLMError  # noqa: E402
 from mapping import load_schema, map_block  # noqa: E402
 from nas_adapter import get_adapter as get_nas_adapter  # noqa: E402
 from checks import experiment_warnings  # noqa: E402
@@ -42,6 +42,7 @@ from services import (  # noqa: E402
     compute_missing,
     extract_fields,
     field_index,
+    generate_growth_report,
     load_template,
     normalize_unit,
     render_csv,
@@ -456,6 +457,13 @@ class LoginIn(BaseModel):
 class ChangePasswordIn(BaseModel):
     old_password: str
     new_password: str
+
+
+class GrowthReportIn(BaseModel):
+    """只提供分析侧重与数量上限；用户归属永远来自 Bearer 令牌。"""
+
+    focus: str | None = None
+    limit: int = 20
 
 
 # --------------------------------------------------------------------------- #
@@ -1089,6 +1097,40 @@ def list_experiments(limit: int = 100, user: dict = Depends(auth.get_current_use
     # 管理员看全部；普通用户只看自己的归档
     owner = None if user.get("role") == "admin" else user["id"]
     return {"experiments": store.list_experiments(limit, owner_user_id=owner)}
+
+
+@app.post("/v1/growth-reports")
+def create_growth_report(
+    payload: GrowthReportIn, user: dict = Depends(auth.get_current_user)
+) -> dict:
+    """生成当前登录实验员自己的 AI 成长报告。
+
+    与档案列表的“管理员看全部”语义刻意不同：这里无论角色都只取本人数据。
+    统计由确定性代码完成，模型只接收裁剪后的实验上下文并生成语义分析。
+    """
+    limit = max(1, min(payload.limit, 20))
+    rows = store.list_experiments(limit, owner_user_id=user["id"])
+    experiments = []
+    for row in rows:
+        experiment = store.get_experiment(row["id"])
+        # 再校验一次归属；历史无主数据与其他用户数据都不进入成长分析。
+        if not experiment or experiment.get("owner_user_id") != user["id"]:
+            continue
+        experiment["warnings"] = experiment_warnings(experiment)
+        experiments.append(experiment)
+    if not experiments:
+        raise HTTPException(status_code=400, detail="还没有可分析的本人实验档案")
+
+    try:
+        with llm_client() as client:
+            return generate_growth_report(client, experiments, (payload.focus or "").strip())
+    except LLMError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="AI 成长分析暂时不可用，请确认模型配置与网络后重试",
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 @app.get("/v1/experiments/{experiment_id}")

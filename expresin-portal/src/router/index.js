@@ -40,13 +40,13 @@ const routes = [
     path: '/setup',
     name: 'setup',
     component: () => import('../views/SetupView.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, chatWorkbench: true },
   },
   {
     path: '/recognize',
     name: 'recognize',
     component: () => import('../views/RecognizeView.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, chatWorkbench: true },
   },
   {
     path: '/archive',

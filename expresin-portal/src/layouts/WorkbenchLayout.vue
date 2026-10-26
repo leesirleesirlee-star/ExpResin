@@ -325,6 +325,7 @@ const style = computed(() => ({
 /* 左栏表单 / 右栏检查：磨砂玻璃悬浮卡片，非折叠态生效 */
 .pane--form:not(.pane--collapsed),
 .pane--inspector:not(.pane--collapsed) {
+  z-index: 2; /* 两侧悬浮层在底层 Chat 之上 */
   border: 1px solid var(--glass-border);
   background: var(--glass-bg);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
@@ -336,6 +337,7 @@ const style = computed(() => ({
 /* 中列 Jarvis 对话：完全透明融入页面底层，无任何框线/圆角/裁剪，
    修复此前 border-radius + overflow:hidden 导致的边缘模糊框线 */
 .pane--chat {
+  z-index: 1;
   border: none;
   border-radius: 0;
   background: transparent;
@@ -358,27 +360,49 @@ const style = computed(() => ({
   pointer-events: none;
 }
 
-/* 三列入场：从左到右依次显现（表单 → 对话 → 检查） —— 每列轻微左滑 + 淡入，延迟 0/80/160ms，
-   与整页交叉淡入叠加出「列级节奏」；只在挂载时播放一次，不影响折叠的 grid 过渡 */
+/* 三栏同步进场：左表单向左外侧来、右检查向右侧来，底层 Chat 从 96% 缩放出现。
+   三者均为 0ms 延迟；Chat 400ms 先收稳，两侧 800ms 弹簧落位，形成明确的前后层次。
+   仅 transform / opacity 参与动画，只在挂载时播放，不影响后续折叠的 grid 过渡。 */
 @media (prefers-reduced-motion: no-preference) {
   .pane--form {
-    animation: pane-in var(--duration-normal) var(--ease-decelerate) both;
+    animation: pane-from-left 800ms var(--ease-spring) both;
   }
   .pane--chat {
-    animation: pane-in var(--duration-normal) var(--ease-decelerate) 80ms both;
+    transform-origin: center bottom;
+    animation: pane-chat-in 400ms var(--ease-spring) both;
   }
   .pane--inspector {
-    animation: pane-in var(--duration-normal) var(--ease-decelerate) 160ms both;
+    animation: pane-from-right 800ms var(--ease-spring) both;
   }
 }
-@keyframes pane-in {
+@keyframes pane-from-left {
   from {
     opacity: 0;
-    transform: translateX(-16px);
+    transform: translate3d(-48px, 0, 0) scale(0.985);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+@keyframes pane-from-right {
+  from {
+    opacity: 0;
+    transform: translate3d(48px, 0, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+@keyframes pane-chat-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 

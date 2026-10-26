@@ -496,6 +496,29 @@ h1[data-tip] {
   opacity: 0;
   transform: translateY(-4px);
 }
+.page-workbench-enter-active {
+  transition: opacity 120ms var(--ease-decelerate);
+}
+.page-workbench-leave-active {
+  transition: opacity 120ms var(--ease-accelerate);
+  position: absolute;
+  top: var(--topbar-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  background: var(--bg-canvas);
+  overflow: hidden;
+}
+.page-workbench-enter-active,
+.page-workbench-leave-active {
+  will-change: opacity;
+}
+.page-workbench-enter-from,
+.page-workbench-leave-to {
+  opacity: 0;
+}
+
 /* 向导步骤页互切（新建实验 ↔ 数据识别）：两页共用同一条步骤条且静止位置一致，
    任何位移都会被读成「步骤条在动」——零位移纯 opacity 交接，
    步骤条原地固定，仅激活步骤原地推进；编排节奏与其余过渡一致。 */
@@ -525,6 +548,7 @@ h1[data-tip] {
   .page-right-leave-active,
   .page-left-leave-active,
   .page-none-leave-active,
+  .page-workbench-leave-active,
   .page-fade-leave-active {
     top: var(--topbar-h-mobile);
   }
@@ -536,6 +560,8 @@ h1[data-tip] {
   .page-left-leave-active,
   .page-none-enter-active,
   .page-none-leave-active,
+  .page-workbench-enter-active,
+  .page-workbench-leave-active,
   .page-fade-enter-active,
   .page-fade-leave-active {
     transition: none;

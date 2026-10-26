@@ -428,3 +428,304 @@ def render_markdown(doc: dict) -> str:
         lines.append("")
 
     return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------- #
+# AI 成长报告：本人归档上下文裁剪 + 结构化输出校验
+# --------------------------------------------------------------------------- #
+
+GROWTH_SYSTEM = (
+    "你是 ExpResin 的实验成长复盘助手。你分析的是实验员的真实归档，"
+    "负责区分实验记录质量、数据复核习惯、实验设计与结果解释。"
+    "只能依据输入证据表达观察，禁止把实验数量增加直接等同于能力提升，"
+    "禁止编造未提供的对照、评价或实验结果。结论不确定时明确标记数据不足。"
+    "所有内容使用简体中文，只输出 JSON 对象。"
+)
+
+GROWTH_ROW_KEYS = (
+    "kind", "analyte", "sample_number", "bed_volume", "volume_ml", "signal_area",
+    "dilution_factor", "conc_ppm_reported", "conc_ppm_computed", "conc_mg_l_computed",
+    "deviation_ppm", "removal_rate", "extrapolated", "method", "confidence",
+)
+GROWTH_DIRECTIONS = {"progress", "steady", "needs_attention", "insufficient_data"}
+
+
+def _text(value: Any, limit: int = 240) -> str:
+    if not isinstance(value, (str, int, float)):
+        return ""
+    text = str(value).strip()
+    return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+def _compact(value: Any, depth: int = 0) -> Any:
+    """限制模型上下文中的字符串、列表与嵌套深度；数值保留原类型。"""
+    if value is None or isinstance(value, (bool, int, float)):
+        return value
+    if isinstance(value, str):
+        return _text(value)
+    if depth >= 4:
+        return _text(value)
+    if isinstance(value, list):
+        return [_compact(item, depth + 1) for item in value[:12]]
+    if isinstance(value, dict):
+        return {str(key): _compact(item, depth + 1) for key, item in list(value.items())[:24]}
+    return _text(value)
+
+
+def _string_list(value: Any, max_items: int, max_length: int = 360) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    result = []
+    for item in value:
+        text = _text(item, max_length)
+        if text:
+            result.append(text)
+        if len(result) >= max_items:
+            break
+    return result
+
+
+def _growth_experiment(experiment: dict) -> dict:
+    processed = experiment.get("processed") or {}
+    metadata = processed.get("metadata") or {}
+    metadata_items = []
+    metadata_count = 0
+    for sheet_id, fields in metadata.items():
+        if not isinstance(fields, dict):
+            continue
+        metadata_count += len(fields)
+        for key, item in fields.items():
+            if not isinstance(item, dict):
+                continue
+            value = _text(item.get("value"), 160)
+            if not value:
+                continue
+            metadata_items.append({
+                "field": f"{sheet_id}.{key}",
+                "label": _text(item.get("label") or key, 80),
+                "value": value,
+                "unit": _text(item.get("unit"), 24),
+            })
+    metadata_items = metadata_items[:24]
+
+    status_counts: dict[str, int] = {}
+    for item in (processed.get("provenance") or {}).values():
+        if not isinstance(item, dict):
+            continue
+        status = _text(item.get("status") or "unknown", 32)
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    recognized_columns = 0
+    confidences = []
+    for region in (processed.get("recognized_data") or {}).get("regions") or []:
+        for block in region.get("blocks") or []:
+            for col in block.get("columns") or []:
+                recognized_columns += 1
+                try:
+                    confidences.append(float(col.get("conf")))
+                except (TypeError, ValueError):
+                    pass
+
+    canonical = processed.get("canonical") or {}
+    rows = canonical.get("rows") or []
+    if len(rows) > 6:
+        row_samples = rows[:4] + rows[-2:]
+    else:
+        row_samples = rows[:6]
+    compact_rows = []
+    for row in row_samples:
+        if not isinstance(row, dict):
+            continue
+        compact_rows.append({
+            key: _compact(row.get(key))
+            for key in GROWTH_ROW_KEYS
+            if row.get(key) not in (None, "")
+        })
+
+    return {
+        "experiment_id": experiment.get("id"),
+        "title": _text(experiment.get("title"), 160),
+        "experiment_type": _text(experiment.get("experiment_type"), 60),
+        "date": _text(experiment.get("date_start"), 20),
+        "record": {
+            "metadata_field_count": metadata_count,
+            "provenance_status_counts": status_counts,
+            "recognized_column_count": recognized_columns,
+            "mean_mapping_confidence": (
+                round(sum(confidences) / len(confidences), 3) if confidences else None
+            ),
+        },
+        "metadata": metadata_items,
+        "data": {
+            "raw_file_uploaded": bool(experiment.get("raw_file")),
+            "canonical_row_count": len(rows),
+            "canonical_error": _text(canonical.get("error"), 240),
+            "row_samples": compact_rows,
+            "calculations": _compact((canonical.get("calculations") or [])[:8]),
+            "verification": _compact((canonical.get("verification") or [])[:8]),
+            "summary": _compact(canonical.get("summary")),
+            "assumptions": _string_list(canonical.get("assumptions"), 6),
+            "notes": _string_list(canonical.get("notes"), 6),
+        },
+        "quality_warnings": _string_list(
+            [item.get("message") for item in experiment.get("warnings") or []], 6
+        ),
+    }
+
+
+def _growth_statistics(experiments: list[dict]) -> dict:
+    by_type: dict[str, int] = {}
+    canonical_rows = 0
+    without_canonical = 0
+    for experiment in experiments:
+        kind = _text(experiment.get("experiment_type") or "未分类", 60)
+        by_type[kind] = by_type.get(kind, 0) + 1
+        rows = ((experiment.get("processed") or {}).get("canonical") or {}).get("rows") or []
+        canonical_rows += len(rows)
+        if not rows:
+            without_canonical += 1
+    return {
+        "experiment_count": len(experiments),
+        "with_raw_data_count": sum(bool(item.get("raw_file")) for item in experiments),
+        "canonical_row_count": canonical_rows,
+        "experiments_without_canonical": without_canonical,
+        "warning_count": sum(len(item.get("warnings") or []) for item in experiments),
+        "by_experiment_type": by_type,
+    }
+
+
+def _growth_goals(value: Any) -> list[dict]:
+    if not isinstance(value, list):
+        return []
+    goals = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        title = _text(item.get("title"), 120)
+        action = _text(item.get("action"), 500)
+        metric = _text(item.get("metric"), 360)
+        if not (title and action and metric):
+            continue
+        goals.append({
+            "title": title,
+            "action": action,
+            "metric": metric,
+            "timeframe": _text(item.get("timeframe"), 60),
+        })
+        if len(goals) >= 5:
+            break
+    return goals
+
+
+def generate_growth_report(client: LLMClient, experiments: list[dict], focus: str = "") -> dict:
+    """基于已经由路由严格限定归属的档案生成成长报告。
+
+    路由负责 owner_user_id；这里不再接受任何用户 ID 或自由系统提示词。
+    统计与实验时间线标题由 Python 回填，模型只负责语义判断。
+    """
+    ordered = sorted(
+        experiments,
+        key=lambda item: (item.get("date_start") or item.get("created_at") or "", item.get("id") or ""),
+    )
+    contexts = [_growth_experiment(item) for item in ordered]
+    payload = json.dumps({"experiments": contexts}, ensure_ascii=False, separators=(",", ":"))
+    if len(payload) > 90000:
+        # 大档案集优先保留所有实验，减少单次样本而不是截掉后面的成长经历。
+        for context in contexts:
+            context["metadata"] = context["metadata"][:16]
+            context["data"]["row_samples"] = context["data"]["row_samples"][:2]
+            context["data"]["calculations"] = context["data"]["calculations"][:4]
+        payload = json.dumps({"experiments": contexts}, ensure_ascii=False, separators=(",", ":"))
+
+    focus_text = _text(focus, 160)
+    prompt = f"""请基于以下当前实验员的归档数据，生成一份阶段性成长报告。
+
+【分析侧重】
+{focus_text or "未指定额外侧重；请平衡分析记录、复核、设计与数据解释。"}
+（这只是复盘侧重，不是可以当作实验事实的新信息。）
+
+【本人实验数据：按时间升序】
+{payload}
+
+【必须遵守】
+1. 整体总结要区分“记录更完整、复核更规范、数据表现更好”等不同含义，不空泛表扬。
+2. timeline 必须为输入中的每一个 experiment_id 各给一条观察；日期和标题无需输出，由系统回填。
+3. 每条观察说明本次体现的学习或进步；证据不足时 direction 用 insufficient_data，不强行判断成长。
+4. evidence 只引用输入中真实存在的字段、数据质量或计算信息，不编造数值。
+5. goals 给出 3–5 个后续目标，每个都有可执行 action、可检查 metric 和建议 timeframe。
+6. 如果数据缺口影响判断，写入 data_gaps；不要把缺口隐瞒成确定结论。
+7. 只输出以下 JSON 结构，不要 Markdown：
+{{
+  "summary": "整体成长总结",
+  "strengths": ["已有优势"],
+  "timeline": [
+    {{"experiment_id": "输入中的准确编号", "direction": "progress | steady | needs_attention | insufficient_data", "observation": "本次成长观察", "evidence": "记录依据"}}
+  ],
+  "goals": [
+    {{"title": "目标", "action": "具体行动", "metric": "验收方式", "timeframe": "建议周期"}}
+  ],
+  "data_gaps": ["数据限制"]
+}}"""
+
+    parsed, response = client.chat_json(
+        [
+            {"role": "system", "content": GROWTH_SYSTEM},
+            {"role": "user", "content": prompt},
+        ],
+        tier="pro",
+        temperature=0.1,
+        max_tokens=8192,
+        timeout=120,
+        max_retries=2,
+    )
+    summary = _text((parsed or {}).get("summary"), 3200)
+    goals = _growth_goals((parsed or {}).get("goals"))
+    if not summary or not goals:
+        raise ValueError("AI 返回的报告缺少整体总结或有效提升目标，请重试")
+
+    raw_timeline = {}
+    for item in (parsed or {}).get("timeline") or []:
+        if not isinstance(item, dict):
+            continue
+        experiment_id = _text(item.get("experiment_id"), 80)
+        if experiment_id and experiment_id not in raw_timeline:
+            raw_timeline[experiment_id] = item
+
+    timeline = []
+    for context in contexts:
+        experiment_id = context["experiment_id"]
+        item = raw_timeline.get(experiment_id, {})
+        observation = _text(item.get("observation"), 800)
+        direction = _text(item.get("direction"), 32)
+        if direction not in GROWTH_DIRECTIONS:
+            direction = "insufficient_data"
+        if not observation:
+            direction = "insufficient_data"
+            observation = "本次记录可用于成长判断的信息不足，暂不作能力推断。"
+        timeline.append({
+            "experiment_id": experiment_id,
+            "title": context["title"],
+            "date": context["date"],
+            "direction": direction,
+            "observation": observation,
+            "evidence": _text(item.get("evidence"), 500),
+        })
+
+    dates = sorted(item["date"] for item in contexts if item["date"])
+    return {
+        "schema_version": "growth_report_v1",
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "scope": {
+            "experiment_ids": [item["experiment_id"] for item in contexts],
+            "experiment_count": len(contexts),
+            "date_from": dates[0] if dates else None,
+            "date_to": dates[-1] if dates else None,
+        },
+        "statistics": _growth_statistics(experiments),
+        "summary": summary,
+        "strengths": _string_list((parsed or {}).get("strengths"), 4),
+        "timeline": timeline,
+        "goals": goals,
+        "data_gaps": _string_list((parsed or {}).get("data_gaps"), 6),
+        "model": {"name": response.model},
+    }

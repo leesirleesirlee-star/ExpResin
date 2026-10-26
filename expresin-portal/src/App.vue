@@ -11,19 +11,16 @@ const route = useRoute()
 /* bare 路由（欢迎页 / 登录页）：无顶栏的全屏页，App.vue 网格也要让出顶栏行 */
 const bare = computed(() => Boolean(route.meta.bare))
 
-/* 页面过渡名跟随导航方向：顶栏右移 → page-right（新页从右入），
-   左移 → page-left（新页从左入），同级/未知 → page-fade（纯淡入淡出），
-   向导步骤组内互切（新建实验 ↔ 数据识别）→ page-none（零位移，步骤条固定）。
-   滑动方向与顶栏指示条一致，形成「动画链接」。 */
-const transitionName = computed(() =>
-  navDirection.value === 'forward'
-    ? 'page-right'
-    : navDirection.value === 'back'
-      ? 'page-left'
-      : navDirection.value === 'none'
-        ? 'page-none'
-        : 'page-fade',
-)
+/* Chat 工作台的路由层只做短交叉淡化，三栏的「两侧进入 + 底层缩放」由
+   WorkbenchLayout 同步负责，避免旧的整页横移与栏级动画叠加。
+   其余页面仍按功能导航的空间顺序前进/后退，同级或未知方向纯淡入淡出。 */
+const transitionName = computed(() => {
+  if (route.meta.chatWorkbench) return 'page-workbench'
+  if (navDirection.value === 'forward') return 'page-right'
+  if (navDirection.value === 'back') return 'page-left'
+  if (navDirection.value === 'none') return 'page-none'
+  return 'page-fade'
+})
 </script>
 
 <template>
