@@ -1,11 +1,10 @@
 <script setup>
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import WorkbenchLayout from '../layouts/WorkbenchLayout.vue'
 import ChatPanel from '../components/ChatPanel.vue'
 import TemplateForm from '../components/TemplateForm.vue'
 import MetadataInspector from '../components/MetadataInspector.vue'
-import StatusBar from '../components/StatusBar.vue'
 import PanelHead from '../components/PanelHead.vue'
 import { useToast } from '../composables/useToast.js'
 import {
@@ -56,12 +55,6 @@ async function onFocusField(path) {
   focusPath.value = path
 }
 
-const statusExperiment = computed(() => ({
-  id: session.drafts['01_Metadata.experiment_id']?.value || session.experimentId || '—',
-  status: missingFields.value.length ? 'reviewing' : 'draft',
-  lastSaved: session.online ? '草稿同步到后端' : '本地草稿（未连接后端）',
-}))
-
 async function onConfirm() {
   if (missingFields.value.length) {
     show(`还有 ${missingFields.value.length} 项必填信息未填写，请先补全或标记「稍后补」。`, {
@@ -88,10 +81,6 @@ async function onConfirm() {
   } finally {
     archiving.value = false
   }
-}
-
-function onSave() {
-  show('草稿已保存。Raw 数据保持只读，未被修改。', { tone: 'success' })
 }
 </script>
 
@@ -146,18 +135,6 @@ function onSave() {
         :deferred="deferredFields"
         @focus="onFocusField"
         @defer="(path) => deferField(path)"
-        @confirm="onConfirm"
-      />
-    </template>
-
-    <template #status>
-      <StatusBar
-        :experiment="statusExperiment"
-        confirm-label="确认并归档"
-        save-label="保存草稿"
-        :saving="archiving"
-        saving-label="归档中…"
-        @save="onSave"
         @confirm="onConfirm"
       />
     </template>

@@ -46,7 +46,7 @@ onMounted(load)
           <h1 class="title">数据管理</h1>
           <p class="subtitle">全部实验员账号与归档数据总览（仅管理员可见）</p>
         </div>
-        <button class="btn btn-secondary" type="button" :disabled="loading" @click="load">
+        <button class="btn btn-primary refresh-btn" type="button" :disabled="loading" @click="load">
           {{ loading ? '刷新中…' : '刷新' }}
         </button>
       </header>
@@ -134,7 +134,24 @@ onMounted(load)
 </template>
 
 <style scoped>
-/* 根元素 .page 的几何由全局 base.css 控制；此处只写面板与表格 */
+/* 外层 .app / .page-stage 都是限高裁剪容器，页面根元素必须自行承担纵向滚动。 */
+.page {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.wrap {
+  width: 100%;
+  min-width: 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-6) var(--space-9);
+}
+
 .head {
   display: flex;
   align-items: flex-start;
@@ -163,6 +180,7 @@ onMounted(load)
 }
 
 .panel {
+  min-width: 0;
   margin-bottom: var(--space-5);
   padding: var(--space-4) var(--space-5);
   border: 1px solid var(--border-subtle);
@@ -189,11 +207,17 @@ onMounted(load)
 }
 
 .table-wrap {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .table {
   width: 100%;
+  min-width: 720px;
   border-collapse: collapse;
   font: var(--text-sm);
 }
@@ -266,5 +290,24 @@ onMounted(load)
 
 .view-btn {
   height: 30px;
+}
+
+@media (max-width: 640px) {
+  .wrap {
+    padding: var(--space-5) var(--space-4) var(--space-7);
+  }
+
+  .head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .refresh-btn {
+    align-self: flex-start;
+  }
+
+  .panel {
+    padding: var(--space-4);
+  }
 }
 </style>

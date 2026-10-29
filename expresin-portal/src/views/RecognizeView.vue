@@ -5,7 +5,6 @@ import WorkbenchLayout from '../layouts/WorkbenchLayout.vue'
 import ChatPanel from '../components/ChatPanel.vue'
 import DynamicForm from '../components/DynamicForm.vue'
 import MappingInspector from '../components/MappingInspector.vue'
-import StatusBar from '../components/StatusBar.vue'
 import PanelHead from '../components/PanelHead.vue'
 import BaseModal from '../components/BaseModal.vue'
 import { useToast } from '../composables/useToast.js'
@@ -134,12 +133,6 @@ const mappedStats = computed(() => {
   return { total, mapped }
 })
 
-const statusExperiment = computed(() => ({
-  id: session.drafts['01_Metadata.experiment_id']?.value || session.experimentId || '—',
-  status: session.recognized ? 'reviewing' : 'draft',
-  lastSaved: sourceInfo.value ? `已识别：${sourceInfo.value.file}` : '尚未上传数据',
-}))
-
 onMounted(async () => {
   // 从实验档案点进来时带上 ?session=，须沿用该实验原来的会话继续识别，
   // 否则上传的数据会落到新会话，归档时实验编号冲突。
@@ -262,15 +255,6 @@ async function onConfirm() {
   }
 }
 
-function onSave() {
-  show(
-    session.online
-      ? '草稿已随会话自动保存到后端，Raw 文件保持只读。'
-      : '本地草稿已保存。Raw 文件保持只读。',
-    { tone: 'success' },
-  )
-}
-
 function goSetup() {
   missingOpen.value = false
   router.push({ name: 'setup' })
@@ -372,18 +356,6 @@ function goSetup() {
         :resolving="resolving"
         @select="selected = $event"
         @resolve="onResolve"
-        @confirm="onConfirm"
-      />
-    </template>
-
-    <template #status>
-      <StatusBar
-        :experiment="statusExperiment"
-        confirm-label="确认识别结果"
-        save-label="保存草稿"
-        :saving="archiving"
-        saving-label="归档中…"
-        @save="onSave"
         @confirm="onConfirm"
       />
     </template>

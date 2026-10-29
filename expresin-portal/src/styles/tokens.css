@@ -80,6 +80,8 @@
   --glass-blur: 18px;
   --glass-saturate: 180%;
   --glass-edge: inset 0 1px 1px rgba(255, 255, 255, 0.55), inset 0 -1px 1px rgba(255, 255, 255, 0.16);
+  --ambient-warm: var(--accent-bg);
+  --ambient-cool: transparent;
   /* 导航分段控件：轨道为暖米灰凹槽，滑块为暖白（明显浮起） */
   --nav-track: #e6e1d3;
   --nav-track-border: #ddd7c6;
@@ -185,13 +187,13 @@
   --bg-workbench: #1f1d1b;
   --bg-card: #282623;
 
-  --border-subtle: #3a3632;
-  --border-strong: #47423d;
+  --border-subtle: #46413c;
+  --border-strong: #5b554e;
 
   --text-primary: #eae8e5;
-  --text-secondary: #8e8b85;
-  --text-tertiary: #55534f;
-  --text-disabled: #55534f;
+  --text-secondary: #d2cec6;
+  --text-tertiary: #aaa59c;
+  --text-disabled: #8f8a82;
 
   --brand-orange: #f2a978;
   --brand-orange-hover: #d99a6b;
@@ -231,15 +233,15 @@
 
   --focus-ring: 0 0 0 3px var(--accent-bg);
 
-  /* Liquid Glass 深色：镜面高光收敛，底层更透以呈现自适应着色感 */
-  --glass-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.02) 32%, rgba(255, 255, 255, 0) 55%),
-    rgba(31, 29, 27, 0.6);
-  --glass-bg-strong: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 32%, rgba(255, 255, 255, 0) 55%),
-    rgba(31, 29, 27, 0.84);
+  /* 深色磨砂玻璃：均匀半透明底层 + 细亮边，避免液态高光干扰文字 */
+  --glass-bg: rgba(31, 29, 27, 0.78);
+  --glass-bg-strong: rgba(31, 29, 27, 0.92);
   --glass-border: rgba(255, 255, 255, 0.16);
-  --glass-blur: 18px;
+  --glass-blur: 24px;
   --glass-saturate: 180%;
-  --glass-edge: inset 0 1px 1px rgba(255, 255, 255, 0.18), inset 0 -1px 1px rgba(255, 255, 255, 0.06);
+  --glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --ambient-warm: rgba(242, 169, 120, 0.24);
+  --ambient-cool: rgba(143, 180, 214, 0.20);
   /* 导航分段控件：轨道比工作台更深，滑块比轨道更亮（避免「凹陷」错觉） */
   --nav-track: #232120;
   --nav-track-border: #2c2926;
@@ -253,8 +255,8 @@
   /* 规范 2.5：Dark 模式阴影透明度减半 */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.02);
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 16px 40px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.36);
 }
 
 /* ==========================================================================
@@ -268,13 +270,13 @@
     --bg-workbench: #1f1d1b;
     --bg-card: #282623;
 
-    --border-subtle: #3a3632;
-    --border-strong: #47423d;
+    --border-subtle: #46413c;
+    --border-strong: #5b554e;
 
     --text-primary: #eae8e5;
-    --text-secondary: #8e8b85;
-    --text-tertiary: #55534f;
-    --text-disabled: #55534f;
+    --text-secondary: #d2cec6;
+    --text-tertiary: #aaa59c;
+    --text-disabled: #8f8a82;
 
     --brand-orange: #f2a978;
     --brand-orange-hover: #d99a6b;
@@ -313,14 +315,14 @@
 
     --focus-ring: 0 0 0 3px var(--accent-bg);
 
-    --glass-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.02) 32%, rgba(255, 255, 255, 0) 55%),
-      rgba(31, 29, 27, 0.6);
-    --glass-bg-strong: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 32%, rgba(255, 255, 255, 0) 55%),
-      rgba(31, 29, 27, 0.84);
+    --glass-bg: rgba(31, 29, 27, 0.78);
+    --glass-bg-strong: rgba(31, 29, 27, 0.92);
     --glass-border: rgba(255, 255, 255, 0.16);
-    --glass-blur: 18px;
+    --glass-blur: 24px;
     --glass-saturate: 180%;
-    --glass-edge: inset 0 1px 1px rgba(255, 255, 255, 0.18), inset 0 -1px 1px rgba(255, 255, 255, 0.06);
+    --glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    --ambient-warm: rgba(242, 169, 120, 0.24);
+    --ambient-cool: rgba(143, 180, 214, 0.20);
     --nav-track: #232120;
     --nav-track-border: #2c2926;
     --nav-slider: #3b3630;
@@ -332,13 +334,13 @@
 
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.02);
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.03);
-    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.04);
-    --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 16px 40px rgba(0, 0, 0, 0.28);
+    --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.36);
   }
 }
 
 /* ==========================================================================
-   无障碍：系统开启「减少透明度」时，Liquid Glass 回退为近不透明表面
+   无障碍：系统开启「减少透明度」时，磨砂玻璃回退为近不透明表面
    （真实材质由系统自适应；Web 近似需手动兜底，保证任何内容下的可读性）
    ========================================================================== */
 @media (prefers-reduced-transparency: reduce) {

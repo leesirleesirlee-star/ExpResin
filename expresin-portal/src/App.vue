@@ -80,8 +80,8 @@ const transitionName = computed(() => {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(60% 50% at 15% 0%, var(--accent-bg), transparent 70%),
-    radial-gradient(50% 40% at 100% 100%, var(--accent-bg), transparent 70%);
+    radial-gradient(60% 50% at 15% 0%, var(--ambient-warm), transparent 70%),
+    radial-gradient(50% 40% at 100% 100%, var(--ambient-cool), transparent 70%);
   opacity: 0.5;
   z-index: 0;
 }

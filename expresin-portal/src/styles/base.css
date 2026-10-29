@@ -119,8 +119,8 @@ select {
    用于欢迎页 CTA、认证卡片提交等强调场景。 */
 .btn-primary.btn-liquid {
   background: color-mix(in srgb, var(--accent) 52%, transparent);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border-color: color-mix(in srgb, var(--accent) 40%, transparent);
   box-shadow: none;
   color: #1c1c1e;

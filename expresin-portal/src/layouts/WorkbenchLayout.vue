@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 /**
  * 三栏工作台布局：只服务于真正需要「对话 + 表单 + 检查」的页面。
  * 栏位（参考 Claude Science）：左 = 表单 · 中 = Jarvis 对话（弹性主栏） · 右 = 检查。
- * 结构：页面工具条（标题/阶段进度/折叠） + 三栏 + 底部状态栏。
+ * 结构：页面工具条（标题/阶段进度/折叠） + 三栏；确认操作由右侧检查面板承担。
  */
 const props = defineProps({
   title: { type: String, required: true },
@@ -174,15 +174,13 @@ const style = computed(() => ({
         {{ t.label }}
       </button>
     </nav>
-
-    <footer class="status"><slot name="status" /></footer>
   </div>
 </template>
 
 <style scoped>
 .workbench {
   display: grid;
-  grid-template-rows: var(--panel-head-h) minmax(0, 1fr) 0 minmax(0, auto);
+  grid-template-rows: var(--panel-head-h) minmax(0, 1fr) 0;
   min-height: 0;
   height: 100%;
   position: relative;
@@ -435,13 +433,10 @@ const style = computed(() => ({
   display: none;
 }
 
-.status {
-  min-height: 0;
-}
 
 @media (max-width: 1024px) {
   .workbench {
-    grid-template-rows: var(--panel-head-h) minmax(0, 1fr) 52px auto;
+    grid-template-rows: var(--panel-head-h) minmax(0, 1fr) 52px;
   }
   .panes {
     grid-template-columns: minmax(0, 1fr);
