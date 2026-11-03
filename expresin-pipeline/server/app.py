@@ -40,6 +40,7 @@ from services import (  # noqa: E402
     check_unit,
     compose_reply,
     compute_missing,
+    conversation_reply,
     extract_fields,
     field_index,
     generate_growth_report,
@@ -417,6 +418,21 @@ class SessionCreate(BaseModel):
     project_id: str = "DEMO"
 
 
+class DraftFieldIn(BaseModel):
+    field_path: str
+    value: str | int | float | bool | None = None
+    unit: str | None = None
+    confidence: float | None = None
+    status: str = "pending"
+    source_type: str | None = "manual"
+    source_ref: str | None = None
+    raw_text: str | None = None
+
+
+class DraftsUpdate(BaseModel):
+    fields: list[DraftFieldIn]
+
+
 class MessageIn(BaseModel):
     text: str
 
@@ -540,6 +556,7 @@ def admin_list_experiments(
     limit: int = 500, admin: dict = Depends(auth.require_admin)
 ) -> dict:
     """全部用户的实验列表（附归属用户名），供管理员「数据管理」页使用。"""
+    limit = max(1, min(limit, 500))
     experiments = store.list_experiments(limit)
     users = {u["id"]: u for u in store.list_users()}
     for exp in experiments:
@@ -631,9 +648,32 @@ def create_session(
     return {**sess, "experiment_id_suggestion": suggestion}
 
 
+@app.get("/portal/assistant/sessions")
+def list_sessions(limit: int = 6, user: dict = Depends(auth.get_current_user)) -> dict:
+    """当前用户的未归档草稿；管理员工作台同样只看本人，避免混入学生数据。"""
+    limit = max(1, min(limit, 50))
+    return {"sessions": store.list_sessions(user["id"], limit=limit, status="draft")}
+
+
 @app.get("/portal/assistant/sessions/{sid}")
 def get_session(sid: str, user: dict = Depends(auth.get_current_user)) -> dict:
     return _owned_session(sid, user)
+
+
+@app.patch("/portal/assistant/sessions/{sid}/drafts")
+def update_drafts(
+    sid: str, payload: DraftsUpdate, user: dict = Depends(auth.get_current_user)
+) -> dict:
+    """防抖批量自动保存入口；只接受模板内字段，单事务提交。"""
+    sess = _owned_session(sid, user)
+    if sess.get("status") != "draft":
+        raise HTTPException(status_code=409, detail="已归档会话不能继续修改草稿")
+    if len(payload.fields) > 200:
+        raise HTTPException(status_code=422, detail="单次最多保存 200 个字段")
+    index = field_index(TEMPLATES["expresin_template_v1"])
+    fields = [item.model_dump() for item in payload.fields if item.field_path in index]
+    updated = store.upsert_drafts(sid, fields)
+    return {"ok": True, "updated": updated}
 
 
 @app.get("/portal/assistant/sessions/{sid}/form-state")
@@ -662,6 +702,18 @@ def post_message(
     index = field_index(template)
 
     store.add_message(sid, "user", payload.text)
+
+    missing = compute_missing(template, store.get_draft_map(sid), "pre")
+    direct_reply = conversation_reply(payload.text, missing)
+    if direct_reply is not None:
+        store.add_message(sid, "assistant", direct_reply, meta={"intent": "conversation"})
+        store.touch_session(sid)
+        return {
+            "reply": direct_reply,
+            "extracted": [],
+            "missing": missing,
+            "form_state": form_state(sid),
+        }
 
     try:
         with llm_client() as client:
@@ -1094,7 +1146,8 @@ def confirm(sid: str, payload: ConfirmIn, user: dict = Depends(auth.get_current_
 
 @app.get("/v1/experiments")
 def list_experiments(limit: int = 100, user: dict = Depends(auth.get_current_user)) -> dict:
-    # 管理员看全部；普通用户只看自己的归档
+    # 管理员看全部；普通用户只看自己的归档。限制分页大小，避免误请求拖垮内存。
+    limit = max(1, min(limit, 500))
     owner = None if user.get("role") == "admin" else user["id"]
     return {"experiments": store.list_experiments(limit, owner_user_id=owner)}
 

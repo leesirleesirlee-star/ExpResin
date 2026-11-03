@@ -24,13 +24,19 @@ function submit() {
   draft.value = ''
 }
 
+async function scrollToBottom() {
+  await nextTick()
+  const el = scroller.value
+  if (el) el.scrollTop = el.scrollHeight
+}
+
+function shouldTypeMessage(message, index) {
+  return index === props.messages.length - 1 && message.role !== 'user' && message.role !== 'error'
+}
+
 watch(
   () => [props.messages.length, props.streaming],
-  async () => {
-    await nextTick()
-    const el = scroller.value
-    if (el) el.scrollTop = el.scrollHeight
-  },
+  scrollToBottom,
 )
 </script>
 
@@ -43,7 +49,13 @@ watch(
     </PanelHead>
 
     <div ref="scroller" class="thread" role="log" aria-live="polite">
-      <ChatMessage v-for="(m, i) in messages" :key="m.id ?? i" :message="m" />
+      <ChatMessage
+        v-for="(m, i) in messages"
+        :key="m.id ?? i"
+        :message="m"
+        :typewriter="shouldTypeMessage(m, i)"
+        @progress="scrollToBottom"
+      />
 
       <ChatMessage v-if="streaming" :message="{ role: 'jarvis' }" streaming />
     </div>

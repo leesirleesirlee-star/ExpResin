@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS experiments (
     raw_file       TEXT,
     raw_sha256     TEXT,
     nas_json       TEXT,
+    owner_user_id  TEXT,
     created_at     TEXT NOT NULL,
     updated_at     TEXT NOT NULL
 );
@@ -118,6 +119,8 @@ CREATE INDEX IF NOT EXISTS idx_drafts_session ON form_drafts (session_id);
 CREATE INDEX IF NOT EXISTS idx_messages_session ON messages (session_id);
 CREATE INDEX IF NOT EXISTS idx_assets_session ON session_assets (session_id);
 CREATE INDEX IF NOT EXISTS idx_tokens_user ON auth_tokens (user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_user_status_updated
+    ON sessions (user_id, status, updated_at DESC);
 """
 
 
@@ -133,6 +136,11 @@ class Store:
         self._conn.row_factory = sqlite3.Row
         self._conn.executescript(SCHEMA)
         self._migrate()
+        # 依赖迁移列的索引必须在 _migrate 之后创建，兼容尚无 owner_user_id 的旧库。
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_experiments_owner_created"
+            " ON experiments (owner_user_id, created_at DESC)"
+        )
         self._conn.commit()
 
     def _migrate(self) -> None:
@@ -167,6 +175,36 @@ class Store:
     def get_session(self, session_id: str) -> dict[str, Any] | None:
         row = self._conn.execute("SELECT * FROM sessions WHERE id=?", (session_id,)).fetchone()
         return dict(row) if row else None
+
+    def list_sessions(
+        self,
+        owner_user_id: str,
+        limit: int = 6,
+        status: str | None = "draft",
+    ) -> list[dict[str, Any]]:
+        """本人轻量草稿列表；摘要一次查询完成，避免逐会话读取表单与消息。"""
+        sql = """
+            SELECT s.id, s.project_id, s.template_id, s.status, s.experiment_id,
+                   s.created_at, s.updated_at,
+                   (SELECT d.value FROM form_drafts d
+                    WHERE d.session_id=s.id AND d.field_path='01_Metadata.title') AS title,
+                   (SELECT d.value FROM form_drafts d
+                    WHERE d.session_id=s.id AND d.field_path='01_Metadata.experiment_type') AS experiment_type,
+                   (SELECT d.value FROM form_drafts d
+                    WHERE d.session_id=s.id AND d.field_path='01_Metadata.date_start') AS date_start,
+                   (SELECT COUNT(*) FROM form_drafts d
+                    WHERE d.session_id=s.id AND TRIM(COALESCE(d.value, '')) <> '') AS field_count
+            FROM sessions s
+            WHERE s.user_id=?
+        """
+        params: list[Any] = [owner_user_id]
+        if status:
+            sql += " AND s.status=?"
+            params.append(status)
+        sql += " ORDER BY s.updated_at DESC, s.id DESC LIMIT ?"
+        params.append(limit)
+        rows = self._conn.execute(sql, params).fetchall()
+        return [dict(row) for row in rows]
 
     def touch_session(self, session_id: str) -> None:
         self._conn.execute(
@@ -220,6 +258,52 @@ class Store:
             ),
         )
         self._conn.commit()
+
+    def upsert_drafts(self, session_id: str, items: list[dict[str, Any]]) -> int:
+        """批量保存草稿：同一事务写入并只更新一次会话时间，减少提交与锁竞争。"""
+        if not items:
+            return 0
+        now = _now()
+        rows = [
+            (
+                session_id,
+                item["field_path"],
+                "" if item.get("value") is None else str(item.get("value")),
+                item.get("unit"),
+                item.get("confidence"),
+                item.get("status") or "pending",
+                item.get("source_type"),
+                item.get("source_ref"),
+                item.get("raw_text"),
+                item.get("model_version"),
+                now,
+            )
+            for item in items
+        ]
+        with self._conn:
+            self._conn.executemany(
+                """
+                INSERT INTO form_drafts
+                    (session_id, field_path, value, unit, confidence, status,
+                     source_type, source_ref, raw_text, model_version, updated_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                ON CONFLICT (session_id, field_path) DO UPDATE SET
+                    value=excluded.value,
+                    unit=COALESCE(excluded.unit, form_drafts.unit),
+                    confidence=COALESCE(excluded.confidence, form_drafts.confidence),
+                    status=excluded.status,
+                    source_type=COALESCE(excluded.source_type, form_drafts.source_type),
+                    source_ref=COALESCE(excluded.source_ref, form_drafts.source_ref),
+                    raw_text=COALESCE(excluded.raw_text, form_drafts.raw_text),
+                    model_version=COALESCE(excluded.model_version, form_drafts.model_version),
+                    updated_at=excluded.updated_at
+                """,
+                rows,
+            )
+            self._conn.execute(
+                "UPDATE sessions SET updated_at=? WHERE id=?", (now, session_id)
+            )
+        return len(rows)
 
     def get_drafts(self, session_id: str) -> list[dict[str, Any]]:
         rows = self._conn.execute(

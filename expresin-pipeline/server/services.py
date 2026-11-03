@@ -162,6 +162,9 @@ def extract_fields(
         # 输出质量一致但更快更省，因此这里按任务复杂度做模型路由（PRD FR-25）。
         tier="flash",
         max_tokens=4096,
+        # 对话是交互链路：不做 180s × 3 的后台式重试，避免前端长期停在等待气泡。
+        timeout=25,
+        max_retries=1,
     )
     if not isinstance(parsed, dict):
         parsed = {}
@@ -224,21 +227,67 @@ def compute_missing(template: dict, drafts: dict[str, dict], stage: str = "pre")
     return missing
 
 
-def compose_reply(extracted: list[dict], missing: list[dict], index: dict[str, dict]) -> str:
-    parts = []
-    if extracted:
-        names = "、".join(index[e["field_path"]]["label"] for e in extracted[:6] if e["field_path"] in index)
-        parts.append(f"已记录：{names}。")
-    else:
-        parts.append("这次描述里没有识别到可填写的字段。")
+def _next_step(missing: list[dict]) -> str:
+    if not missing:
+        return "必填信息已经齐全，确认无误后即可归档。"
+    labels = "、".join(item["label"] for item in missing[:3])
+    more = f" 等 {len(missing)} 项" if len(missing) > 3 else ""
+    return f"当前还缺少：{labels}{more}。你可以直接告诉我，也可以在右侧表单填写。"
 
-    if missing:
-        labels = "、".join(m["label"] for m in missing[:5])
-        more = f" 等 {len(missing)} 项" if len(missing) > 5 else ""
-        parts.append(f"还缺：{labels}{more}。可以在右侧表单补充，或告诉我「稍后补」。")
-    else:
-        parts.append("必填信息已齐全，确认无误后即可归档。")
-    return "".join(parts)
+
+def conversation_reply(text: str, missing: list[dict]) -> str | None:
+    """常见交流直接回复；返回 None 时才进入实验字段抽取。"""
+    normalized = re.sub(r"\s+", "", text.strip().lower())
+    plain = normalized.strip("!！?？~～。.，,")
+
+    if re.fullmatch(
+        r"(?:hi+|hello|hey|你好[啊呀]?|您好|嗨[呀啊]?|哈喽|早上好|上午好|下午好|晚上好|在吗|在么)",
+        plain,
+    ):
+        return "你好，我是 Jarvis。你可以把实验条件直接告诉我，我会帮你填写；也可以问「接下来要填什么」。"
+
+    if any(phrase in plain for phrase in ("你是谁", "你叫什么", "介绍一下你自己", "whoareyou")):
+        return "我是 Jarvis，你的实验记录助手。我负责把自然语言整理成实验字段、检查缺失信息，并协助完成归档。"
+
+    if any(
+        phrase in plain
+        for phrase in (
+            "你能做什么", "你会什么", "你能帮我做什么", "怎么用", "如何使用", "怎么使用",
+            "我需要做什么", "我该做什么", "需要我做什么", "如何开始", "怎么开始", "使用帮助",
+        )
+    ) or plain in {"帮助", "帮忙", "help"}:
+        return (
+            "我可以帮你做三件事：① 从实验描述中提取并填写字段；② 检查还缺哪些必填信息；"
+            "③ 协助上传实验文件和完成归档。" + _next_step(missing)
+        )
+
+    if any(
+        phrase in plain
+        for phrase in (
+            "还差什么", "还缺什么", "缺哪些", "哪些没填", "填完了吗", "填写进度",
+            "当前进度", "完成情况", "接下来填什么", "接下来要填什么", "下一步做什么",
+        )
+    ):
+        return _next_step(missing)
+
+    if re.fullmatch(r"(?:谢谢|谢谢你|谢谢啦|感谢|辛苦了|thanks|thankyou)", plain):
+        return "不客气。需要继续填写时，直接把实验条件发给我就好。"
+
+    if re.fullmatch(r"(?:再见|拜拜|先到这里|待会见|bye|goodbye)", plain):
+        return "好的，当前草稿会保留。下次回来后可以继续填写。"
+
+    return None
+
+
+def compose_reply(extracted: list[dict], missing: list[dict], index: dict[str, dict]) -> str:
+    if not extracted:
+        return (
+            "我没有从这段话里识别出明确的实验字段。你可以换个说法，例如「树脂用量 120 mg、"
+            "温度 25 ℃」；如果想了解用法，也可以问「你能帮我做什么」。"
+        )
+
+    names = "、".join(index[e["field_path"]]["label"] for e in extracted[:6] if e["field_path"] in index)
+    return f"已记录：{names}。" + _next_step(missing)
 
 
 # --------------------------------------------------------------------------- #

@@ -73,8 +73,11 @@ directories are needed to build or start the stack.
   blocking the archive, and the archive detail page offers one-click republish.
 - **Modular workspace & AI growth reports**: the home workbench keeps one clear
   **Start experiment** action and hosts compact modules instead of duplicating
-  large navigation cards. **Growth summary** is implemented; experiment-creation
-  and curve-generation modules are explicitly marked as placeholders. The growth
+  large navigation cards. **Growth summary** and **experiment creation** are
+  implemented; the curve-generation module remains explicitly marked as a
+  placeholder. Experiment creation supports quick title/type/date setup, real
+  backend sessions, the current user's six latest drafts, resume links and
+  450 ms debounced bulk auto-save (one SQLite transaction per batch). The growth
   report reads up to 20 archived experiments belonging to the signed-in user,
   combines deterministic archive statistics with AI-generated overall analysis,
   per-experiment growth observations, actionable improvement goals and data-gap
@@ -139,6 +142,11 @@ Auth & admin:
 - `GET  /auth/me` · `POST /auth/change-password`
 - `GET  /admin/users` · `GET /admin/experiments`
 
+Portal drafts:
+
+- `GET /portal/assistant/sessions` (current user's unfinished drafts)
+- `PATCH /portal/assistant/sessions/{id}/drafts` (bulk auto-save)
+
 Experiment workflow (all `/v1` endpoints require
 `Authorization: Bearer <token>`):
 
@@ -158,23 +166,29 @@ The full endpoint specification lives in `docs/` and the in-app API Docs page.
 
 ## Verification
 
-From the repository root, run the isolated growth-report smoke test and frontend
-production build:
+From the repository root, run the isolated smoke tests and frontend production
+build:
 
 ```bash
 python expresin-pipeline/scripts/smoke_growth_report.py
+python expresin-pipeline/scripts/smoke_session_drafts.py
 python -m compileall -q expresin-pipeline/server/app.py expresin-pipeline/server/services.py
 cd expresin-portal
 npm run build
 ```
 
-The smoke test uses a temporary SQLite database under the git-ignored
-`.deepworks/tmp/` directory and a fake structured LLM response, so it neither
-touches the real archive nor incurs model charges. Its 17 checks cover registration,
-empty archives, authentication, deterministic statistics, focus forwarding,
-cross-user isolation, admin self-scope, malformed model output (502) and unavailable
-AI configuration (503). The current suite passes, as does the frontend build.
-Real model latency and report quality still require a configured live-model check.
+Both smoke suites use temporary SQLite databases under the git-ignored
+`.deepworks/tmp/` directory, so they never touch the real archive. The growth
+suite also uses a fake structured LLM response and incurs no model charges. Its
+17 checks cover registration, empty archives, authentication, deterministic
+statistics, focus forwarding, cross-user isolation, admin self-scope, malformed
+model output (502) and unavailable AI configuration (503). The 33 draft/chat checks
+cover local conversation intent, contextual guidance, bounded chat timeouts,
+empty-extraction replies, bulk persistence,
+single-transaction commits, list summaries, cross-user
+isolation, confirmed-session locking, query indexes and legacy migration order.
+The current suites pass, as does the frontend build. Real model latency and
+report quality still require a configured live-model check.
 
 ## License
 

@@ -23,7 +23,18 @@ export const session = reactive({
   archive: [],
   archiveLoading: false,
   lastArchiveError: '',
+  draftSessions: [],
+  draftsLoading: false,
+  lastDraftsError: '',
+  draftSaving: false,
+  draftSaveError: '',
+  lastDraftSavedAt: '',
 })
+
+const DRAFT_SAVE_DELAY = 450
+const pendingDraftFields = new Map()
+let draftSaveTimer = null
+let draftSaveInFlight = null
 
 /** 标准 Schema 的合法目标字段（列块类型 → 字段清单），供识别页人工改判使用。 */
 export const schemaColumns = reactive({})
@@ -54,6 +65,69 @@ function suggestExperimentId() {
   return `RES-${stamp}-001`
 }
 
+function queueDraftSave(fieldPath) {
+  if (!session.online || !session.sessionId) return
+  pendingDraftFields.set(fieldPath, {
+    field_path: fieldPath,
+    ...session.drafts[fieldPath],
+  })
+  session.draftSaveError = ''
+  if (draftSaveTimer) clearTimeout(draftSaveTimer)
+  draftSaveTimer = setTimeout(() => {
+    draftSaveTimer = null
+    void flushDrafts()
+  }, DRAFT_SAVE_DELAY)
+}
+
+/** 将一批变更写入后端；失败时保留待保存内容，归档仍会提交完整字段快照。 */
+export async function flushDrafts() {
+  if (draftSaveTimer) {
+    clearTimeout(draftSaveTimer)
+    draftSaveTimer = null
+  }
+  while (draftSaveInFlight) {
+    try {
+      await draftSaveInFlight
+    } catch {
+      // 首个调用会记录错误并重排队；归档等后续调用仍可继续提交完整快照。
+    }
+  }
+  if (!session.online || !session.sessionId || !pendingDraftFields.size) return
+
+  const sid = session.sessionId
+  const fields = Array.from(pendingDraftFields.values())
+  for (const field of fields) pendingDraftFields.delete(field.field_path)
+  session.draftSaving = true
+
+  let saved = false
+  draftSaveInFlight = api.updateDrafts(sid, fields)
+  try {
+    await draftSaveInFlight
+    saved = true
+    if (session.sessionId === sid) {
+      session.draftSaveError = ''
+      session.lastDraftSavedAt = new Date().toISOString()
+    }
+  } catch (error) {
+    if (session.sessionId === sid) {
+      for (const field of fields) {
+        if (!pendingDraftFields.has(field.field_path)) {
+          pendingDraftFields.set(field.field_path, field)
+        }
+      }
+      session.draftSaveError = error.message || '草稿自动保存失败'
+    }
+  } finally {
+    draftSaveInFlight = null
+    session.draftSaving = false
+  }
+
+  // 请求期间产生的新变更紧接着保存；失败批次不自动重试，避免离线请求循环。
+  if (saved && pendingDraftFields.size && session.sessionId === sid) {
+    await flushDrafts()
+  }
+}
+
 export function setField(fieldPath, value, extra = {}) {
   const prev = session.drafts[fieldPath] || {}
   const next = {
@@ -69,18 +143,13 @@ export function setField(fieldPath, value, extra = {}) {
     next.status = 'deferred'
   }
   session.drafts[fieldPath] = next
-
-  if (session.online && session.sessionId) {
-    api
-      .getFormState(session.sessionId)
-      .catch(() => {})
-    // 后端模式下由 sendMessage / upload 负责同步，这里不重复写，避免请求风暴
-  }
+  queueDraftSave(fieldPath)
 }
 
 export function deferField(fieldPath) {
   const prev = session.drafts[fieldPath] || {}
   session.drafts[fieldPath] = { ...prev, status: 'deferred', source_type: prev.source_type || 'manual' }
+  queueDraftSave(fieldPath)
 }
 
 /** 本地缺失项计算（与后端 missing-fields 口径一致）。 */
@@ -129,9 +198,26 @@ async function loadTemplate() {
   }
 }
 
-export async function initSession() {
-  if (session.ready) return
-  session.template = await loadTemplate()
+function resetSessionState() {
+  if (draftSaveTimer) {
+    clearTimeout(draftSaveTimer)
+    draftSaveTimer = null
+  }
+  pendingDraftFields.clear()
+  session.ready = false
+  session.sessionId = null
+  session.drafts = {}
+  session.messages = []
+  session.missing = []
+  session.experimentId = ''
+  session.recognized = null
+  session.draftSaving = false
+  session.draftSaveError = ''
+  session.lastDraftSavedAt = ''
+}
+
+async function initializeSession(initial = {}) {
+  if (!session.template) session.template = await loadTemplate()
   session.online = await probeBackend()
 
   if (session.online) {
@@ -142,37 +228,47 @@ export async function initSession() {
       })
       session.sessionId = created.id
       session.experimentId = created.experiment_id_suggestion || suggestExperimentId()
-      applyFormState(await api.getFormState(created.id))
+      // 新建会话必为空，无需再请求一次空 form-state。
     } catch {
       session.online = false
+      session.sessionId = null
     }
   }
 
   if (!session.experimentId) session.experimentId = suggestExperimentId()
-  if (!session.drafts['01_Metadata.experiment_id']) {
-    setField('01_Metadata.experiment_id', session.experimentId, {
-      source_type: 'template_default',
-      status: 'pending',
-    })
-  }
-  if (!session.drafts['01_Metadata.date_start']) {
-    setField('01_Metadata.date_start', new Date().toISOString().slice(0, 10), {
-      source_type: 'template_default',
-      status: 'pending',
-    })
-  }
+  setField('01_Metadata.experiment_id', session.experimentId, {
+    source_type: 'template_default',
+    status: 'pending',
+  })
+  setField('01_Metadata.date_start', initial.dateStart || new Date().toISOString().slice(0, 10), {
+    source_type: 'template_default',
+    status: 'pending',
+  })
+  if (initial.title) setField('01_Metadata.title', initial.title)
+  if (initial.experimentType) setField('01_Metadata.experiment_type', initial.experimentType)
+  if (initial.operator) setField('01_Metadata.operator', initial.operator)
 
-  if (!session.messages.length) {
-    session.messages.push({
-      role: 'assistant',
-      content:
-        '我是 Jarvis，负责记录这次实验。你可以直接用一句话告诉我实验安排，例如：' +
-        '“今天用 120 mg 的 A600 树脂和 50 mL 溶液做 SO4 的批次吸附，初始浓度 100 mg/L”。' +
-        '我会自动填入右侧表单，并提示还缺哪些必填信息。',
-    })
-  }
-
+  session.messages.push({
+    role: 'assistant',
+    content:
+      '我是 Jarvis，负责记录这次实验。你可以直接用一句话告诉我实验安排，例如：' +
+      '“今天用 120 mg 的 A600 树脂和 50 mL 溶液做 SO4 的批次吸附，初始浓度 100 mg/L”。' +
+      '我会自动填入右侧表单，并提示还缺哪些必填信息。',
+  })
   session.ready = true
+  return session
+}
+
+export async function initSession() {
+  if (session.ready) return session
+  return initializeSession()
+}
+
+/** 从工作台显式开始新实验；与导航进入 /setup 时续接当前会话的语义区分开。 */
+export async function startNewSession(initial = {}) {
+  await flushDrafts()
+  resetSessionState()
+  return initializeSession(initial)
 }
 
 /**
@@ -182,6 +278,8 @@ export async function initSession() {
  */
 export async function resumeSession(sid) {
   if (!sid) return false
+  await flushDrafts()
+  resetSessionState()
   if (!session.template) session.template = await loadTemplate()
   session.online = await probeBackend()
   if (!session.online) {
@@ -226,10 +324,12 @@ export async function sendMessage(text) {
       session.messages.push({ role: 'assistant', content: res.reply })
       return
     } catch (e) {
-      session.messages.push({
-        role: 'assistant',
-        content: `后端调用失败（${e.message}），请直接在表单中填写。`,
-      })
+      const content = e.timeout
+        ? '模型响应超时，这次描述暂未写入。你可以重试，或直接在右侧表单填写。'
+        : e.status === 502
+          ? '模型服务暂时不可用，这次描述暂未写入。你可以稍后重试，或直接填写表单。'
+          : `消息发送失败（${e.message}），请稍后重试或直接在表单中填写。`
+      session.messages.push({ role: 'assistant', content })
       return
     }
   }
@@ -250,6 +350,7 @@ export async function uploadRawFile(file, sheet = null) {
 }
 
 export async function confirmSession() {
+  await flushDrafts()
   const payload = {
     experiment_id: session.drafts['01_Metadata.experiment_id']?.value || session.experimentId,
     fields: Object.entries(session.drafts).map(([field_path, d]) => ({
@@ -271,6 +372,26 @@ export async function confirmSession() {
     id: payload.experiment_id,
     title: session.drafts['01_Metadata.title']?.value || '（未命名实验）',
     local: true,
+  }
+}
+
+export async function loadDraftSessions(limit = 6) {
+  session.draftsLoading = true
+  try {
+    if (!session.online) session.online = await probeBackend()
+    if (!session.online) {
+      session.draftSessions = []
+      session.lastDraftsError = ''
+      return
+    }
+    const res = await api.listSessions(limit)
+    session.draftSessions = res.sessions || []
+    session.lastDraftsError = ''
+  } catch (error) {
+    session.draftSessions = []
+    session.lastDraftsError = error.message || '草稿列表读取失败'
+  } finally {
+    session.draftsLoading = false
   }
 }
 

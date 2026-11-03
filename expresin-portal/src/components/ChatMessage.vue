@@ -1,4 +1,6 @@
 <script setup>
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
+
 /**
  * 对话消息气泡（升级方案 §7.1）。
  *
@@ -12,11 +14,72 @@ const props = defineProps({
   message: { type: Object, required: true },
   /** 流式输出中：渲染打字指示气泡而非文本 */
   streaming: { type: Boolean, default: false },
+  /** 仅最新的 Jarvis 回复启用快速逐字显示 */
+  typewriter: { type: Boolean, default: false },
 })
+
+const emit = defineEmits(['progress'])
 
 function textOf(m) {
   return m.content ?? m.text ?? ''
 }
+
+const fullText = computed(() => textOf(props.message))
+const displayed = ref('')
+const typing = ref(false)
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+let timer = null
+let characters = []
+let characterIndex = 0
+let chunkSize = 2
+
+function stopTimer() {
+  if (timer !== null) window.clearTimeout(timer)
+  timer = null
+}
+
+function typeNext() {
+  characterIndex = Math.min(characterIndex + chunkSize, characters.length)
+  displayed.value = characters.slice(0, characterIndex).join('')
+  emit('progress')
+
+  if (characterIndex >= characters.length) {
+    typing.value = false
+    timer = null
+    return
+  }
+  /* 比欢迎页 55–115ms 更快；长回复自动增加每帧字符数，避免等待过久。 */
+  timer = window.setTimeout(typeNext, 16 + Math.random() * 10)
+}
+
+function syncDisplay() {
+  stopTimer()
+  const canType =
+    props.typewriter &&
+    !props.streaming &&
+    !reducedMotion &&
+    props.message.role !== 'user' &&
+    props.message.role !== 'error'
+
+  displayed.value = fullText.value
+  typing.value = false
+  if (!canType || !fullText.value) return
+
+  characters = Array.from(fullText.value)
+  characterIndex = 0
+  chunkSize = Math.max(2, Math.ceil(characters.length / 160))
+  displayed.value = ''
+  typing.value = true
+  typeNext()
+}
+
+watch(
+  () => [fullText.value, props.typewriter, props.streaming],
+  syncDisplay,
+  { immediate: true },
+)
+
+onBeforeUnmount(stopTimer)
 </script>
 
 <template>
@@ -29,8 +92,14 @@ function textOf(m) {
       <i></i><i></i><i></i>
     </p>
     <template v-else>
-      <p class="bubble">{{ textOf(props.message) }}</p>
-      <div v-if="props.message.chips?.length" class="chips">
+      <p class="bubble" :aria-label="typing ? fullText : undefined">
+        <span :aria-hidden="typing ? 'true' : undefined">{{ displayed }}</span><span
+          v-if="typing"
+          class="type-caret"
+          aria-hidden="true"
+        ></span>
+      </p>
+      <div v-if="!typing && props.message.chips?.length" class="chips">
         <span v-for="c in props.message.chips" :key="c" class="badge badge-neutral">{{ c }}</span>
       </div>
     </template>
@@ -76,6 +145,20 @@ function textOf(m) {
   color: var(--error);
   border-left: 2px solid var(--error);
   border-top-left-radius: var(--radius-sm);
+}
+.type-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 3px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  vertical-align: -0.12em;
+  animation: type-caret-blink 720ms step-end infinite;
+}
+@keyframes type-caret-blink {
+  0%, 45% { opacity: 1; }
+  46%, 100% { opacity: 0; }
 }
 .chips {
   display: flex;

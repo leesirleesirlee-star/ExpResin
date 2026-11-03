@@ -1,6 +1,6 @@
 <script setup>
-import { nextTick, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import WorkbenchLayout from '../layouts/WorkbenchLayout.vue'
 import ChatPanel from '../components/ChatPanel.vue'
 import TemplateForm from '../components/TemplateForm.vue'
@@ -11,14 +11,17 @@ import {
   confirmSession,
   deferField,
   deferredFields,
+  flushDrafts,
   initSession,
   missingFields,
   preSheets,
+  resumeSession,
   sendMessage,
   session,
   setField,
 } from '../data/session.js'
 
+const route = useRoute()
 const router = useRouter()
 const { show } = useToast()
 
@@ -31,7 +34,23 @@ const STEPS = [
   { id: 'archive', label: '归档' },
 ]
 
-onMounted(initSession)
+onMounted(async () => {
+  const resumeId = typeof route.query.session === 'string' ? route.query.session : ''
+  if (resumeId) await resumeSession(resumeId)
+  else await initSession()
+})
+
+onBeforeUnmount(() => {
+  void flushDrafts()
+})
+
+const draftStatus = computed(() => {
+  if (!session.online) return { label: '本地草稿模式', tone: 'warning' }
+  if (session.draftSaving) return { label: '正在保存草稿…', tone: 'neutral' }
+  if (session.draftSaveError) return { label: '自动保存失败', tone: 'error' }
+  if (session.lastDraftSavedAt) return { label: '草稿已自动保存', tone: 'success' }
+  return { label: '已连接后端', tone: 'success' }
+})
 
 async function onSend(text) {
   streaming.value = true
@@ -92,8 +111,12 @@ async function onConfirm() {
     active-step="pre"
   >
     <template #actions>
-      <span class="badge" :class="session.online ? 'badge-success' : 'badge-warning'">
-        {{ session.online ? '已连接后端' : '本地草稿模式' }}
+      <span
+        class="badge"
+        :class="`badge-${draftStatus.tone}`"
+        :title="session.draftSaveError || '字段变更会防抖批量保存；归档前自动刷新。'"
+      >
+        {{ draftStatus.label }}
       </span>
     </template>
 

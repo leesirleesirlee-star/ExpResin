@@ -140,6 +140,15 @@ export const api = {
 
   getSession: (sid) => req(`/portal/assistant/sessions/${sid}`),
 
+  listSessions: (limit = 6) => req(`/portal/assistant/sessions?limit=${limit}`),
+
+  updateDrafts: (sid, fields) =>
+    req(
+      `/portal/assistant/sessions/${sid}/drafts`,
+      { method: 'PATCH', body: JSON.stringify({ fields }) },
+      30000,
+    ),
+
   getFormState: (sid) => req(`/portal/assistant/sessions/${sid}/form-state`),
 
   getMissingFields: (sid) => req(`/portal/assistant/sessions/${sid}/missing-fields`),
@@ -148,7 +157,7 @@ export const api = {
     req(
       `/portal/assistant/sessions/${sid}/messages`,
       { method: 'POST', body: JSON.stringify({ text }) },
-      120000,
+      35000,
     ),
 
   uploadFile: (sid, file, analyze = true, sheet = null) => {

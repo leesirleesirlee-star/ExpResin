@@ -1,11 +1,17 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { api } from '../data/api.js'
 import { auth } from '../data/auth.js'
-import { loadArchive, session } from '../data/session.js'
+import {
+  loadArchive,
+  loadDraftSessions,
+  session,
+  startNewSession,
+} from '../data/session.js'
 import { useToast } from '../composables/useToast.js'
 
+const router = useRouter()
 const { show } = useToast()
 const REPORT_LIMIT = 20
 
@@ -21,7 +27,7 @@ const modules = [
     id: 'setup',
     label: '实验新建',
     desc: '快速记录与草稿',
-    headline: '实验方法与材料的工作区，后续在这里承接。',
+    headline: '先建立实验草稿，再进入完整录入；未完成的记录随时续接。',
     icon: 'M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3M8 15h8',
   },
   {
@@ -35,6 +41,68 @@ const modules = [
 
 const activeModule = ref('growth')
 const currentModule = computed(() => modules.find((m) => m.id === activeModule.value) || modules[0])
+
+const EXPERIMENT_TYPES = [
+  { value: 'batch', label: '批次实验' },
+  { value: 'column', label: '柱实验' },
+  { value: 'electrochemical', label: '电化学实验（通用）' },
+  { value: 'electrochemical_two_chamber', label: '两室电化学实验' },
+  { value: 'electrochemical_three_chamber', label: '三室电化学实验' },
+  { value: 'electrochemical_bipolar', label: '双极膜电化学实验' },
+]
+const quickTitle = ref('')
+const quickType = ref('batch')
+const quickDate = ref(new Date().toISOString().slice(0, 10))
+const starting = ref(false)
+const setupError = ref('')
+
+async function beginExperiment(withQuickFields = false) {
+  if (starting.value) return
+  const title = quickTitle.value.trim()
+  if (withQuickFields && !title) {
+    setupError.value = '请先填写实验标题'
+    return
+  }
+  starting.value = true
+  setupError.value = ''
+  try {
+    await startNewSession({
+      title: withQuickFields ? title : '',
+      experimentType: withQuickFields ? quickType.value : '',
+      dateStart: withQuickFields ? quickDate.value : '',
+      operator: auth.user?.display_name || auth.user?.username || '',
+    })
+    await router.push({ name: 'setup' })
+    if (!session.online) {
+      show('后端未连接，本次使用本地草稿；连接后端后可自动保存。', { tone: 'warning' })
+    }
+  } catch (error) {
+    setupError.value = error.message || '新建实验失败，请稍后重试'
+  } finally {
+    starting.value = false
+  }
+}
+
+function resumeDraft(item) {
+  router.push({ name: 'setup', query: { session: item.id } })
+}
+
+function experimentTypeLabel(value) {
+  return EXPERIMENT_TYPES.find((item) => item.value === value)?.label || '类型待补充'
+}
+
+function formatDraftTime(value) {
+  if (!value) return '尚未保存'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+}
 
 /* 管理员在档案页可以看全部，但成长报告永远只分析当前账号自己的数据。 */
 const ownArchive = computed(() =>
@@ -184,7 +252,10 @@ function downloadReport() {
   show('Markdown 报告已导出', { tone: 'success' })
 }
 
-onMounted(loadArchive)
+onMounted(async () => {
+  // 档案与草稿互不依赖，并行读取以缩短工作台可交互等待。
+  await Promise.all([loadArchive(), loadDraftSessions()])
+})
 </script>
 
 <template>
@@ -196,12 +267,12 @@ onMounted(loadArchive)
           <h1>把每一次实验，变成下一步的进步。</h1>
           <p>实验记录、数据复盘与成长目标，在同一个工作区持续沉淀。</p>
         </div>
-        <RouterLink to="/setup" class="btn btn-primary start-btn">
+        <button class="btn btn-primary start-btn" type="button" :disabled="starting" @click="beginExperiment(false)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true">
             <path d="M12 5v14M5 12h14" />
           </svg>
-          开始实验
-        </RouterLink>
+          {{ starting ? '正在创建…' : '开始实验' }}
+        </button>
       </header>
 
       <div class="module-bar" aria-label="工作台模块">
@@ -221,13 +292,13 @@ onMounted(loadArchive)
             <span class="module-tab-label">{{ module.label }}</span>
             <span class="module-tab-desc">{{ module.desc }}</span>
           </span>
-          <span class="module-status" :class="{ 'is-ready': module.id === 'growth' }">
-            {{ module.id === 'growth' ? '可用' : '占位' }}
+          <span class="module-status" :class="{ 'is-ready': module.id !== 'curve' }">
+            {{ module.id === 'curve' ? '占位' : '可用' }}
           </span>
         </button>
       </div>
 
-      <section class="module-panel" :aria-busy="generating">
+      <section class="module-panel" :aria-busy="generating || starting || session.draftsLoading">
         <header class="module-head">
           <div>
             <h2>{{ currentModule.label }}</h2>
@@ -398,17 +469,112 @@ onMounted(loadArchive)
               </div>
             </template>
 
+            <div v-else-if="activeModule === 'setup'" class="setup-workspace">
+              <form class="quick-setup" @submit.prevent="beginExperiment(true)">
+                <div class="quick-setup-heading">
+                  <span class="quick-step">01</span>
+                  <div>
+                    <h3>为这次实验建立记录</h3>
+                    <p>先确定标题、类型和日期，方法与材料在下一步完整录入。</p>
+                  </div>
+                </div>
+
+                <div class="quick-field quick-field--title">
+                  <label for="quick-title">实验标题</label>
+                  <input
+                    id="quick-title"
+                    v-model="quickTitle"
+                    class="input"
+                    type="text"
+                    required
+                    maxlength="120"
+                    :disabled="starting"
+                    placeholder="例如：A600 树脂对 SO4 的动态吸附"
+                  />
+                </div>
+                <div class="quick-meta-grid">
+                  <div class="quick-field">
+                    <label for="quick-type">实验类型</label>
+                    <select id="quick-type" v-model="quickType" class="input" :disabled="starting">
+                      <option v-for="item in EXPERIMENT_TYPES" :key="item.value" :value="item.value">
+                        {{ item.label }}
+                      </option>
+                    </select>
+                  </div>
+                  <div class="quick-field">
+                    <label for="quick-date">实验日期</label>
+                    <input id="quick-date" v-model="quickDate" class="input" type="date" required :disabled="starting" />
+                  </div>
+                </div>
+
+                <p v-if="setupError" class="quick-error" role="alert">{{ setupError }}</p>
+                <button class="btn btn-primary quick-submit" type="submit" :disabled="starting || !quickTitle.trim()">
+                  <span v-if="starting" class="spinner spinner--button" aria-hidden="true"></span>
+                  {{ starting ? '正在创建草稿…' : '创建并继续录入' }}
+                  <span v-if="!starting" aria-hidden="true">→</span>
+                </button>
+                <p class="quick-note">
+                  {{ session.online ? '字段将自动保存到当前账号的草稿。' : '后端离线时使用本地草稿，不会伪造云端保存状态。' }}
+                </p>
+              </form>
+
+              <section class="draft-shelf" aria-labelledby="draft-shelf-title">
+                <div class="draft-shelf-head">
+                  <div>
+                    <h3 id="draft-shelf-title">继续未完成的记录</h3>
+                    <p>仅显示当前账号最近 6 份未归档草稿</p>
+                  </div>
+                  <button
+                    class="draft-refresh"
+                    type="button"
+                    :disabled="session.draftsLoading"
+                    aria-label="刷新草稿列表"
+                    @click="loadDraftSessions()"
+                  >
+                    ↻
+                  </button>
+                </div>
+
+                <div v-if="session.draftsLoading" class="draft-state" role="status">
+                  <span class="spinner" aria-hidden="true"></span>
+                  <p>正在读取草稿…</p>
+                </div>
+                <div v-else-if="!session.online" class="draft-state">
+                  <p>连接后端后，可在这里续接已保存的草稿。</p>
+                  <button class="btn btn-ghost" type="button" @click="loadDraftSessions()">重新连接</button>
+                </div>
+                <div v-else-if="session.lastDraftsError" class="draft-state draft-state--error" role="alert">
+                  <p>{{ session.lastDraftsError }}</p>
+                  <button class="btn btn-ghost" type="button" @click="loadDraftSessions()">重新加载</button>
+                </div>
+                <div v-else-if="!session.draftSessions.length" class="draft-state">
+                  <p>还没有未归档草稿。创建后会在这里形成续接入口。</p>
+                </div>
+                <ul v-else class="draft-list">
+                  <li v-for="item in session.draftSessions" :key="item.id">
+                    <button class="draft-item" type="button" @click="resumeDraft(item)">
+                      <span class="draft-item-main">
+                        <strong>{{ item.title || '未命名草稿' }}</strong>
+                        <span>{{ experimentTypeLabel(item.experiment_type) }} · {{ item.field_count || 0 }} 项已填写</span>
+                      </span>
+                      <span class="draft-item-meta">
+                        <time>{{ formatDraftTime(item.updated_at) }}</time>
+                        <span aria-hidden="true">→</span>
+                      </span>
+                    </button>
+                  </li>
+                </ul>
+              </section>
+            </div>
+
             <div v-else class="placeholder-state">
               <span class="placeholder-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path :d="currentModule.icon" /></svg>
               </span>
               <span class="placeholder-tag">模块占位 · 尚未开放</span>
-              <h3>{{ activeModule === 'setup' ? '实验新建工作区' : '曲线生成工作区' }}</h3>
-              <p v-if="activeModule === 'setup'">后续将在这里承接快速新建、草稿续接与最近录入。目前请使用页面右上角的「开始实验」。</p>
-              <p v-else>后续将在这里承接标定曲线、穿透曲线与图形导出。目前可在数据识别页查看已识别曲线。</p>
-              <RouterLink :to="activeModule === 'setup' ? '/setup' : '/recognize'" class="btn btn-ghost">
-                {{ activeModule === 'setup' ? '前往新建实验' : '前往数据识别' }}
-              </RouterLink>
+              <h3>曲线生成工作区</h3>
+              <p>后续将在这里承接标定曲线、穿透曲线与图形导出。目前可在数据识别页查看已识别曲线。</p>
+              <RouterLink to="/recognize" class="btn btn-ghost">前往数据识别</RouterLink>
             </div>
           </div>
         </Transition>
@@ -662,6 +828,206 @@ onMounted(loadArchive)
 }
 .placeholder-state h3 {
   margin-top: var(--space-2);
+}
+
+.setup-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+  min-height: 380px;
+}
+.quick-setup {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  padding: var(--space-6);
+}
+.quick-setup-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+.quick-step {
+  padding-top: 2px;
+  color: var(--accent);
+  font: 12px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.quick-setup-heading h3,
+.draft-shelf-head h3 {
+  font: var(--text-base);
+  font-weight: 600;
+}
+.quick-setup-heading p,
+.draft-shelf-head p {
+  margin-top: 5px;
+  color: var(--text-secondary);
+  font: var(--text-xs);
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+.quick-field {
+  min-width: 0;
+}
+.quick-field--title {
+  width: 100%;
+}
+.quick-field label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--text-secondary);
+  font: var(--text-xs);
+  font-weight: 500;
+}
+.quick-field .input {
+  width: 100%;
+  min-height: 42px;
+  background: var(--control-bg);
+}
+.quick-meta-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(140px, 0.75fr);
+  gap: var(--space-3);
+  width: 100%;
+  margin-top: var(--space-4);
+}
+.quick-submit {
+  justify-content: center;
+  min-height: 44px;
+  margin-top: var(--space-5);
+  padding-inline: var(--space-5);
+}
+.quick-submit > span:last-child {
+  margin-left: var(--space-2);
+}
+.quick-note {
+  margin-top: var(--space-3);
+  color: var(--text-tertiary);
+  font: var(--text-xs);
+  line-height: 1.6;
+}
+.quick-error {
+  margin-top: var(--space-3);
+  color: var(--error);
+  font: var(--text-xs);
+}
+.draft-shelf {
+  min-width: 0;
+  padding: var(--space-6) var(--space-5);
+  border-left: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--bg-tertiary) 52%, transparent);
+}
+.draft-shelf-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.draft-refresh {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 20px;
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard);
+}
+.draft-refresh:hover {
+  background: var(--bg-secondary);
+  color: var(--accent);
+}
+.draft-refresh:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+.draft-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.draft-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard);
+}
+.draft-item:hover {
+  border-color: var(--border-subtle);
+  background: var(--bg-card);
+}
+.draft-item-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.draft-item-main strong {
+  overflow: hidden;
+  font: var(--text-sm);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.draft-item-main > span,
+.draft-item-meta {
+  color: var(--text-tertiary);
+  font: var(--text-xs);
+}
+.draft-item-meta {
+  display: flex;
+  align-items: flex-end;
+  flex: none;
+  flex-direction: column;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.draft-item-meta > span {
+  color: var(--accent);
+}
+.draft-state {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 220px;
+  padding: var(--space-5);
+  color: var(--text-secondary);
+  text-align: center;
+}
+.draft-state p {
+  max-width: 280px;
+  margin: var(--space-3) 0;
+  font: var(--text-sm);
+  line-height: 1.7;
+}
+.draft-state .spinner {
+  width: 20px;
+  height: 20px;
+}
+.draft-state--error {
+  color: var(--error);
 }
 
 .growth-config {
@@ -1013,7 +1379,17 @@ onMounted(loadArchive)
   line-height: 1.6;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 768px) {
+  .setup-workspace {
+    grid-template-columns: 1fr;
+  }
+  .draft-shelf {
+    border-top: 1px solid var(--border-subtle);
+    border-left: none;
+  }
+  .draft-state {
+    min-height: 150px;
+  }
   .workspace-head {
     align-items: flex-start;
   }
@@ -1084,8 +1460,21 @@ onMounted(loadArchive)
   .module-head,
   .growth-config,
   .report-head,
-  .report-section {
+  .report-section,
+  .quick-setup,
+  .draft-shelf {
     padding: var(--space-4);
+  }
+  .quick-meta-grid {
+    grid-template-columns: 1fr;
+  }
+  .draft-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .draft-item-meta {
+    align-items: center;
+    flex-direction: row;
   }
   .module-head {
     align-items: flex-start;
