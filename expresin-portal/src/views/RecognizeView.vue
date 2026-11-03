@@ -8,6 +8,7 @@ import MappingInspector from '../components/MappingInspector.vue'
 import PanelHead from '../components/PanelHead.vue'
 import BaseModal from '../components/BaseModal.vue'
 import { useToast } from '../composables/useToast.js'
+import { useI18n } from '../composables/useI18n.js'
 import { collectIssues } from '../data/demo.js'
 import {
   analyteOptions,
@@ -25,6 +26,7 @@ import {
 const router = useRouter()
 const route = useRoute()
 const { show } = useToast()
+const { t } = useI18n()
 
 const STEPS = [
   { id: 'pre', label: '录入' },
@@ -87,9 +89,9 @@ const pendingTotal = computed(
 const failedTotal = computed(() => issues.value.failedBlocks.length)
 
 const REVIEW_TOAST = {
-  confirm: '已确认映射正确',
-  remap: (target) => `已改判为 ${target}`,
-  ignore: '已标记为非数据列',
+  confirm: () => t('已确认映射正确'),
+  remap: (target) => t('已改判为 {target}', { target }),
+  ignore: () => t('已标记为非数据列'),
 }
 
 /**
@@ -113,7 +115,7 @@ async function onResolve({ block, col, action, target_field }) {
     show(`${block} / ${col} ${label}`, { tone: 'success' })
     selected.value = null
   } catch (e) {
-    show(`人工判定保存失败：${e.message}`, { tone: 'error' })
+    show(t('人工判定保存失败：{message}', { message: e.message }), { tone: 'error' })
   } finally {
     resolving.value = false
   }
@@ -182,31 +184,46 @@ async function onPickFile(event) {
     sheetName.value = sourceInfo.value.sheet || sheetName.value
 
     const stats = mappedStats.value
-    const sheetNote = sourceInfo.value.sheet ? `（工作表 ${sourceInfo.value.sheet}）` : ''
-    const cacheNote = sourceInfo.value.cached ? '（命中缓存，未重复调用模型）' : ''
+    const sheetNote = sourceInfo.value.sheet
+      ? t('（工作表 {sheet}）', { sheet: sourceInfo.value.sheet })
+      : ''
+    const cacheNote = sourceInfo.value.cached ? t('（命中缓存，未重复调用模型）') : ''
     const failed = sourceInfo.value.failedBlocks ?? []
     const failNote = failed.length
-      ? `，其中 ${failed.length} 个列块识别失败（已降级为待确认，可重新上传重试）`
+      ? t('，其中 {n} 个列块识别失败（已降级为待确认，可重新上传重试）', {
+          n: failed.length,
+        })
       : ''
     session.messages.push({
       role: 'assistant',
-      content:
-        `已解析《${file.name}》${sheetNote}${cacheNote}，识别到 ${regions.value.length} 个数据区、` +
-        `${stats.total} 列，其中 ${stats.mapped} 列已映射到标准字段${failNote}。` +
-        '请在中间栏逐列核对，低置信度与缺失项列在右侧。',
+      content: t(
+        '已解析《{file}》{sheetNote}{cacheNote}，识别到 {regions} 个数据区、{total} 列，其中 {mapped} 列已映射到标准字段{failNote}。请在中间栏逐列核对，低置信度与缺失项列在右侧。',
+        {
+          file: file.name,
+          sheetNote,
+          cacheNote,
+          regions: regions.value.length,
+          total: stats.total,
+          mapped: stats.mapped,
+          failNote,
+        },
+      ),
     })
     show(
       sourceInfo.value.cached
-        ? '已命中识别缓存，结果与上次一致。'
+        ? t('已命中识别缓存，结果与上次一致。')
         : failed.length
-          ? `解析完成，但有 ${failed.length} 个列块失败，可重新上传重试。`
-          : '文件解析完成，请逐列确认映射。',
+          ? t('解析完成，但有 {n} 个列块失败，可重新上传重试。', { n: failed.length })
+          : t('文件解析完成，请逐列确认映射。'),
       { tone: failed.length && !sourceInfo.value.cached ? 'warning' : 'success' },
     )
   } catch (e) {
-    show(e.offline ? '后端服务不可达，请先启动后端再上传。' : `解析失败：${e.message}`, {
-      tone: 'error',
-    })
+    show(
+      e.offline
+        ? t('后端服务不可达，请先启动后端再上传。')
+        : t('解析失败：{message}', { message: e.message }),
+      { tone: 'error' },
+    )
   } finally {
     stopUploadClock()
     uploading.value = false
@@ -228,27 +245,32 @@ async function onConfirm() {
   try {
     const exp = await confirmSession()
     if (exp.local) {
-      show('本地草稿模式：未写入后端归档，请先启动后端服务。', { tone: 'warning' })
+      show(t('本地草稿模式：未写入后端归档，请先启动后端服务。'), { tone: 'warning' })
       return
     }
-    session.messages.push({ role: 'assistant', content: `实验 ${exp.id} 已归档。` })
-    show(`实验已归档：${exp.id}`, { tone: 'success' })
+    session.messages.push({
+      role: 'assistant',
+      content: '实验 {id} 已归档。',
+      params: { id: exp.id },
+    })
+    show(t('实验已归档：{id}', { id: exp.id }), { tone: 'success' })
     router.push({ name: 'archive' })
   } catch (e) {
     const missing = e.payload?.detail?.missing || []
     if (e.status === 409) {
-      const labels = missing.map((m) => m.label || m.field_path).join('、')
+      const labels = missing.map((m) => t(m.label || m.field_path)).join(t('、'))
       session.messages.push({
         role: 'assistant',
-        content:
-          `归档被拦截：还有 ${missing.length} 项必填信息未填写 —— ${labels}。` +
-          '请到「实验前 · 新建实验」补全后再回来归档。',
+        content: t(
+          '归档被拦截：还有 {n} 项必填信息未填写 —— {labels}。请到「实验前 · 新建实验」补全后再回来归档。',
+          { n: missing.length, labels },
+        ),
       })
-      show(`还缺 ${missing.length} 项必填信息，无法归档`, { tone: 'warning' })
+      show(t('还缺 {n} 项必填信息，无法归档', { n: missing.length }), { tone: 'warning' })
       missingItems.value = missing
       missingOpen.value = true
     } else {
-      show(`归档失败：${e.message}`, { tone: 'error' })
+      show(t('归档失败：{message}', { message: e.message }), { tone: 'error' })
     }
   } finally {
     archiving.value = false
@@ -272,16 +294,16 @@ function goSetup() {
     active-step="post"
   >
     <template #actions>
-      <span v-if="sourceInfo?.demo" class="badge badge-neutral">示例数据</span>
-      <span class="badge badge-neutral">{{ mappedStats.mapped }}/{{ mappedStats.total }} 列已映射</span>
+      <span v-if="sourceInfo?.demo" class="badge badge-neutral">{{ t('示例数据') }}</span>
+      <span class="badge badge-neutral">{{ t('{mapped}/{total} 列已映射', { mapped: mappedStats.mapped, total: mappedStats.total }) }}</span>
       <span
         class="badge"
         :class="failedTotal ? 'badge-error' : pendingTotal ? 'badge-warning' : 'badge-success'"
       >
         <template v-if="failedTotal">
-          {{ pendingTotal ? `${pendingTotal} 项待确认 · ` : '' }}{{ failedTotal }} 块识别失败
+          {{ pendingTotal ? t('{n} 项待确认 · ', { n: pendingTotal }) : '' }}{{ t('{n} 块识别失败', { n: failedTotal }) }}
         </template>
-        <template v-else>{{ pendingTotal ? `${pendingTotal} 项待确认` : '全部通过' }}</template>
+        <template v-else>{{ pendingTotal ? t('{n} 项待确认', { n: pendingTotal }) : t('全部通过') }}</template>
       </span>
     </template>
 
@@ -298,20 +320,20 @@ function goSetup() {
     </template>
 
     <template #form>
-      <PanelHead label="识别结果">
+      <PanelHead :label="t('识别结果')">
         <template #actions>
           <div class="head-right">
           <span v-if="sourceInfo" class="muted src mono">
             {{ sourceInfo.file }}{{ sourceInfo.sheet ? ` · ${sourceInfo.sheet}` : '' }}
           </span>
           <label class="sheet-field">
-            <span class="caps">工作表</span>
+            <span class="caps">{{ t('工作表') }}</span>
             <input
               v-model="sheetName"
               class="sheet-input"
               type="text"
-              placeholder="留空 = 首个"
-              aria-label="工作表名称"
+              :placeholder="t('留空 = 首个')"
+              :aria-label="t('工作表名称')"
               :disabled="uploading"
             />
           </label>
@@ -323,7 +345,7 @@ function goSetup() {
             @change="onPickFile"
           />
           <button class="btn btn-secondary" type="button" :disabled="uploading" @click="fileInput.click()">
-            {{ uploading ? `解析中 ${uploadElapsed}s` : '上传原始数据' }}
+            {{ uploading ? t('解析中 {n}s', { n: uploadElapsed }) : t('上传原始数据') }}
           </button>
           </div>
         </template>
@@ -336,8 +358,8 @@ function goSetup() {
           <p class="muted">
             {{
               uploading
-                ? `正在解析文件…已用时 ${uploadElapsed} 秒`
-                : '尚未识别到数据。上传一份 Excel / CSV 原始数据开始。'
+                ? t('正在解析文件…已用时 {n} 秒', { n: uploadElapsed })
+                : t('尚未识别到数据。上传一份 Excel / CSV 原始数据开始。')
             }}
           </p>
         </div>
@@ -362,15 +384,15 @@ function goSetup() {
   </WorkbenchLayout>
 
   <BaseModal :open="missingOpen" title="还差必填信息，无法归档" @close="missingOpen = false">
-    <p class="muted">以下必填信息尚未填写，请到「实验前 · 新建实验」补全后再归档：</p>
+    <p class="muted">{{ t('以下必填信息尚未填写，请到「实验前 · 新建实验」补全后再归档：') }}</p>
     <ul class="missing-list">
       <li v-for="m in missingItems" :key="m.field_path" class="mono">
-        {{ m.label || m.field_path }}
+        {{ t(m.label || m.field_path) }}
       </li>
     </ul>
     <template #footer>
-      <button class="btn btn-secondary" type="button" @click="missingOpen = false">稍后处理</button>
-      <button class="btn btn-primary" type="button" @click="goSetup">去补全</button>
+      <button class="btn btn-secondary" type="button" @click="missingOpen = false">{{ t('稍后处理') }}</button>
+      <button class="btn btn-primary" type="button" @click="goSetup">{{ t('去补全') }}</button>
     </template>
   </BaseModal>
   </div>

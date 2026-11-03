@@ -9,6 +9,7 @@
  *   - 列识别域：fieldState(col) —— 面向识别结果的列（regions/blocks/columns）
  *   - 录入草稿域：draftStatusOf(field, draft) —— 面向 SetupView 的字段草稿
  */
+import { t } from '../composables/useI18n.js'
 
 /* ------------------------------------------------------------------ *
  * 列识别域
@@ -63,7 +64,8 @@ export const FIELD_STATE_META = {
 
 /** 便捷取 meta，未知状态安全兜底。 */
 export function fieldStateMeta(state) {
-  return FIELD_STATE_META[state] ?? { label: state ?? '', tone: 'neutral' }
+  const meta = FIELD_STATE_META[state] ?? { label: state ?? '', tone: 'neutral' }
+  return { ...meta, label: t(meta.label) }
 }
 
 /* ------------------------------------------------------------------ *
@@ -100,5 +102,6 @@ export const DRAFT_STATE_META = {
 
 /** 便捷取 meta，未知状态安全兜底。 */
 export function draftStateMeta(state) {
-  return DRAFT_STATE_META[state] ?? { label: '', tone: 'neutral' }
+  const meta = DRAFT_STATE_META[state] ?? { label: '', tone: 'neutral' }
+  return { ...meta, label: t(meta.label) }
 }

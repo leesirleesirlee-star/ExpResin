@@ -1,5 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { useI18n } from '../composables/useI18n.js'
+import { localizeJarvisText } from '../i18n/messages.js'
 
 /**
  * 对话消息气泡（升级方案 §7.1）。
@@ -20,11 +22,18 @@ const props = defineProps({
 
 const emit = defineEmits(['progress'])
 
+const { locale } = useI18n()
+
 function textOf(m) {
   return m.content ?? m.text ?? ''
 }
 
-const fullText = computed(() => textOf(props.message))
+const fullText = computed(() => {
+  locale.value
+  const raw = textOf(props.message)
+  if (props.message.role === 'user' || props.message.role === 'error') return raw
+  return localizeJarvisText(raw, props.message.params)
+})
 const displayed = ref('')
 const typing = ref(false)
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -32,6 +41,7 @@ let timer = null
 let characters = []
 let characterIndex = 0
 let chunkSize = 2
+let lastLocale = locale.value
 
 function stopTimer() {
   if (timer !== null) window.clearTimeout(timer)
@@ -54,10 +64,13 @@ function typeNext() {
 
 function syncDisplay() {
   stopTimer()
+  const localeChanged = locale.value !== lastLocale
+  lastLocale = locale.value
   const canType =
     props.typewriter &&
     !props.streaming &&
     !reducedMotion &&
+    !localeChanged &&
     props.message.role !== 'user' &&
     props.message.role !== 'error'
 
@@ -88,7 +101,7 @@ onBeforeUnmount(stopTimer)
     :class="`msg--${props.message.role === 'user' ? 'user' : props.message.role === 'error' ? 'error' : 'jarvis'}`"
     :role="props.message.role === 'error' ? 'alert' : undefined"
   >
-    <p v-if="streaming" class="bubble typing" aria-label="Jarvis 正在输入">
+    <p v-if="streaming" class="bubble typing" :aria-label="$t('Jarvis 正在输入')">
       <i></i><i></i><i></i>
     </p>
     <template v-else>
@@ -100,7 +113,7 @@ onBeforeUnmount(stopTimer)
         ></span>
       </p>
       <div v-if="!typing && props.message.chips?.length" class="chips">
-        <span v-for="c in props.message.chips" :key="c" class="badge badge-neutral">{{ c }}</span>
+        <span v-for="c in props.message.chips" :key="c" class="badge badge-neutral">{{ $t(c) }}</span>
       </div>
     </template>
   </article>

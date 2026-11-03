@@ -4,6 +4,7 @@ import './styles/base.css'
 import App from './App.vue'
 import router, { prefetchViewChunks } from './router/index.js'
 import { clearAuth, initAuth } from './data/auth.js'
+import { t } from './composables/useI18n.js'
 
 /* 后端判定令牌失效（过期 / 改密后其他会话被踢）→ 清本地会话并回登录页 */
 window.addEventListener('expresin:unauthorized', () => {
@@ -17,6 +18,7 @@ window.addEventListener('expresin:unauthorized', () => {
    避免刷新后拿着有效 token 却闪跳欢迎页。 */
 initAuth().finally(() => {
   const app = createApp(App).use(router)
+  app.config.globalProperties.$t = t
   app.mount('#app')
 
   /* 首屏渲染完成后趁空闲预热其余页面 chunk，保证顶栏切换时过渡立即开始 */

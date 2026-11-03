@@ -55,13 +55,13 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
         class="modal"
         role="dialog"
         aria-modal="true"
-        :aria-label="title"
+        :aria-label="$t(title)"
         :style="{ '--modal-w': maxWidth }"
         tabindex="-1"
       >
         <header class="modal-head">
-          <h2>{{ title }}</h2>
-          <button class="icon-btn" type="button" aria-label="关闭对话框" @click="emit('close')">
+          <h2>{{ $t(title) }}</h2>
+          <button class="icon-btn" type="button" :aria-label="$t('关闭对话框')" @click="emit('close')">
             <svg
               viewBox="0 0 24 24"
               fill="none"

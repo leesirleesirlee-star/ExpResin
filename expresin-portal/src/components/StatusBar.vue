@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { STATUS_META } from '../data/demo.js'
+import { useI18n } from '../composables/useI18n.js'
 
 const props = defineProps({
   experiment: { type: Object, required: true },
@@ -14,6 +15,7 @@ const props = defineProps({
 
 defineEmits(['save', 'confirm'])
 
+const { t } = useI18n()
 const meta = computed(() => STATUS_META[props.experiment.status] ?? STATUS_META.draft)
 </script>
 
@@ -23,12 +25,12 @@ const meta = computed(() => STATUS_META[props.experiment.status] ?? STATUS_META.
       <span class="id mono">{{ experiment.id }}</span>
       <span class="badge" :class="`badge-${meta.tone}`">
         <span class="dot" aria-hidden="true"></span>
-        {{ meta.label }}
+        {{ t(meta.label) }}
       </span>
     </div>
 
     <div class="center muted">
-      最后保存：{{ experiment.lastSaved }}
+      {{ t('最后保存：') }}{{ experiment.lastSaved }}
     </div>
 
     <div class="right">
@@ -39,7 +41,7 @@ const meta = computed(() => STATUS_META[props.experiment.status] ?? STATUS_META.
         :disabled="saving"
         @click="$emit('save')"
       >
-        {{ saveLabel }}
+        {{ t(saveLabel) }}
       </button>
       <button
         class="btn btn-primary"
@@ -49,7 +51,7 @@ const meta = computed(() => STATUS_META[props.experiment.status] ?? STATUS_META.
         @click="$emit('confirm')"
       >
         <span v-if="saving" class="spinner" aria-hidden="true"></span>
-        {{ saving ? savingLabel : confirmLabel }}
+        {{ t(saving ? savingLabel : confirmLabel) }}
       </button>
     </div>
   </footer>

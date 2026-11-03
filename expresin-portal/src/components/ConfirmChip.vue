@@ -22,5 +22,5 @@ const meta = computed(() =>
 </script>
 
 <template>
-  <span v-if="meta.label" class="badge" :class="`badge-${meta.tone}`">{{ meta.label }}</span>
+  <span v-if="meta.label" class="badge" :class="`badge-${meta.tone}`">{{ $t(meta.label) }}</span>
 </template>

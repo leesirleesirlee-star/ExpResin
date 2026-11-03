@@ -12,6 +12,9 @@ import { computed, ref } from 'vue'
 import PanelHead from './PanelHead.vue'
 import StatGrid from './StatGrid.vue'
 import MiniButton from './MiniButton.vue'
+import { useI18n } from '../composables/useI18n.js'
+
+const { t } = useI18n()
 
 const props = defineProps({
   sheets: { type: Array, default: () => [] },
@@ -70,7 +73,7 @@ const attention = computed(() => {
           value,
           unit: d.unit || f.unit || '',
           conf: typeof d.confidence === 'number' ? d.confidence : null,
-          reason: d.status === 'unit_error' ? '单位与模板不一致' : '由对话抽取，置信度偏低',
+          reason: t(d.status === 'unit_error' ? '单位与模板不一致' : '由对话抽取，置信度偏低'),
           raw_text: d.raw_text,
         })
       }
@@ -104,11 +107,11 @@ const hintOpen = ref(false)
 </script>
 
 <template>
-  <aside class="meta-inspector" aria-label="录入检查面板">
-    <PanelHead label="录入检查">
+  <aside class="meta-inspector" :aria-label="$t('录入检查面板')">
+    <PanelHead :label="$t('录入检查')">
       <template #actions>
         <span class="badge" :class="blocking ? 'badge-warning' : 'badge-success'">
-          {{ blocking ? `${blocking} 项待补` : '可以归档' }}
+          {{ blocking ? t('{n} 项待补', { n: blocking }) : t('可以归档') }}
         </span>
       </template>
     </PanelHead>
@@ -117,35 +120,35 @@ const hintOpen = ref(false)
       <!-- 1. 填写进度 -->
       <section class="block">
         <div class="progress-head">
-          <span class="caps">必填完成度</span>
+          <span class="caps">{{ t('必填完成度') }}</span>
           <span class="mono progress-num">{{ filledRequired }}/{{ required.length }}</span>
         </div>
         <div class="bar" role="progressbar" :aria-valuenow="progress" aria-valuemin="0" aria-valuemax="100">
           <div class="bar-fill" :style="{ width: `${progress}%` }" />
         </div>
         <p class="hint muted">
-          另有 {{ optionalFilled }} 个选填字段已填写。归档只校验必填项。
+          {{ t('另有 {n} 个选填字段已填写。归档只校验必填项。', { n: optionalFilled }) }}
         </p>
       </section>
 
       <!-- 2. 阻塞归档项 -->
       <section class="block">
         <div class="progress-head">
-          <span class="caps">阻塞归档</span>
+          <span class="caps">{{ t('阻塞归档') }}</span>
           <span class="mono progress-num">{{ missing.length }}</span>
         </div>
 
-        <p v-if="!missing.length" class="empty muted">必填信息已齐全。</p>
+        <p v-if="!missing.length" class="empty muted">{{ t('必填信息已齐全。') }}</p>
 
         <ul v-else class="list">
           <li v-for="m in missing" :key="m.field_path" class="row row--blocking">
             <div class="row-main">
-              <span class="row-title">{{ m.label }}</span>
-              <span class="row-sub muted">必填项尚未填写</span>
+              <span class="row-title">{{ t(m.label) }}</span>
+              <span class="row-sub muted">{{ t('必填项尚未填写') }}</span>
             </div>
             <div class="row-actions">
-              <MiniButton @click="$emit('focus', m.field_path)">定位</MiniButton>
-              <MiniButton variant="ghost" @click="$emit('defer', m.field_path)">稍后补</MiniButton>
+              <MiniButton @click="$emit('focus', m.field_path)">{{ t('定位') }}</MiniButton>
+              <MiniButton variant="ghost" @click="$emit('defer', m.field_path)">{{ t('稍后补') }}</MiniButton>
             </div>
           </li>
         </ul>
@@ -154,18 +157,18 @@ const hintOpen = ref(false)
       <!-- 3. 需要核对 -->
       <section class="block">
         <div class="progress-head">
-          <span class="caps">建议核对</span>
+          <span class="caps">{{ t('建议核对') }}</span>
           <span class="mono progress-num">{{ attention.length }}</span>
         </div>
 
-        <p v-if="!attention.length" class="empty muted">没有低置信度或单位异常的字段。</p>
+        <p v-if="!attention.length" class="empty muted">{{ t('没有低置信度或单位异常的字段。') }}</p>
 
         <ul v-else class="list">
           <li v-for="a in attention" :key="a.path">
             <button class="row row--attention" type="button" @click="$emit('focus', a.path)">
               <span class="row-main">
                 <span class="row-title">
-                  {{ a.label }}
+                  {{ t(a.label) }}
                   <span class="mono row-value">{{ a.value }}{{ a.unit ? ` ${a.unit}` : '' }}</span>
                 </span>
                 <span class="row-sub muted">{{ a.reason }}</span>
@@ -179,44 +182,44 @@ const hintOpen = ref(false)
       <!-- 4. 已稍后补 -->
       <section v-if="deferred.length" class="block">
         <div class="progress-head">
-          <span class="caps">已标记稍后补</span>
+          <span class="caps">{{ t('已标记稍后补') }}</span>
           <span class="mono progress-num">{{ deferred.length }}</span>
         </div>
         <ul class="list">
           <li v-for="d in deferred" :key="d.field_path" class="deferred-item">
-            <span class="mono">{{ d.label }}</span>
-            <MiniButton variant="ghost" @click="$emit('focus', d.field_path)">去填写</MiniButton>
+            <span class="mono">{{ t(d.label) }}</span>
+            <MiniButton variant="ghost" @click="$emit('focus', d.field_path)">{{ t('去填写') }}</MiniButton>
           </li>
         </ul>
       </section>
 
       <!-- 5. 来源分布 -->
       <section class="block">
-        <span class="caps">字段来源</span>
+        <span class="caps">{{ t('字段来源') }}</span>
         <StatGrid :items="sources" :columns="2" />
       </section>
     </div>
 
     <div class="foot">
       <button class="btn btn-primary block-btn" type="button" @click="$emit('confirm')">
-        确认并归档
+        {{ t('确认并归档') }}
       </button>
       <div v-if="blocking" class="hintbar">
         <button
           type="button"
           class="hint-trigger"
           :aria-expanded="hintOpen"
-          :aria-label="`提示：还需补全 ${blocking} 项必填信息`"
+          :aria-label="t('提示：还需补全 {n} 项必填信息', { n: blocking })"
           @click="hintOpen = !hintOpen"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10" />
             <path d="M12 16v-4m0-4h.01" />
           </svg>
-          提示
+          {{ t('提示') }}
         </button>
         <div v-if="hintOpen" class="hint-card" role="note">
-          <p>还需补全 {{ blocking }} 项必填信息（可点「稍后补」跳过并说明）。</p>
+          <p>{{ t('还需补全 {n} 项必填信息（可点「稍后补」跳过并说明）。', { n: blocking }) }}</p>
         </div>
       </div>
     </div>

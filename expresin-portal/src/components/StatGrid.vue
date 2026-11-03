@@ -17,7 +17,7 @@ defineProps({
   <div class="stat-grid" :style="{ '--stat-cols': columns }">
     <div v-for="s in items" :key="s.key" class="stat">
       <span class="stat-num">{{ s.value }}</span>
-      <span class="stat-label">{{ s.label }}</span>
+      <span class="stat-label">{{ $t(s.label) }}</span>
     </div>
   </div>
 </template>

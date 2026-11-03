@@ -10,9 +10,11 @@ import {
   startNewSession,
 } from '../data/session.js'
 import { useToast } from '../composables/useToast.js'
+import { useI18n } from '../composables/useI18n.js'
 
 const router = useRouter()
 const { show } = useToast()
+const { t, locale } = useI18n()
 const REPORT_LIMIT = 20
 
 const modules = [
@@ -60,7 +62,7 @@ async function beginExperiment(withQuickFields = false) {
   if (starting.value) return
   const title = quickTitle.value.trim()
   if (withQuickFields && !title) {
-    setupError.value = '请先填写实验标题'
+    setupError.value = t('请先填写实验标题')
     return
   }
   starting.value = true
@@ -74,10 +76,10 @@ async function beginExperiment(withQuickFields = false) {
     })
     await router.push({ name: 'setup' })
     if (!session.online) {
-      show('后端未连接，本次使用本地草稿；连接后端后可自动保存。', { tone: 'warning' })
+      show(t('后端未连接，本次使用本地草稿；连接后端后可自动保存。'), { tone: 'warning' })
     }
   } catch (error) {
-    setupError.value = error.message || '新建实验失败，请稍后重试'
+    setupError.value = error.message || t('新建实验失败，请稍后重试')
   } finally {
     starting.value = false
   }
@@ -88,14 +90,14 @@ function resumeDraft(item) {
 }
 
 function experimentTypeLabel(value) {
-  return EXPERIMENT_TYPES.find((item) => item.value === value)?.label || '类型待补充'
+  return t(EXPERIMENT_TYPES.find((item) => item.value === value)?.label || '类型待补充')
 }
 
 function formatDraftTime(value) {
-  if (!value) return '尚未保存'
+  if (!value) return t('尚未保存')
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString('zh-CN', {
+  return date.toLocaleString(locale.value === 'en' ? 'en-US' : 'zh-CN', {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
@@ -113,13 +115,13 @@ const experimentTypeCount = computed(
 )
 const archiveDateRange = computed(() => {
   const dates = ownArchive.value.map((item) => item.date_start).filter(Boolean).sort()
-  if (!dates.length) return '暂无日期'
-  return dates[0] === dates.at(-1) ? dates[0] : `${dates[0]} 至 ${dates.at(-1)}`
+  if (!dates.length) return t('暂无日期')
+  return dates[0] === dates.at(-1) ? dates[0] : `${dates[0]} ${t('至')} ${dates.at(-1)}`
 })
 const scopeLabel = computed(() =>
   ownArchive.value.length > REPORT_LIMIT
-    ? `最近 ${REPORT_LIMIT} 份本人实验档案`
-    : `全部 ${ownArchive.value.length} 份本人实验档案`,
+    ? t('最近 {n} 份本人实验档案', { n: REPORT_LIMIT })
+    : t('全部 {n} 份本人实验档案', { n: ownArchive.value.length }),
 )
 
 const focus = ref('')
@@ -139,23 +141,23 @@ async function generateReport() {
       focus: focus.value.trim() || undefined,
       limit: REPORT_LIMIT,
     })
-    show('成长报告已生成', { tone: 'success' })
+    show(t('成长报告已生成'), { tone: 'success' })
   } catch (error) {
-    generateError.value = error.message || '报告生成失败，请稍后重试'
+    generateError.value = error.message || t('报告生成失败，请稍后重试')
   } finally {
     generating.value = false
   }
 }
 
 function formatDate(value) {
-  return value || '未记录日期'
+  return value || t('未记录日期')
 }
 
 function formatDateTime(value) {
   if (!value) return '—'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString('zh-CN', { hour12: false })
+  return date.toLocaleString(locale.value === 'en' ? 'en-US' : 'zh-CN', { hour12: false })
 }
 
 const DIRECTIONS = {
@@ -166,7 +168,8 @@ const DIRECTIONS = {
 }
 
 function directionOf(item) {
-  return DIRECTIONS[item?.direction] || DIRECTIONS.insufficient_data
+  const direction = DIRECTIONS[item?.direction] || DIRECTIONS.insufficient_data
+  return { ...direction, label: t(direction.label) }
 }
 
 function reportMarkdown() {
@@ -263,19 +266,19 @@ onMounted(async () => {
     <div class="wrap">
       <header class="workspace-head">
         <div class="workspace-title">
-          <p class="eyebrow">个人研究工作台</p>
-          <h1>把每一次实验，变成下一步的进步。</h1>
-          <p>实验记录、数据复盘与成长目标，在同一个工作区持续沉淀。</p>
+          <p class="eyebrow">{{ $t('个人研究工作台') }}</p>
+          <h1>{{ $t('把每一次实验，变成下一步的进步。') }}</h1>
+          <p>{{ $t('实验记录、数据复盘与成长目标，在同一个工作区持续沉淀。') }}</p>
         </div>
         <button class="btn btn-primary start-btn" type="button" :disabled="starting" @click="beginExperiment(false)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true">
             <path d="M12 5v14M5 12h14" />
           </svg>
-          {{ starting ? '正在创建…' : '开始实验' }}
+          {{ starting ? $t('正在创建…') : $t('开始实验') }}
         </button>
       </header>
 
-      <div class="module-bar" aria-label="工作台模块">
+      <div class="module-bar" :aria-label="$t('工作台模块')">
         <button
           v-for="module in modules"
           :key="module.id"
@@ -289,11 +292,11 @@ onMounted(async () => {
             <path :d="module.icon" />
           </svg>
           <span class="module-tab-copy">
-            <span class="module-tab-label">{{ module.label }}</span>
-            <span class="module-tab-desc">{{ module.desc }}</span>
+            <span class="module-tab-label">{{ $t(module.label) }}</span>
+            <span class="module-tab-desc">{{ $t(module.desc) }}</span>
           </span>
           <span class="module-status" :class="{ 'is-ready': module.id !== 'curve' }">
-            {{ module.id === 'curve' ? '占位' : '可用' }}
+            {{ module.id === 'curve' ? $t('占位') : $t('可用') }}
           </span>
         </button>
       </div>
@@ -301,11 +304,11 @@ onMounted(async () => {
       <section class="module-panel" :aria-busy="generating || starting || session.draftsLoading">
         <header class="module-head">
           <div>
-            <h2>{{ currentModule.label }}</h2>
-            <p>{{ currentModule.headline }}</p>
+            <h2>{{ $t(currentModule.label) }}</h2>
+            <p>{{ $t(currentModule.headline) }}</p>
           </div>
           <RouterLink v-if="activeModule === 'growth'" to="/archive" class="archive-link">
-            查看实验档案
+            {{ $t('查看实验档案') }}
             <span aria-hidden="true">→</span>
           </RouterLink>
         </header>
@@ -315,20 +318,20 @@ onMounted(async () => {
             <template v-if="activeModule === 'growth'">
               <div v-if="session.archiveLoading" class="state-block" role="status">
                 <span class="spinner" aria-hidden="true"></span>
-                <h3>正在读取实验档案</h3>
-                <p>确认当前账号可用于成长分析的数据范围。</p>
+                <h3>{{ $t('正在读取实验档案') }}</h3>
+                <p>{{ $t('确认当前账号可用于成长分析的数据范围。') }}</p>
               </div>
 
               <div v-else-if="!session.online" class="state-block">
-                <h3>后端服务尚未连接</h3>
-                <p>成长报告需要读取本人归档并调用 AI，连接后端后再试。</p>
-                <button class="btn btn-ghost" type="button" @click="loadArchive">重新连接</button>
+                <h3>{{ $t('后端服务尚未连接') }}</h3>
+                <p>{{ $t('成长报告需要读取本人归档并调用 AI，连接后端后再试。') }}</p>
+                <button class="btn btn-ghost" type="button" @click="loadArchive">{{ $t('重新连接') }}</button>
               </div>
 
               <div v-else-if="session.lastArchiveError" class="state-block state-block--error" role="alert">
-                <h3>实验档案读取失败</h3>
+                <h3>{{ $t('实验档案读取失败') }}</h3>
                 <p>{{ session.lastArchiveError }}</p>
-                <button class="btn btn-ghost" type="button" @click="loadArchive">重新加载</button>
+                <button class="btn btn-ghost" type="button" @click="loadArchive">{{ $t('重新加载') }}</button>
               </div>
 
               <div v-else-if="!ownArchive.length" class="state-block">
@@ -337,26 +340,28 @@ onMounted(async () => {
                     <path d="M4 19V5M4 19h16M7 15l4-4 3 2 5-7M16 6h3v3" />
                   </svg>
                 </span>
-                <h3>先完成一次实验，再回来看成长</h3>
-                <p>没有本人归档时不会生成空泛结论。完成实验录入与数据归档后，这里就能开始复盘。</p>
-                <RouterLink to="/setup" class="btn btn-primary">开始第一次实验</RouterLink>
+                <h3>{{ $t('先完成一次实验，再回来看成长') }}</h3>
+                <p>{{ $t('没有本人归档时不会生成空泛结论。完成实验录入与数据归档后，这里就能开始复盘。') }}</p>
+                <RouterLink to="/setup" class="btn btn-primary">{{ $t('开始第一次实验') }}</RouterLink>
               </div>
 
               <div v-else class="growth-workspace">
                 <section class="growth-config">
                   <div class="config-main">
                     <div>
-                      <h3>生成阶段性成长报告</h3>
-                      <p>AI 将分析{{ scopeLabel }}，梳理每次实验的成长观察与后续目标。</p>
+                      <h3>{{ $t('生成阶段性成长报告') }}</h3>
+                      <p>{{ $t('AI 将分析{scope}，梳理每次实验的成长观察与后续目标。', { scope: scopeLabel }) }}</p>
                     </div>
                     <button class="btn btn-primary generate-btn" type="button" :disabled="!canGenerate" @click="generateReport">
                       <span v-if="generating" class="spinner spinner--button" aria-hidden="true"></span>
-                      {{ generating ? '正在生成…' : report ? '重新生成报告' : '生成成长报告' }}
+                      {{ generating ? $t('正在生成…') : report ? $t('重新生成报告') : $t('生成成长报告') }}
                     </button>
                   </div>
 
                   <div class="focus-field">
-                    <label for="growth-focus">希望重点提升的方向 <span>选填</span></label>
+                    <label for="growth-focus">
+                      {{ $t('希望重点提升的方向') }} <span>{{ $t('选填') }}</span>
+                    </label>
                     <input
                       id="growth-focus"
                       v-model="focus"
@@ -364,57 +369,60 @@ onMounted(async () => {
                       type="text"
                       maxlength="160"
                       :disabled="generating"
-                      placeholder="例如：提高数据复核能力，或减少实验记录遗漏"
+                      :placeholder="$t('例如：提高数据复核能力，或减少实验记录遗漏')"
                     />
                   </div>
 
                   <dl class="archive-facts">
-                    <div><dt>本人档案</dt><dd>{{ ownArchive.length }} 份</dd></div>
-                    <div><dt>实验类型</dt><dd>{{ experimentTypeCount }} 类</dd></div>
-                    <div><dt>记录时间</dt><dd>{{ archiveDateRange }}</dd></div>
+                    <div><dt>{{ $t('本人档案') }}</dt><dd>{{ $t('{n} 份', { n: ownArchive.length }) }}</dd></div>
+                    <div><dt>{{ $t('实验类型') }}</dt><dd>{{ $t('{n} 类', { n: experimentTypeCount }) }}</dd></div>
+                    <div><dt>{{ $t('记录时间') }}</dt><dd>{{ archiveDateRange }}</dd></div>
                   </dl>
-                  <p class="privacy-note">仅使用当前登录账号的归档数据；AI 结论用于复盘，不替代原始记录与导师评价。</p>
+                  <p class="privacy-note">{{ $t('仅使用当前登录账号的归档数据；AI 结论用于复盘，不替代原始记录与导师评价。') }}</p>
                 </section>
 
                 <div v-if="generating" class="report-loading" role="status">
                   <span class="spinner" aria-hidden="true"></span>
                   <div>
-                    <h3>正在阅读实验轨迹并生成报告</h3>
-                    <p>分析实验记录、规范数据与复核信息，可能需要片刻，请勿重复提交。</p>
+                    <h3>{{ $t('正在阅读实验轨迹并生成报告') }}</h3>
+                    <p>{{ $t('分析实验记录、规范数据与复核信息，可能需要片刻，请勿重复提交。') }}</p>
                   </div>
                 </div>
 
                 <div v-else-if="generateError" class="report-error" role="alert">
-                  <div><strong>这次未能生成报告</strong><p>{{ generateError }}</p></div>
-                  <button class="btn btn-ghost" type="button" @click="generateReport">重试</button>
+                  <div><strong>{{ $t('这次未能生成报告') }}</strong><p>{{ generateError }}</p></div>
+                  <button class="btn btn-ghost" type="button" @click="generateReport">{{ $t('重试') }}</button>
                 </div>
 
                 <article v-if="report" class="growth-report">
                   <header class="report-head">
                     <div>
                       <p class="report-eyebrow">EXPRESIN · GROWTH REPORT</p>
-                      <h2>我的实验成长报告</h2>
-                      <p>{{ formatDateTime(report.generated_at) }} · 基于 {{ report.scope?.experiment_count || 0 }} 份实验档案</p>
+                      <h2>{{ $t('我的实验成长报告') }}</h2>
+                      <p>
+                        {{ formatDateTime(report.generated_at) }} ·
+                        {{ $t('基于 {n} 份实验档案', { n: report.scope?.experiment_count || 0 }) }}
+                      </p>
                     </div>
                     <div class="report-actions">
-                      <button class="btn btn-ghost report-action" type="button" @click="copyReport">复制报告</button>
-                      <button class="btn btn-ghost report-action" type="button" @click="downloadReport">导出 Markdown</button>
+                      <button class="btn btn-ghost report-action" type="button" @click="copyReport">{{ $t('复制报告') }}</button>
+                      <button class="btn btn-ghost report-action" type="button" @click="downloadReport">{{ $t('导出 Markdown') }}</button>
                     </div>
                   </header>
 
                   <section class="report-section report-summary">
-                    <h3>整体总结</h3>
+                    <h3>{{ $t('整体总结') }}</h3>
                     <p>{{ report.summary }}</p>
                     <dl class="report-stats">
-                      <div><dt>分析档案</dt><dd>{{ report.statistics?.experiment_count || 0 }} 份</dd></div>
-                      <div><dt>含原始数据</dt><dd>{{ report.statistics?.with_raw_data_count || 0 }} 份</dd></div>
-                      <div><dt>规范数据行</dt><dd>{{ report.statistics?.canonical_row_count || 0 }} 行</dd></div>
-                      <div><dt>质量提示</dt><dd>{{ report.statistics?.warning_count || 0 }} 条</dd></div>
+                      <div><dt>{{ $t('分析档案') }}</dt><dd>{{ $t('{n} 份', { n: report.statistics?.experiment_count || 0 }) }}</dd></div>
+                      <div><dt>{{ $t('含原始数据') }}</dt><dd>{{ $t('{n} 份', { n: report.statistics?.with_raw_data_count || 0 }) }}</dd></div>
+                      <div><dt>{{ $t('规范数据行') }}</dt><dd>{{ $t('{n} 行', { n: report.statistics?.canonical_row_count || 0 }) }}</dd></div>
+                      <div><dt>{{ $t('质量提示') }}</dt><dd>{{ $t('{n} 条', { n: report.statistics?.warning_count || 0 }) }}</dd></div>
                     </dl>
                   </section>
 
                   <section v-if="report.strengths?.length" class="report-section">
-                    <h3>已形成的优势</h3>
+                    <h3>{{ $t('已形成的优势') }}</h3>
                     <ul class="strength-list">
                       <li v-for="item in report.strengths" :key="item"><span aria-hidden="true">✓</span>{{ item }}</li>
                     </ul>
@@ -422,8 +430,8 @@ onMounted(async () => {
 
                   <section class="report-section">
                     <div class="section-title-row">
-                      <h3>每一次成长经历</h3>
-                      <span>按实验时间排列</span>
+                      <h3>{{ $t('每一次成长经历') }}</h3>
+                      <span>{{ $t('按实验时间排列') }}</span>
                     </div>
                     <ol class="timeline-list">
                       <li v-for="item in report.timeline || []" :key="item.experiment_id" class="timeline-item">
@@ -431,13 +439,13 @@ onMounted(async () => {
                         <div class="timeline-content">
                           <div class="timeline-title">
                             <div>
-                              <h4>{{ item.title || '（未命名实验）' }}</h4>
+                              <h4>{{ item.title || $t('（未命名实验）') }}</h4>
                               <RouterLink :to="`/archive/${item.experiment_id}`" class="experiment-id mono">{{ item.experiment_id }}</RouterLink>
                             </div>
                             <span class="direction-badge" :class="directionOf(item).className">{{ directionOf(item).label }}</span>
                           </div>
                           <p>{{ item.observation }}</p>
-                          <p v-if="item.evidence" class="timeline-evidence"><strong>记录依据</strong>{{ item.evidence }}</p>
+                          <p v-if="item.evidence" class="timeline-evidence"><strong>{{ $t('记录依据') }}</strong>{{ item.evidence }}</p>
                         </div>
                       </li>
                     </ol>
@@ -445,8 +453,8 @@ onMounted(async () => {
 
                   <section class="report-section">
                     <div class="section-title-row">
-                      <h3>日后提升目标</h3>
-                      <span>行动与验收方式</span>
+                      <h3>{{ $t('日后提升目标') }}</h3>
+                      <span>{{ $t('行动与验收方式') }}</span>
                     </div>
                     <ol class="goal-list">
                       <li v-for="(goal, index) in report.goals || []" :key="`${goal.title}-${index}`">
@@ -454,17 +462,17 @@ onMounted(async () => {
                         <div>
                           <div class="goal-title"><h4>{{ goal.title }}</h4><span v-if="goal.timeframe">{{ goal.timeframe }}</span></div>
                           <p>{{ goal.action }}</p>
-                          <p class="goal-metric"><strong>验收方式</strong>{{ goal.metric }}</p>
+                          <p class="goal-metric"><strong>{{ $t('验收方式') }}</strong>{{ goal.metric }}</p>
                         </div>
                       </li>
                     </ol>
                   </section>
 
                   <details v-if="report.data_gaps?.length" class="report-gaps">
-                    <summary>查看本次分析的数据限制（{{ report.data_gaps.length }}）</summary>
+                    <summary>{{ $t('查看本次分析的数据限制（{n}）', { n: report.data_gaps.length }) }}</summary>
                     <ul><li v-for="item in report.data_gaps" :key="item">{{ item }}</li></ul>
                   </details>
-                  <footer class="report-foot">报告由 AI 基于所选档案生成，请结合实验原始记录与导师反馈使用。</footer>
+                  <footer class="report-foot">{{ $t('报告由 AI 基于所选档案生成，请结合实验原始记录与导师反馈使用。') }}</footer>
                 </article>
               </div>
             </template>
@@ -474,13 +482,13 @@ onMounted(async () => {
                 <div class="quick-setup-heading">
                   <span class="quick-step">01</span>
                   <div>
-                    <h3>为这次实验建立记录</h3>
-                    <p>先确定标题、类型和日期，方法与材料在下一步完整录入。</p>
+                    <h3>{{ $t('为这次实验建立记录') }}</h3>
+                    <p>{{ $t('先确定标题、类型和日期，方法与材料在下一步完整录入。') }}</p>
                   </div>
                 </div>
 
                 <div class="quick-field quick-field--title">
-                  <label for="quick-title">实验标题</label>
+                  <label for="quick-title">{{ $t('实验标题') }}</label>
                   <input
                     id="quick-title"
                     v-model="quickTitle"
@@ -489,20 +497,20 @@ onMounted(async () => {
                     required
                     maxlength="120"
                     :disabled="starting"
-                    placeholder="例如：A600 树脂对 SO4 的动态吸附"
+                    :placeholder="$t('例如：A600 树脂对 SO4 的动态吸附')"
                   />
                 </div>
                 <div class="quick-meta-grid">
                   <div class="quick-field">
-                    <label for="quick-type">实验类型</label>
+                    <label for="quick-type">{{ $t('实验类型') }}</label>
                     <select id="quick-type" v-model="quickType" class="input" :disabled="starting">
                       <option v-for="item in EXPERIMENT_TYPES" :key="item.value" :value="item.value">
-                        {{ item.label }}
+                        {{ $t(item.label) }}
                       </option>
                     </select>
                   </div>
                   <div class="quick-field">
-                    <label for="quick-date">实验日期</label>
+                    <label for="quick-date">{{ $t('实验日期') }}</label>
                     <input id="quick-date" v-model="quickDate" class="input" type="date" required :disabled="starting" />
                   </div>
                 </div>
@@ -510,25 +518,25 @@ onMounted(async () => {
                 <p v-if="setupError" class="quick-error" role="alert">{{ setupError }}</p>
                 <button class="btn btn-primary quick-submit" type="submit" :disabled="starting || !quickTitle.trim()">
                   <span v-if="starting" class="spinner spinner--button" aria-hidden="true"></span>
-                  {{ starting ? '正在创建草稿…' : '创建并继续录入' }}
+                  {{ starting ? $t('正在创建草稿…') : $t('创建并继续录入') }}
                   <span v-if="!starting" aria-hidden="true">→</span>
                 </button>
                 <p class="quick-note">
-                  {{ session.online ? '字段将自动保存到当前账号的草稿。' : '后端离线时使用本地草稿，不会伪造云端保存状态。' }}
+                  {{ session.online ? $t('字段将自动保存到当前账号的草稿。') : $t('后端离线时使用本地草稿，不会伪造云端保存状态。') }}
                 </p>
               </form>
 
               <section class="draft-shelf" aria-labelledby="draft-shelf-title">
                 <div class="draft-shelf-head">
                   <div>
-                    <h3 id="draft-shelf-title">继续未完成的记录</h3>
-                    <p>仅显示当前账号最近 6 份未归档草稿</p>
+                    <h3 id="draft-shelf-title">{{ $t('继续未完成的记录') }}</h3>
+                    <p>{{ $t('仅显示当前账号最近 6 份未归档草稿') }}</p>
                   </div>
                   <button
                     class="draft-refresh"
                     type="button"
                     :disabled="session.draftsLoading"
-                    aria-label="刷新草稿列表"
+                    :aria-label="$t('刷新草稿列表')"
                     @click="loadDraftSessions()"
                   >
                     ↻
@@ -537,25 +545,28 @@ onMounted(async () => {
 
                 <div v-if="session.draftsLoading" class="draft-state" role="status">
                   <span class="spinner" aria-hidden="true"></span>
-                  <p>正在读取草稿…</p>
+                  <p>{{ $t('正在读取草稿…') }}</p>
                 </div>
                 <div v-else-if="!session.online" class="draft-state">
-                  <p>连接后端后，可在这里续接已保存的草稿。</p>
-                  <button class="btn btn-ghost" type="button" @click="loadDraftSessions()">重新连接</button>
+                  <p>{{ $t('连接后端后，可在这里续接已保存的草稿。') }}</p>
+                  <button class="btn btn-ghost" type="button" @click="loadDraftSessions()">{{ $t('重新连接') }}</button>
                 </div>
                 <div v-else-if="session.lastDraftsError" class="draft-state draft-state--error" role="alert">
                   <p>{{ session.lastDraftsError }}</p>
-                  <button class="btn btn-ghost" type="button" @click="loadDraftSessions()">重新加载</button>
+                  <button class="btn btn-ghost" type="button" @click="loadDraftSessions()">{{ $t('重新加载') }}</button>
                 </div>
                 <div v-else-if="!session.draftSessions.length" class="draft-state">
-                  <p>还没有未归档草稿。创建后会在这里形成续接入口。</p>
+                  <p>{{ $t('还没有未归档草稿。创建后会在这里形成续接入口。') }}</p>
                 </div>
                 <ul v-else class="draft-list">
                   <li v-for="item in session.draftSessions" :key="item.id">
                     <button class="draft-item" type="button" @click="resumeDraft(item)">
                       <span class="draft-item-main">
-                        <strong>{{ item.title || '未命名草稿' }}</strong>
-                        <span>{{ experimentTypeLabel(item.experiment_type) }} · {{ item.field_count || 0 }} 项已填写</span>
+                        <strong>{{ item.title || $t('未命名草稿') }}</strong>
+                        <span>
+                          {{ experimentTypeLabel(item.experiment_type) }} ·
+                          {{ $t('{n} 项已填写', { n: item.field_count || 0 }) }}
+                        </span>
                       </span>
                       <span class="draft-item-meta">
                         <time>{{ formatDraftTime(item.updated_at) }}</time>
@@ -571,10 +582,10 @@ onMounted(async () => {
               <span class="placeholder-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path :d="currentModule.icon" /></svg>
               </span>
-              <span class="placeholder-tag">模块占位 · 尚未开放</span>
-              <h3>曲线生成工作区</h3>
-              <p>后续将在这里承接标定曲线、穿透曲线与图形导出。目前可在数据识别页查看已识别曲线。</p>
-              <RouterLink to="/recognize" class="btn btn-ghost">前往数据识别</RouterLink>
+              <span class="placeholder-tag">{{ $t('模块占位 · 尚未开放') }}</span>
+              <h3>{{ $t('曲线生成工作区') }}</h3>
+              <p>{{ $t('后续将在这里承接标定曲线、穿透曲线与图形导出。目前可在数据识别页查看已识别曲线。') }}</p>
+              <RouterLink to="/recognize" class="btn btn-ghost">{{ $t('前往数据识别') }}</RouterLink>
             </div>
           </div>
         </Transition>

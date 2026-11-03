@@ -20,7 +20,7 @@ defineProps({
   <div class="panel-head">
     <component :is="as" class="caps panel-title">
       <span v-if="dot" class="panel-dot" aria-hidden="true"></span>
-      {{ label }}
+      {{ $t(label) }}
     </component>
     <div v-if="$slots.actions" class="panel-head-actions">
       <slot name="actions" />

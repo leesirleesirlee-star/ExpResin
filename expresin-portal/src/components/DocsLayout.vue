@@ -14,13 +14,13 @@ defineProps({
 
 <template>
   <div class="docs">
-    <nav class="docs-nav" :aria-label="navLabel">
+    <nav class="docs-nav" :aria-label="$t(navLabel)">
       <slot name="nav" />
     </nav>
     <main class="docs-main">
       <slot />
     </main>
-    <aside class="docs-aside" aria-label="示例">
+    <aside class="docs-aside" :aria-label="$t('示例')">
       <slot name="aside" />
     </aside>
   </div>

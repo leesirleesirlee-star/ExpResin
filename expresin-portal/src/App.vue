@@ -40,6 +40,10 @@ const transitionName = computed(() => {
       </Transition>
     </router-view>
 
+    <Teleport to="body">
+      <div class="locale-veil" aria-hidden="true"></div>
+    </Teleport>
+
     <TransitionGroup name="toast" tag="div" class="toast-stack">
       <div
         v-for="t in toasts"
@@ -50,7 +54,7 @@ const transitionName = computed(() => {
       >
         <span class="toast-dot" aria-hidden="true"></span>
         <p class="toast-text">{{ t.text }}</p>
-        <button class="toast-close" type="button" aria-label="关闭提示" @click="dismiss(t.id)">
+        <button class="toast-close" type="button" :aria-label="$t('关闭提示')" @click="dismiss(t.id)">
           ×
         </button>
       </div>

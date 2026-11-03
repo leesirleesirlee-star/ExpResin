@@ -4,10 +4,12 @@ import { RouterLink, useRoute } from 'vue-router'
 import { api } from '../data/api.js'
 import { loadArchive, session } from '../data/session.js'
 import { useToast } from '../composables/useToast.js'
+import { useI18n } from '../composables/useI18n.js'
 import ProvenanceRail from '../components/ProvenanceRail.vue'
 
 const route = useRoute()
 const { show } = useToast()
+const { t } = useI18n()
 const record = ref(null)
 const loading = ref(true)
 // 规范长表：归档产物里的**逐行数据值**（识别骨架只含列映射，value 恒为空）。
@@ -28,9 +30,9 @@ async function downloadFile(kind) {
     a.download = filename
     a.click()
     URL.revokeObjectURL(url)
-    show(`已导出 ${filename}`)
+    show(t('已导出 {filename}', { filename }))
   } catch (e) {
-    show(e.message || '导出失败，请稍后重试', { tone: 'error' })
+    show(e.message || t('导出失败，请稍后重试'), { tone: 'error' })
   } finally {
     exporting.value = ''
   }
@@ -96,7 +98,7 @@ const warnings = computed(() => record.value?.warnings || [])
 
 /** 警告代码 → 徽标文案；未知代码给通用兜底，便于后端后续新增警告类型。 */
 function warningLabel(code) {
-  return { type_field_mismatch: '类型一致性' }[code] || '数据提示'
+  return t({ type_field_mismatch: '类型一致性' }[code] || '数据提示')
 }
 
 // ---------------------------------------------------------------- NAS 汇总
@@ -130,12 +132,17 @@ async function republish() {
     const result = res?.nas || null
     record.value = { ...record.value, nas: result }
     if (result?.files?.length) {
-      show(`已发布 ${result.files.length} 个文件到 NAS（${result.adapter || 'local'}）`)
+      show(t('已发布 {n} 个文件到 NAS（{adapter}）', {
+        n: result.files.length,
+        adapter: result.adapter || 'local',
+      }))
     } else {
-      show(`NAS 发布未完成：${result?.error || result?.skipped || '未知原因'}`, { tone: 'error' })
+      show(t('NAS 发布未完成：{reason}', {
+        reason: result?.error || result?.skipped || t('未知原因'),
+      }), { tone: 'error' })
     }
   } catch (e) {
-    show(e.message || 'NAS 发布失败，请稍后重试', { tone: 'error' })
+    show(e.message || t('NAS 发布失败，请稍后重试'), { tone: 'error' })
   } finally {
     publishing.value = false
   }
@@ -249,7 +256,7 @@ function fillText(col) {
             <path d="M19 12H5" />
             <path d="m12 19-7-7 7-7" />
           </svg>
-          返回实验档案
+          {{ t('返回实验档案') }}
         </RouterLink>
         <span class="crumb-id mono">{{ route.params.id }}</span>
       </nav>
@@ -260,13 +267,13 @@ function fillText(col) {
       </div>
 
       <p v-else-if="!record" class="empty muted">
-        未找到该实验档案。
+        {{ t('未找到该实验档案。') }}
       </p>
 
       <template v-else>
         <header class="head">
           <div>
-            <h1>{{ record.title || '（未命名实验）' }}</h1>
+            <h1>{{ record.title || t('（未命名实验）') }}</h1>
             <p class="muted mono">
               {{ record.id }}
               <template v-if="record.source_file"> · {{ record.source_file }}</template>
@@ -279,10 +286,10 @@ function fillText(col) {
               :disabled="!!exporting"
               @click="downloadFile('template')"
             >
-              {{ exporting === 'template' ? '正在导出…' : '导出模板 Excel' }}
+              {{ exporting === 'template' ? t('正在导出…') : t('导出模板 Excel') }}
             </button>
             <span class="badge" :class="record.status === 'demo' ? 'badge-neutral' : 'badge-success'">
-              {{ record.status === 'demo' ? '示例档案' : '已归档' }}
+              {{ record.status === 'demo' ? t('示例档案') : t('已归档') }}
             </span>
           </div>
         </header>
@@ -290,23 +297,23 @@ function fillText(col) {
         <dl class="stats">
           <div class="stat">
             <dd class="num">{{ stats.regions }}</dd>
-            <dt class="lbl">数据区</dt>
+            <dt class="lbl">{{ t('数据区') }}</dt>
           </div>
           <div class="stat">
             <dd class="num">{{ stats.blocks }}</dd>
-            <dt class="lbl">列块</dt>
+            <dt class="lbl">{{ t('列块') }}</dt>
           </div>
           <div class="stat">
             <dd class="num">{{ stats.mapped }}/{{ stats.cols }}</dd>
-            <dt class="lbl">已映射列</dt>
+            <dt class="lbl">{{ t('已映射列') }}</dt>
           </div>
           <div class="stat">
             <dd class="num">{{ stats.low }}</dd>
-            <dt class="lbl">低置信度</dt>
+            <dt class="lbl">{{ t('低置信度') }}</dt>
           </div>
         </dl>
 
-        <section v-if="warnings.length" class="warnings" aria-label="数据质量提示">
+        <section v-if="warnings.length" class="warnings" :aria-label="t('数据质量提示')">
           <div v-for="(w, i) in warnings" :key="i" class="warn-item">
             <span class="badge badge-warning warn-badge">{{ warningLabel(w.code) }}</span>
             <div class="warn-body">
@@ -321,24 +328,27 @@ function fillText(col) {
         <section
           v-if="session.online && record.status !== 'demo'"
           class="nas"
-          aria-label="NAS 汇总"
+          :aria-label="t('NAS 汇总')"
         >
           <header class="nas-head">
-            <h2>NAS 汇总</h2>
+            <h2>{{ t('NAS 汇总') }}</h2>
             <span class="badge" :class="NAS_STATE_BADGE[nasState]">
-              {{ NAS_STATE_LABEL[nasState] }}
+              {{ t(NAS_STATE_LABEL[nasState]) }}
             </span>
             <button
               class="btn btn-secondary btn-compact"
               :disabled="publishing"
               @click="republish"
             >
-              {{ publishing ? '正在发布…' : nasState === 'ok' ? '重新发布' : '发布到 NAS' }}
+              {{ publishing ? t('正在发布…') : nasState === 'ok' ? t('重新发布') : t('发布到 NAS') }}
             </button>
           </header>
 
           <p v-if="nasState === 'ok'" class="muted hint">
-            适配器 {{ nas.adapter || 'local' }} · 发布于 {{ nas.published_at || '—' }}
+            {{ t('适配器 {adapter} · 发布于 {time}', {
+              adapter: nas.adapter || 'local',
+              time: nas.published_at || '—',
+            }) }}
           </p>
           <ul v-if="nasState === 'ok'" class="nas-files">
             <li v-for="f in nas.files" :key="f.path" class="mono">
@@ -350,7 +360,7 @@ function fillText(col) {
           <p v-else-if="nasState === 'error'" class="nas-msg">{{ nas.error }}</p>
           <p v-else-if="nasState === 'skipped'" class="nas-msg">{{ nas.skipped }}</p>
           <p v-else class="muted hint">
-            该档案尚无 NAS 发布记录（可能早于 NAS 落库功能归档），可点击右上按钮补发。
+            {{ t('该档案尚无 NAS 发布记录（可能早于 NAS 落库功能归档），可点击右上按钮补发。') }}
           </p>
         </section>
 
@@ -358,7 +368,7 @@ function fillText(col) {
           v-if="(record.regions || []).length || canonicalColumns.length"
           ref="tocEl"
           class="toc"
-          aria-label="页内目录"
+          :aria-label="t('页内目录')"
         >
           <span
             class="toc-slider"
@@ -377,7 +387,7 @@ function fillText(col) {
             :class="{ 'is-active': activeSection === 'region-' + region.id }"
             @click="scrollToId('region-' + region.id)"
           >
-            {{ region.kindLabel }}
+            {{ t(region.kindLabel) }}
           </button>
           <button
             v-if="canonicalColumns.length"
@@ -386,13 +396,12 @@ function fillText(col) {
             :class="{ 'is-active': activeSection === 'canonical' }"
             @click="scrollToId('canonical')"
           >
-            规范长表
+            {{ t('规范长表') }}
           </button>
         </nav>
 
         <p v-if="record.status === 'demo'" class="notice">
-          该档案来自识别链路输出（未经过人工确认写入），因此标记为示例。连接后端并完成一次
-          「确认并归档」后，此处将展示正式规范文档。
+          {{ t('该档案来自识别链路输出（未经过人工确认写入），因此标记为示例。连接后端并完成一次「确认并归档」后，此处将展示正式规范文档。') }}
         </p>
 
         <section
@@ -402,7 +411,7 @@ function fillText(col) {
           class="region"
         >
           <header class="region-head">
-            <h2>{{ region.kindLabel }}</h2>
+            <h2>{{ t(region.kindLabel) }}</h2>
             <span class="muted mono">{{ region.title || region.id }}</span>
           </header>
 
@@ -410,31 +419,31 @@ function fillText(col) {
             <div class="block-head">
               <span class="mono muted">{{ block.id }}</span>
               <div class="tags">
-                <span v-if="block.analyte" class="badge badge-accent">目标离子 {{ block.analyte }}</span>
+                <span v-if="block.analyte" class="badge badge-accent">{{ t('目标离子') }} {{ block.analyte }}</span>
                 <ProvenanceRail
                   :confidence="block.confidence"
-                  :evidence="`已映射 ${(block.columns || []).filter((c) => c.target).length}/${(block.columns || []).length} 列 · 阈值 0.80`"
+                  :evidence="t('已映射 {mapped}/{total} 列 · 阈值 0.80', { mapped: (block.columns || []).filter((c) => c.target).length, total: (block.columns || []).length })"
                 />
               </div>
             </div>
 
             <div class="table-scroll">
-              <table class="grid" aria-label="列映射">
+              <table class="grid" :aria-label="t('列映射')">
                 <thead>
                   <tr>
-                    <th scope="col">列</th>
-                    <th scope="col">原始表头</th>
-                    <th scope="col">标准字段</th>
-                    <th scope="col">填充</th>
-                    <th scope="col">单位</th>
-                    <th scope="col">置信度</th>
+                    <th scope="col">{{ t('列') }}</th>
+                    <th scope="col">{{ t('原始表头') }}</th>
+                    <th scope="col">{{ t('标准字段') }}</th>
+                    <th scope="col">{{ t('填充') }}</th>
+                    <th scope="col">{{ t('单位') }}</th>
+                    <th scope="col">{{ t('置信度') }}</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="col in block.columns" :key="col.col">
                     <td class="mono dim">{{ col.col }}</td>
-                    <td class="mono">{{ col.raw || '（空）' }}</td>
-                    <td>{{ col.field || '未映射' }}</td>
+                    <td class="mono">{{ col.raw || t('（空）') }}</td>
+                    <td>{{ t(col.field || '未映射') }}</td>
                     <td class="mono dim">{{ fillText(col) }}</td>
                     <td class="mono dim">{{ col.unit || col.unitStd || '—' }}</td>
                     <td class="mono" :class="{ warn: col.target && col.conf < 0.8 }">
@@ -449,9 +458,9 @@ function fillText(col) {
 
         <section v-if="canonicalColumns.length" id="canonical" class="canonical">
           <header class="region-head">
-            <h2>规范长表</h2>
+            <h2>{{ t('规范长表') }}</h2>
             <span class="muted mono">
-              {{ canonicalTotal }} 行 · {{ canonicalColumns.length }} 列
+              {{ t('{rows} 行 · {cols} 列', { rows: canonicalTotal, cols: canonicalColumns.length }) }}
             </span>
             <button
               v-if="session.online && record.status !== 'demo'"
@@ -459,16 +468,16 @@ function fillText(col) {
               :disabled="!!exporting"
               @click="downloadFile('csv')"
             >
-              {{ exporting === 'csv' ? '正在导出…' : '导出 CSV' }}
+              {{ exporting === 'csv' ? t('正在导出…') : t('导出 CSV') }}
             </button>
           </header>
           <p class="muted hint">
-            归档时从原始文件重读、并由计算引擎复算得到的逐行数据值（
-            <span class="mono">canonical_table_v1</span>）。上方各列块表格只描述「列映射」，
-            此处才是数据值本身。
+            {{ t('归档时从原始文件重读、并由计算引擎复算得到的逐行数据值（') }}
+            <span class="mono">canonical_table_v1</span>
+            {{ t('）。上方各列块表格只描述「列映射」，此处才是数据值本身。') }}
           </p>
           <div class="table-scroll">
-            <table class="grid" aria-label="规范长表">
+            <table class="grid" :aria-label="t('规范长表')">
               <thead>
                 <tr>
                   <th v-for="name in canonicalColumns" :key="name" scope="col">{{ name }}</th>
@@ -484,7 +493,7 @@ function fillText(col) {
             </table>
           </div>
           <p v-if="canonicalTotal > canonicalRows.length" class="muted hint">
-            仅展示前 {{ canonicalRows.length }} 行（共 {{ canonicalTotal }} 行），完整数据请用上方「导出 CSV」。
+            {{ t('仅展示前 {shown} 行（共 {total} 行），完整数据请用上方「导出 CSV」。', { shown: canonicalRows.length, total: canonicalTotal }) }}
           </p>
         </section>
       </template>

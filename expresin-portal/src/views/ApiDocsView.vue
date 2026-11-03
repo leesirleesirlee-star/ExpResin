@@ -202,14 +202,14 @@ const METHOD_CLASS = {
 <template>
   <DocsLayout>
     <template #nav>
-      <h1 class="nav-title">API 文档</h1>
+      <h1 class="nav-title">{{ $t('API 文档') }}</h1>
       <p class="nav-sub muted">
-        契约版本 v0 · OpenAPI 3.1 风格。所有页面功能先有 API，再有界面。
+        {{ $t('契约版本 v0 · OpenAPI 3.1 风格。所有页面功能先有 API，再有界面。') }}
       </p>
 
       <div v-for="g in groups" :key="g.id" class="nav-group">
-        <h2 class="caps">{{ g.label }}</h2>
-        <p class="nav-note muted">{{ g.note }}</p>
+        <h2 class="caps">{{ $t(g.label) }}</h2>
+        <p class="nav-note muted">{{ $t(g.note) }}</p>
         <ul>
           <li v-for="item in g.items" :key="item.id">
             <button
@@ -220,7 +220,7 @@ const METHOD_CLASS = {
               @click="activeId = item.id"
             >
               <span class="m mono" :class="`m--${item.method.toLowerCase()}`">{{ item.method }}</span>
-              <span class="p mono">{{ item.path }}</span>
+              <span class="p mono">{{ $t(item.path) }}</span>
             </button>
           </li>
         </ul>
@@ -228,35 +228,36 @@ const METHOD_CLASS = {
     </template>
 
     <section class="content">
-      <h1 class="endpoint-title mono">{{ active.path }}</h1>
+      <h1 class="endpoint-title mono">{{ $t(active.path) }}</h1>
       <div class="endpoint">
         <span class="badge" :class="METHOD_CLASS[active.method] || 'badge-info'">
           {{ active.method }}
         </span>
-        <span class="endpoint-group muted">{{ active.group }}</span>
+        <span class="endpoint-group muted">{{ $t(active.group) }}</span>
       </div>
 
-      <p class="desc">{{ active.desc }}</p>
+      <p class="desc">{{ $t(active.desc) }}</p>
 
       <dl v-if="active.body || active.returns" class="params">
         <div v-if="active.body">
-          <dt>请求体</dt>
+          <dt>{{ $t('请求体') }}</dt>
           <dd class="mono">{{ active.body }}</dd>
         </div>
         <div v-if="active.returns">
-          <dt>返回</dt>
+          <dt>{{ $t('返回') }}</dt>
           <dd class="mono">{{ active.returns }}</dd>
         </div>
       </dl>
 
       <p class="muted note">
-        当前状态：Portal API 已按本文档实现，Public API v1 正在接入。前端在
-        <code class="mono">/api/health</code> 不可达时自动回退为本地草稿模式。
+        {{ $t('当前状态：Portal API 已按本文档实现，Public API v1 正在接入。前端在') }}
+        <code class="mono">/api/health</code>
+        {{ $t('不可达时自动回退为本地草稿模式。') }}
       </p>
     </section>
 
     <template #aside>
-      <h2 class="caps aside-title">示例</h2>
+      <h2 class="caps aside-title">{{ $t('示例') }}</h2>
       <pre class="code">{{ active.code }}</pre>
     </template>
   </DocsLayout>

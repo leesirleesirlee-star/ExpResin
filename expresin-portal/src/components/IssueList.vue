@@ -19,7 +19,7 @@ defineEmits(['select'])
   <div class="issue-groups">
     <section v-for="g in groups" :key="g.key" class="group">
       <h3 class="caps group-title">
-        {{ g.label }}
+        {{ $t(g.label) }}
         <span class="group-count">{{ g.items.length }}</span>
       </h3>
       <ul class="list">
@@ -35,7 +35,7 @@ defineEmits(['select'])
           >
             <span class="issue-top">
               <span class="mono col">{{ item.col }}</span>
-              <span class="raw mono">{{ item.raw || '（空表头）' }}</span>
+              <span class="raw mono">{{ item.raw || $t('（空表头）') }}</span>
               <span v-if="typeof item.conf === 'number'" class="conf mono">
                 {{ item.conf.toFixed(2) }}
               </span>

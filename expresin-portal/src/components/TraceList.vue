@@ -15,10 +15,10 @@ defineProps({
 
 <template>
   <dl class="trace">
-    <div v-if="title" class="trace-head">{{ title }}</div>
+    <div v-if="title" class="trace-head">{{ $t(title) }}</div>
     <div v-for="row in rows" :key="row.k" class="trace-row">
-      <dt>{{ row.k }}</dt>
-      <dd class="mono">{{ row.v }}</dd>
+      <dt>{{ $t(row.k) }}</dt>
+      <dd class="mono">{{ $t(row.v) }}</dd>
     </div>
   </dl>
 </template>
@@ -45,6 +45,11 @@ defineProps({
 .trace-row dt {
   font: var(--text-xs);
   color: var(--text-tertiary);
+  overflow-wrap: anywhere;
+}
+
+:global(html[lang='en']) .trace-row {
+  grid-template-columns: 96px minmax(0, 1fr);
 }
 .trace-row dd {
   margin: 0;

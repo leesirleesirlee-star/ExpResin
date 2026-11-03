@@ -6,6 +6,8 @@
  * 存储与导出链路沿用同一键，仅展示层映射为中文名。
  */
 
+import { t } from '../composables/useI18n.js'
+
 export const TYPE_LABELS = {
   batch: '批次实验',
   column: '柱实验',
@@ -24,5 +26,5 @@ export const TYPE_LABELS = {
 export function experimentTypeLabel(type, fallback = '—') {
   const raw = String(type ?? '').trim()
   if (!raw) return fallback
-  return TYPE_LABELS[raw.toLowerCase()] ?? raw
+  return t(TYPE_LABELS[raw.toLowerCase()] ?? raw)
 }

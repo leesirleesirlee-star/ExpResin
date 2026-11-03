@@ -41,10 +41,10 @@ watch(
 </script>
 
 <template>
-  <section class="panel chat" aria-label="Jarvis 对话">
+  <section class="panel chat" :aria-label="$t('Jarvis 对话')">
     <PanelHead label="Jarvis" dot>
       <template #actions>
-        <span class="badge badge-accent">实验记录助手</span>
+        <span class="badge badge-accent">{{ $t('实验记录助手') }}</span>
       </template>
     </PanelHead>
 
@@ -67,7 +67,7 @@ watch(
         v-if="showUpload"
         class="icon-btn"
         type="button"
-        aria-label="上传实验数据文件"
+        :aria-label="$t('上传实验数据文件')"
         @click="$emit('upload')"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -81,12 +81,12 @@ watch(
           v-model="draft"
           class="input"
           type="text"
-          aria-label="输入消息"
+          :aria-label="$t('输入消息')"
         />
-        <span class="input-tip" aria-hidden="true">{{ placeholder }}</span>
+        <span class="input-tip" aria-hidden="true">{{ $t(placeholder) }}</span>
       </div>
 
-      <button class="send" type="submit" :disabled="!draft.trim()" aria-label="发送">
+      <button class="send" type="submit" :disabled="!draft.trim()" :aria-label="$t('发送')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 19V5m0 0-6 6m6-6 6 6" />
         </svg>
@@ -104,10 +104,10 @@ watch(
           <circle cx="12" cy="12" r="10" />
           <path d="M12 16v-4m0-4h.01" />
         </svg>
-        提示
+        {{ $t('提示') }}
       </button>
       <div v-if="hintOpen" class="hint-card" role="note">
-        <p>{{ hint }}</p>
+        <p>{{ $t(hint) }}</p>
       </div>
     </div>
     </div>

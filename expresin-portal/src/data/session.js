@@ -5,6 +5,7 @@
  */
 
 import { computed, reactive } from 'vue'
+import { t } from '../composables/useI18n.js'
 import { api, probeBackend } from './api.js'
 
 const TEMPLATE_FALLBACK = `${import.meta.env.BASE_URL}data/experiment_template_v1.json`
@@ -115,7 +116,7 @@ export async function flushDrafts() {
           pendingDraftFields.set(field.field_path, field)
         }
       }
-      session.draftSaveError = error.message || '草稿自动保存失败'
+      session.draftSaveError = error.message || t('草稿自动保存失败')
     }
   } finally {
     draftSaveInFlight = null
@@ -162,7 +163,7 @@ export const missingFields = computed(() => {
       const d = session.drafts[f.path] || {}
       if (String(d.value ?? '').trim()) continue
       if (d.status === 'deferred') continue
-      out.push({ field_path: f.path, label: f.label, reason: '必填项尚未填写', required: true })
+      out.push({ field_path: f.path, label: f.label, reason: t('必填项尚未填写'), required: true })
     }
   }
   return out
@@ -251,9 +252,7 @@ async function initializeSession(initial = {}) {
   session.messages.push({
     role: 'assistant',
     content:
-      '我是 Jarvis，负责记录这次实验。你可以直接用一句话告诉我实验安排，例如：' +
-      '“今天用 120 mg 的 A600 树脂和 50 mL 溶液做 SO4 的批次吸附，初始浓度 100 mg/L”。' +
-      '我会自动填入右侧表单，并提示还缺哪些必填信息。',
+      '我是 Jarvis，负责记录这次实验。你可以直接用一句话告诉我实验安排，例如：“今天用 120 mg 的 A600 树脂和 50 mL 溶液做 SO4 的批次吸附，初始浓度 100 mg/L”。我会自动填入右侧表单，并提示还缺哪些必填信息。',
   })
   session.ready = true
   return session
@@ -300,9 +299,9 @@ export async function resumeSession(sid) {
     if (!session.messages.length) {
       session.messages.push({
         role: 'assistant',
-        content: `已回到实验 ${
-          session.experimentId || info.id
-        } 的记录。请上传这次实验的原始数据表格，我会识别列与单位后请你逐列确认。`,
+        content:
+          '已回到实验 {id} 的记录。请上传这次实验的原始数据表格，我会识别列与单位后请你逐列确认。',
+        params: { id: session.experimentId || info.id },
       })
     }
     session.ready = true
@@ -328,8 +327,12 @@ export async function sendMessage(text) {
         ? '模型响应超时，这次描述暂未写入。你可以重试，或直接在右侧表单填写。'
         : e.status === 502
           ? '模型服务暂时不可用，这次描述暂未写入。你可以稍后重试，或直接填写表单。'
-          : `消息发送失败（${e.message}），请稍后重试或直接在表单中填写。`
-      session.messages.push({ role: 'assistant', content })
+          : '消息发送失败（{message}），请稍后重试或直接在表单中填写。'
+      session.messages.push({
+        role: 'assistant',
+        content,
+        params: e.timeout || e.status === 502 ? undefined : { message: e.message },
+      })
       return
     }
   }
@@ -341,7 +344,7 @@ export async function sendMessage(text) {
 
 export async function uploadRawFile(file, sheet = null) {
   if (!session.online || !session.sessionId) {
-    return { ok: false, reason: '后端未连接，无法解析文件。请启动 expresin-pipeline/server 后重试。' }
+    return { ok: false, reason: t('后端未连接，无法解析文件。请启动 expresin-pipeline/server 后重试。') }
   }
   const res = await api.uploadFile(session.sessionId, file, true, sheet)
   session.recognized = res.recognized
@@ -370,7 +373,7 @@ export async function confirmSession() {
   // 本地草稿模式：仅生成归档对象，不写入后端
   return {
     id: payload.experiment_id,
-    title: session.drafts['01_Metadata.title']?.value || '（未命名实验）',
+    title: session.drafts['01_Metadata.title']?.value || t('（未命名实验）'),
     local: true,
   }
 }
@@ -389,7 +392,7 @@ export async function loadDraftSessions(limit = 6) {
     session.lastDraftsError = ''
   } catch (error) {
     session.draftSessions = []
-    session.lastDraftsError = error.message || '草稿列表读取失败'
+    session.lastDraftsError = error.message || t('草稿列表读取失败')
   } finally {
     session.draftsLoading = false
   }
@@ -435,7 +438,7 @@ export async function loadSchemaColumns() {
  */
 export async function reviewColumn(blockId, col, action, targetField = null) {
   if (!session.online || !session.sessionId) {
-    return { ok: false, reason: '后端未连接，人工判定无法保存。请先启动后端服务。' }
+    return { ok: false, reason: t('后端未连接，人工判定无法保存。请先启动后端服务。') }
   }
   const res = await api.reviewColumn(session.sessionId, {
     block_id: blockId,

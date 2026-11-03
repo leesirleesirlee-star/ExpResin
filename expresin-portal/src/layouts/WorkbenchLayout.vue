@@ -37,11 +37,11 @@ const style = computed(() => ({
   <div class="workbench">
     <header class="workbar">
       <div class="titles">
-        <h1 :data-tip="subtitle || null" data-tip-align="start">{{ title }}</h1>
+        <h1 :data-tip="subtitle ? $t(subtitle) : null" data-tip-align="start">{{ $t(title) }}</h1>
       </div>
 
       <div v-if="steps.length" class="flow">
-        <ol class="steps" aria-label="实验流程进度">
+        <ol class="steps" :aria-label="$t('实验流程进度')">
           <li
             v-for="(s, i) in steps"
             :key="s.id"
@@ -62,7 +62,7 @@ const style = computed(() => ({
               </svg>
               <template v-else>{{ i + 1 }}</template>
             </span>
-            <span>{{ s.label }}</span>
+            <span>{{ $t(s.label) }}</span>
             <span v-if="i < steps.length - 1" class="link" aria-hidden="true"></span>
           </li>
         </ol>
@@ -74,7 +74,7 @@ const style = computed(() => ({
           class="icon-btn"
           type="button"
           :aria-pressed="formOpen"
-          aria-label="折叠或展开表单面板"
+          :aria-label="$t('折叠或展开表单面板')"
           @click="formOpen = !formOpen"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -86,7 +86,7 @@ const style = computed(() => ({
           class="icon-btn"
           type="button"
           :aria-pressed="inspectorOpen"
-          aria-label="折叠或展开检查面板"
+          :aria-label="$t('折叠或展开检查面板')"
           @click="inspectorOpen = !inspectorOpen"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -111,7 +111,7 @@ const style = computed(() => ({
           <button
             class="icon-btn"
             type="button"
-            aria-label="展开表单面板"
+            :aria-label="$t('展开表单面板')"
             @click="formOpen = true"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -119,7 +119,7 @@ const style = computed(() => ({
               <path d="M9 4v16" />
             </svg>
           </button>
-          <span class="rail-label caps">表单</span>
+          <span class="rail-label caps">{{ $t('表单') }}</span>
         </div>
       </div>
 
@@ -146,7 +146,7 @@ const style = computed(() => ({
           <button
             class="icon-btn"
             type="button"
-            aria-label="展开检查面板"
+            :aria-label="$t('展开检查面板')"
             @click="inspectorOpen = true"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -154,12 +154,12 @@ const style = computed(() => ({
               <path d="M15 4v16" />
             </svg>
           </button>
-          <span class="rail-label caps">检查</span>
+          <span class="rail-label caps">{{ $t('检查') }}</span>
         </div>
       </div>
     </div>
 
-    <nav class="tabs" role="tablist" aria-label="面板切换">
+    <nav class="tabs" role="tablist" :aria-label="$t('面板切换')">
       <button
         v-for="t in tabs"
         :key="t.key"
@@ -171,7 +171,7 @@ const style = computed(() => ({
         :class="{ active: tab === t.key }"
         @click="tab = t.key"
       >
-        {{ t.label }}
+        {{ $t(t.label) }}
       </button>
     </nav>
   </div>

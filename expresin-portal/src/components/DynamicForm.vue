@@ -25,12 +25,19 @@ function fillText(col) {
 </script>
 
 <template>
-  <section class="panel form" aria-label="结构化表单">
+  <section class="panel form" :aria-label="$t('结构化表单')">
     <PanelHead label="Dynamic Form">
       <template #actions>
         <span class="muted count">
-          {{ regions.reduce((n, r) => n + r.blocks.length, 0) }} 个列块 ·
-          {{ regions.reduce((n, r) => n + r.blocks.reduce((m, b) => m + b.columns.length, 0), 0) }} 列
+          {{
+            $t('{blocks} 个列块 · {columns} 列', {
+              blocks: regions.reduce((n, r) => n + r.blocks.length, 0),
+              columns: regions.reduce(
+                (n, r) => n + r.blocks.reduce((m, b) => m + b.columns.length, 0),
+                0,
+              ),
+            })
+          }}
         </span>
       </template>
     </PanelHead>
@@ -39,8 +46,8 @@ function fillText(col) {
       <article v-for="region in regions" :key="region.id" class="region">
         <header class="region-head">
           <div class="region-title">
-            <h2>{{ region.kindLabel }}</h2>
-            <p class="muted mono">{{ region.title || '（无区块标题）' }}</p>
+            <h2>{{ $t(region.kindLabel) }}</h2>
+            <p class="muted mono">{{ region.title || $t('（无区块标题）') }}</p>
           </div>
           <span class="badge badge-neutral">{{ region.id.split('#')[1] || region.id }}</span>
         </header>
@@ -49,22 +56,24 @@ function fillText(col) {
           <div class="block-head">
             <span class="block-id mono">{{ block.id }}</span>
             <div class="block-meta">
-              <span v-if="block.analyte" class="badge badge-accent">目标离子 {{ block.analyte }}</span>
+              <span v-if="block.analyte" class="badge badge-accent">
+                {{ $t('目标离子') }} {{ block.analyte }}
+              </span>
               <span class="badge" :class="block.confidence < 0.8 ? 'badge-warning' : 'badge-success'">
-                块置信度 {{ (block.confidence * 100).toFixed(0) }}%
+                {{ $t('块置信度') }} {{ (block.confidence * 100).toFixed(0) }}%
               </span>
             </div>
           </div>
 
           <div class="grid">
             <div class="row row--head" aria-hidden="true">
-              <span>列</span>
-              <span>原始表头</span>
+              <span>{{ $t('列') }}</span>
+              <span>{{ $t('原始表头') }}</span>
               <span />
-              <span>标准字段</span>
-              <span>填充</span>
-              <span>置信度</span>
-              <span>状态</span>
+              <span>{{ $t('标准字段') }}</span>
+              <span>{{ $t('填充') }}</span>
+              <span>{{ $t('置信度') }}</span>
+              <span>{{ $t('状态') }}</span>
             </div>
 
             <div
@@ -83,9 +92,9 @@ function fillText(col) {
               @keydown.space.prevent="emit('select', { ...col, block: block.id, region: region.title, analyte: block.analyte })"
             >
               <span class="cell col mono">{{ col.col }}</span>
-              <span class="cell raw mono" :title="col.raw">{{ col.raw || '（空）' }}</span>
+              <span class="cell raw mono" :title="col.raw">{{ col.raw || $t('（空）') }}</span>
               <span class="cell arrow" aria-hidden="true">→</span>
-              <span class="cell target">{{ col.field || '未映射' }}</span>
+              <span class="cell target">{{ $t(col.field || '未映射') }}</span>
               <span class="cell fill mono">{{ fillText(col) }}</span>
               <span class="cell conf">
                 <ProvenanceRail :confidence="typeof col.conf === 'number' ? col.conf : null" />

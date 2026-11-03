@@ -28,7 +28,7 @@ const chipText = computed(() => (hasConf.value ? props.confidence.toFixed(2) : '
     <span class="rail-line" aria-hidden="true"></span>
     <span class="rail-chip mono">{{ chipText }}</span>
     <span class="visually-hidden">
-      {{ hasConf ? (ok ? '置信度达标' : '置信度低于阈值') : '无置信度信息' }}
+      {{ hasConf ? (ok ? $t('置信度达标') : $t('置信度低于阈值')) : $t('无置信度信息') }}
     </span>
   </span>
 </template>

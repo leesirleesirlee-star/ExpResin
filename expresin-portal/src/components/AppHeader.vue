@@ -2,9 +2,12 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTheme } from '../composables/useTheme.js'
+import { useI18n } from '../composables/useI18n.js'
 import { auth, isAdmin, logout } from '../data/auth.js'
+import LocaleSwitch from './LocaleSwitch.vue'
 
 const { theme, toggleTheme } = useTheme()
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
@@ -184,10 +187,10 @@ onBeforeUnmount(() => {
           ref="navTrigger"
           class="brand-wrap"
           type="button"
-          aria-label="ExpResin，展开功能导航"
+          :aria-label="$t('ExpResin，展开功能导航')"
           aria-controls="expresin-side-nav"
           :aria-expanded="navOpen"
-          :data-tip="navOpen ? null : '展开功能导航'"
+          :data-tip="navOpen ? null : t('展开功能导航')"
           @click="toggleNav"
         >
           <img class="logo" src="/logo.png" alt="" />
@@ -217,7 +220,7 @@ onBeforeUnmount(() => {
               <button
                 class="side-close"
                 type="button"
-                aria-label="收起功能导航"
+                :aria-label="$t('收起功能导航')"
                 @click="dismissNav(true)"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -227,8 +230,8 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="side-scroll">
-              <nav class="side-group" aria-label="实验流程导航">
-                <p class="side-section">实验流程</p>
+              <nav class="side-group" :aria-label="$t('实验流程导航')">
+                <p class="side-section">{{ $t('实验流程') }}</p>
                 <RouterLink
                   v-for="l in primaryLinks"
                   :key="l.to"
@@ -244,14 +247,14 @@ onBeforeUnmount(() => {
                     </svg>
                   </span>
                   <span class="side-copy">
-                    <span class="side-label">{{ l.label }}</span>
-                    <span class="side-desc">{{ l.desc }}</span>
+                    <span class="side-label">{{ $t(l.label) }}</span>
+                    <span class="side-desc">{{ $t(l.desc) }}</span>
                   </span>
                 </RouterLink>
               </nav>
 
-              <nav class="side-group side-group--resources" aria-label="辅助资源">
-                <p class="side-section">辅助资源</p>
+              <nav class="side-group side-group--resources" :aria-label="$t('辅助资源')">
+                <p class="side-section">{{ $t('辅助资源') }}</p>
                 <RouterLink
                   v-for="l in resourceLinks"
                   :key="l.to"
@@ -266,14 +269,19 @@ onBeforeUnmount(() => {
                       <path :d="l.icon" />
                     </svg>
                   </span>
-                  <span class="side-label">{{ l.label }}</span>
+                  <span class="side-label">{{ $t(l.label) }}</span>
                 </RouterLink>
               </nav>
             </div>
 
+            <div class="side-language">
+              <span class="side-language-label">{{ $t('界面语言') }}</span>
+              <LocaleSwitch />
+            </div>
+
             <footer class="side-footer">
-              <span>Raw 只读 · 全程可追溯</span>
-              <kbd title="按 Esc 收起导航">Esc</kbd>
+              <span>{{ $t('Raw 只读 · 全程可追溯') }}</span>
+              <kbd :title="$t('按 Esc 收起导航')">Esc</kbd>
             </footer>
             </aside>
           </Transition>
@@ -285,7 +293,7 @@ onBeforeUnmount(() => {
       <button
         class="icon-btn"
         type="button"
-        :aria-label="theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'"
+        :aria-label="theme === 'dark' ? $t('切换到浅色模式') : $t('切换到深色模式')"
         @click="toggleTheme"
       >
         <svg v-if="theme === 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -301,7 +309,7 @@ onBeforeUnmount(() => {
         <button
           class="avatar avatar-btn"
           type="button"
-          :aria-label="`账号菜单：${displayName}`"
+          :aria-label="`${$t('账号菜单：')}${displayName}`"
           :aria-expanded="menuOpen"
           @click.stop="toggleMenu"
         >
@@ -311,13 +319,13 @@ onBeforeUnmount(() => {
           <div v-if="menuOpen" class="menu" role="menu">
             <div class="menu-head">
               <span class="menu-name">{{ displayName }}</span>
-              <span class="menu-role">{{ isAdmin ? '管理员' : '实验员' }}</span>
+              <span class="menu-role">{{ $t(isAdmin ? '管理员' : '实验员') }}</span>
             </div>
             <button class="menu-item" type="button" role="menuitem" @click="goChangePassword">
-              修改密码
+              {{ $t('修改密码') }}
             </button>
             <button v-if="isAdmin" class="menu-item" type="button" role="menuitem" @click="goAdmin">
-              数据管理
+              {{ $t('数据管理') }}
             </button>
             <button
               class="menu-item menu-item--danger"
@@ -325,7 +333,7 @@ onBeforeUnmount(() => {
               role="menuitem"
               @click="onLogout"
             >
-              退出登录
+              {{ $t('退出登录') }}
             </button>
           </div>
         </Transition>
@@ -602,15 +610,30 @@ onBeforeUnmount(() => {
   bottom: 9px;
 }
 
+.side-language {
+  display: flex;
+  align-items: center;
+  flex: none;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding: var(--space-3) 6px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.side-language-label {
+  color: var(--text-tertiary);
+  font: var(--text-xs);
+  white-space: nowrap;
+}
+
 .side-footer {
   display: flex;
   align-items: center;
   flex: none;
   justify-content: space-between;
   gap: var(--space-2);
-  margin-top: var(--space-3);
-  padding: var(--space-3) 6px 2px;
-  border-top: 1px solid var(--border-subtle);
+  margin-top: var(--space-1);
+  padding: 0 6px 2px;
   color: var(--text-tertiary);
   font-size: 10px;
   line-height: 1.4;

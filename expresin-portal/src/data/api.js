@@ -3,6 +3,8 @@
  * 后端不可用时由调用方回退到本地模式，保证界面始终可用。
  */
 
+import { t } from '../composables/useI18n.js'
+
 const BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8000'
 
 /* 与 data/auth.js 共用同一 localStorage 键。这里直接读存储而不是 import auth.js，
@@ -44,14 +46,14 @@ async function req(path, options = {}, timeoutMs = 0) {
   } catch (e) {
     // 超时与断连必须给出不同提示，否则用户无法判断该重试还是该启动服务
     if (e.name === 'AbortError') {
-      const err = new Error(`请求超时：${Math.round(timeoutMs / 1000)} 秒内未收到响应`)
+      const err = new Error(t('请求超时：{seconds} 秒内未收到响应', { seconds: Math.round(timeoutMs / 1000) }))
       err.status = 0
       err.timeout = true
       throw err
     }
     // 浏览器把「后端 500 且响应缺少 CORS 头」同样表现为网络层失败，
     // 因此这里不能断言服务没启动，必须保留另一种可能，否则会掩盖真实故障。
-    const err = new Error('无法连接后端服务（也可能是后端返回了未处理的错误，请查看后端日志）')
+    const err = new Error(t('无法连接后端服务（也可能是后端返回了未处理的错误，请查看后端日志）'))
     err.status = 0
     err.offline = true
     throw err
@@ -89,7 +91,7 @@ async function download(path, fallbackName) {
   try {
     res = await fetch(`${BASE}${path}`, { headers: authHeaders() })
   } catch {
-    const err = new Error('无法连接后端服务（也可能是后端返回了未处理的错误，请查看后端日志）')
+    const err = new Error(t('无法连接后端服务（也可能是后端返回了未处理的错误，请查看后端日志）'))
     err.status = 0
     err.offline = true
     throw err

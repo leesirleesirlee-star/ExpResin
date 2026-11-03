@@ -7,6 +7,7 @@ import TemplateForm from '../components/TemplateForm.vue'
 import MetadataInspector from '../components/MetadataInspector.vue'
 import PanelHead from '../components/PanelHead.vue'
 import { useToast } from '../composables/useToast.js'
+import { useI18n } from '../composables/useI18n.js'
 import {
   confirmSession,
   deferField,
@@ -24,6 +25,7 @@ import {
 const route = useRoute()
 const router = useRouter()
 const { show } = useToast()
+const { t } = useI18n()
 
 const streaming = ref(false)
 const archiving = ref(false)
@@ -45,11 +47,11 @@ onBeforeUnmount(() => {
 })
 
 const draftStatus = computed(() => {
-  if (!session.online) return { label: '本地草稿模式', tone: 'warning' }
-  if (session.draftSaving) return { label: '正在保存草稿…', tone: 'neutral' }
-  if (session.draftSaveError) return { label: '自动保存失败', tone: 'error' }
-  if (session.lastDraftSavedAt) return { label: '草稿已自动保存', tone: 'success' }
-  return { label: '已连接后端', tone: 'success' }
+  if (!session.online) return { label: t('本地草稿模式'), tone: 'warning' }
+  if (session.draftSaving) return { label: t('正在保存草稿…'), tone: 'neutral' }
+  if (session.draftSaveError) return { label: t('自动保存失败'), tone: 'error' }
+  if (session.lastDraftSavedAt) return { label: t('草稿已自动保存'), tone: 'success' }
+  return { label: t('已连接后端'), tone: 'success' }
 })
 
 async function onSend(text) {
@@ -76,7 +78,9 @@ async function onFocusField(path) {
 
 async function onConfirm() {
   if (missingFields.value.length) {
-    show(`还有 ${missingFields.value.length} 项必填信息未填写，请先补全或标记「稍后补」。`, {
+    show(t('还有 {n} 项必填信息未填写，请先补全或标记「稍后补」。', {
+      n: missingFields.value.length,
+    }), {
       tone: 'warning',
     })
     return
@@ -85,18 +89,18 @@ async function onConfirm() {
   try {
     const exp = await confirmSession()
     if (exp.local) {
-      show('本地草稿模式：未写入后端归档，请先启动后端服务。', { tone: 'warning' })
+      show(t('本地草稿模式：未写入后端归档，请先启动后端服务。'), { tone: 'warning' })
       return
     }
-    show(`实验已归档：${exp.id}，接着上传这次实验的原始数据表格。`, { tone: 'success' })
+    show(t('实验已归档：{id}，接着上传这次实验的原始数据表格。', { id: exp.id }), { tone: 'success' })
     router.push({ name: 'recognize' })
   } catch (e) {
     const missing = e.payload?.detail?.missing || []
     if (e.status === 409) {
-      show(`还缺 ${missing.length} 项必填信息，无法归档`, { tone: 'warning' })
+      show(t('还缺 {n} 项必填信息，无法归档', { n: missing.length }), { tone: 'warning' })
       return
     }
-    show(`归档失败：${e.message}`, { tone: 'error' })
+    show(t('归档失败：{message}', { message: e.message }), { tone: 'error' })
   } finally {
     archiving.value = false
   }
@@ -114,7 +118,7 @@ async function onConfirm() {
       <span
         class="badge"
         :class="`badge-${draftStatus.tone}`"
-        :title="session.draftSaveError || '字段变更会防抖批量保存；归档前自动刷新。'"
+        :title="session.draftSaveError || t('字段变更会防抖批量保存；归档前自动刷新。')"
       >
         {{ draftStatus.label }}
       </span>
@@ -134,8 +138,12 @@ async function onConfirm() {
       <PanelHead label="FormDraft">
         <template #actions>
           <span class="muted count">
-            {{ preSheets.length }} 个分区 ·
-            {{ preSheets.reduce((n, s) => n + s.fields.length, 0) }} 个字段
+            {{
+              t('{sections} 个分区 · {fields} 个字段', {
+                sections: preSheets.length,
+                fields: preSheets.reduce((n, s) => n + s.fields.length, 0),
+              })
+            }}
           </span>
         </template>
       </PanelHead>

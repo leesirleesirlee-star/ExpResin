@@ -8,6 +8,7 @@
  */
 import { computed, watch } from 'vue'
 import { draftStatusOf } from '../domain/fieldStatus.js'
+import { t } from '../composables/useI18n.js'
 import ConfirmChip from './ConfirmChip.vue'
 
 const props = defineProps({
@@ -69,11 +70,12 @@ function statusOf(field) {
 function displayLabel(field) {
   const value = String(valueOf(field)).trim()
   if (!value) return ''
-  return field.value_labels?.[value.toLowerCase()] ?? field.value_labels?.[value] ?? ''
+  const label = field.value_labels?.[value.toLowerCase()] ?? field.value_labels?.[value] ?? ''
+  return label ? t(label) : ''
 }
 
 function optionLabel(field, option) {
-  return field.option_labels?.[option] ?? field.value_labels?.[option] ?? option
+  return t(field.option_labels?.[option] ?? field.value_labels?.[option] ?? option)
 }
 
 /**
@@ -94,7 +96,7 @@ function emitChange(field, value) {
   <div class="tform">
     <section v-for="sheet in sheets" :key="sheet.id" class="sheet">
       <header class="sheet-head">
-        <h2>{{ sheet.label }}</h2>
+        <h2>{{ $t(sheet.label) }}</h2>
         <span class="badge badge-neutral mono">{{ sheet.id }}</span>
       </header>
 
@@ -114,10 +116,10 @@ function emitChange(field, value) {
         >
           <div class="flabel">
             <label :for="field.path">
-              {{ field.label }}
+              {{ $t(field.label) }}
               <span v-if="field.required" class="req" aria-hidden="true">*</span>
             </label>
-            <span v-if="field.hint" class="fhint muted">{{ field.hint }}</span>
+            <span v-if="field.hint" class="fhint muted">{{ $t(field.hint) }}</span>
           </div>
 
           <div class="fcontrol">
@@ -129,12 +131,12 @@ function emitChange(field, value) {
               :disabled="disabled"
               @change="emitChange(field, $event.target.value)"
             >
-              <option value="">请选择</option>
+              <option value="">{{ $t('请选择') }}</option>
               <template v-if="field.option_groups?.length">
                 <option v-for="o in ungroupedOptions(field)" :key="o" :value="o">
                   {{ optionLabel(field, o) }}
                 </option>
-                <optgroup v-for="g in field.option_groups" :key="g.label" :label="g.label">
+                <optgroup v-for="g in field.option_groups" :key="g.label" :label="$t(g.label)">
                   <option v-for="o in g.options" :key="o" :value="o">
                     {{ optionLabel(field, o) }}
                   </option>
@@ -152,7 +154,7 @@ function emitChange(field, value) {
               :id="field.path"
               class="input textarea"
               :value="valueOf(field)"
-              :placeholder="field.placeholder || ''"
+              :placeholder="field.placeholder ? $t(field.placeholder) : ''"
               :disabled="disabled"
               @input="emitChange(field, $event.target.value)"
             />
@@ -164,7 +166,7 @@ function emitChange(field, value) {
               :type="field.type === 'number' ? 'text' : field.type === 'date' ? 'date' : 'text'"
               :inputmode="field.type === 'number' ? 'decimal' : undefined"
               :value="valueOf(field)"
-              :placeholder="field.placeholder || ''"
+              :placeholder="field.placeholder ? $t(field.placeholder) : ''"
               :disabled="disabled || field.type === 'derived'"
               @input="emitChange(field, $event.target.value)"
             />
@@ -176,10 +178,10 @@ function emitChange(field, value) {
             <span v-if="displayLabel(field)" class="badge badge-accent">{{ displayLabel(field) }}</span>
             <ConfirmChip domain="draft" :state="statusOf(field)" />
             <span v-if="draftOf(field).source_type === 'conversation'" class="badge badge-neutral">
-              来自对话
+              {{ $t('来自对话') }}
             </span>
             <span v-else-if="draftOf(field).source_type === 'upload'" class="badge badge-neutral">
-              来自上传
+              {{ $t('来自上传') }}
             </span>
             <button
               v-if="field.required && !String(valueOf(field)).trim()"
@@ -187,7 +189,7 @@ function emitChange(field, value) {
               type="button"
               @click.stop="emit('defer', field)"
             >
-              稍后补
+              {{ $t('稍后补') }}
             </button>
           </div>
         </div>

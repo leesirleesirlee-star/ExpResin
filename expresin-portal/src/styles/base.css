@@ -610,6 +610,100 @@ h1[data-tip] {
   animation-delay: var(--stagger, 0ms);
 }
 
+/* ---- 深浅色切换：缓慢、柔和的自上而下渐变揭示 ---- */
+@property --theme-reveal {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+::view-transition-group(root) {
+  animation: none;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+  --theme-reveal: 0%;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 calc(var(--theme-reveal) - 10%),
+    transparent var(--theme-reveal)
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 calc(var(--theme-reveal) - 10%),
+    transparent var(--theme-reveal)
+  );
+  animation: theme-reveal 900ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* 切回浅色时，新图层自下而上覆盖 */
+:root[data-theme-wipe='up']::view-transition-new(root) {
+  -webkit-mask-image: linear-gradient(
+    to top,
+    #000 calc(var(--theme-reveal) - 10%),
+    transparent var(--theme-reveal)
+  );
+  mask-image: linear-gradient(
+    to top,
+    #000 calc(var(--theme-reveal) - 10%),
+    transparent var(--theme-reveal)
+  );
+}
+
+@keyframes theme-reveal {
+  from {
+    --theme-reveal: 0%;
+  }
+  to {
+    --theme-reveal: 110%;
+  }
+}
+
+/* ---- 中英切换：深色柔焦幕布覆盖后替换语言，再淡出 ---- */
+.locale-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  background:
+    radial-gradient(80% 60% at 50% 34%, rgba(230, 111, 52, 0.1), transparent 62%),
+    rgba(18, 14, 12, 0.86);
+}
+
+html.locale-switching .locale-veil {
+  visibility: visible;
+  -webkit-backdrop-filter: blur(22px) saturate(0.82);
+  backdrop-filter: blur(22px) saturate(0.82);
+  will-change: opacity;
+  animation: locale-veil 460ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes locale-veil {
+  0% {
+    opacity: 0;
+  }
+  22%,
+  52% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 /* ---- 8.6 支持 prefers-reduced-motion ---- */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -619,5 +713,10 @@ h1[data-tip] {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
   }
 }

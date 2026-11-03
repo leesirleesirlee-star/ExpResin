@@ -3,9 +3,11 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '../data/api.js'
 import { useToast } from '../composables/useToast.js'
+import { useI18n } from '../composables/useI18n.js'
 
 const router = useRouter()
 const { show } = useToast()
+const { t } = useI18n()
 
 const users = ref([])
 const experiments = ref([])
@@ -20,7 +22,7 @@ async function load() {
     users.value = u.users
     experiments.value = e.experiments
   } catch (err) {
-    error.value = err.message || '加载失败'
+    error.value = err.message || t('加载失败')
     show(error.value, { tone: 'error' })
   } finally {
     loading.value = false
@@ -43,11 +45,11 @@ onMounted(load)
     <div class="wrap">
       <header class="head">
         <div>
-          <h1 class="title">数据管理</h1>
-          <p class="subtitle">全部实验员账号与归档数据总览（仅管理员可见）</p>
+          <h1 class="title">{{ t('数据管理') }}</h1>
+          <p class="subtitle">{{ t('全部实验员账号与归档数据总览（仅管理员可见）') }}</p>
         </div>
         <button class="btn btn-primary refresh-btn" type="button" :disabled="loading" @click="load">
-          {{ loading ? '刷新中…' : '刷新' }}
+          {{ loading ? t('刷新中…') : t('刷新') }}
         </button>
       </header>
 
@@ -55,17 +57,17 @@ onMounted(load)
 
       <!-- 用户列表 -->
       <section class="panel">
-        <h2 class="panel-title">实验员账号 <span class="count">{{ users.length }}</span></h2>
+        <h2 class="panel-title">{{ t('实验员账号') }} <span class="count">{{ users.length }}</span></h2>
         <div class="table-wrap">
           <table class="table">
             <thead>
               <tr>
-                <th>用户名</th>
-                <th>姓名</th>
-                <th>角色</th>
-                <th class="num">归档实验数</th>
-                <th>创建时间</th>
-                <th>状态</th>
+                <th>{{ t('用户名') }}</th>
+                <th>{{ t('姓名') }}</th>
+                <th>{{ t('角色') }}</th>
+                <th class="num">{{ t('归档实验数') }}</th>
+                <th>{{ t('创建时间') }}</th>
+                <th>{{ t('状态') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -74,18 +76,18 @@ onMounted(load)
                 <td>{{ u.display_name || '—' }}</td>
                 <td>
                   <span class="tag" :class="u.role === 'admin' ? 'tag--admin' : ''">
-                    {{ u.role === 'admin' ? '管理员' : '实验员' }}
+                    {{ u.role === 'admin' ? t('管理员') : t('实验员') }}
                   </span>
                 </td>
                 <td class="num">{{ u.experiment_count }}</td>
                 <td class="mono muted">{{ fmtTime(u.created_at) }}</td>
                 <td>
-                  <span v-if="u.must_change_password" class="tag tag--warn">待改密</span>
-                  <span v-else class="muted">正常</span>
+                  <span v-if="u.must_change_password" class="tag tag--warn">{{ t('待改密') }}</span>
+                  <span v-else class="muted">{{ t('正常') }}</span>
                 </td>
               </tr>
               <tr v-if="!loading && users.length === 0">
-                <td colspan="6" class="empty">暂无用户</td>
+                <td colspan="6" class="empty">{{ t('暂无用户') }}</td>
               </tr>
             </tbody>
           </table>
@@ -94,23 +96,23 @@ onMounted(load)
 
       <!-- 全部实验 -->
       <section class="panel">
-        <h2 class="panel-title">全部归档实验 <span class="count">{{ experiments.length }}</span></h2>
+        <h2 class="panel-title">{{ t('全部归档实验') }} <span class="count">{{ experiments.length }}</span></h2>
         <div class="table-wrap">
           <table class="table">
             <thead>
               <tr>
-                <th>实验编号</th>
-                <th>标题</th>
-                <th>类型</th>
-                <th>归属</th>
-                <th>归档时间</th>
+                <th>{{ t('实验编号') }}</th>
+                <th>{{ t('标题') }}</th>
+                <th>{{ t('类型') }}</th>
+                <th>{{ t('归属') }}</th>
+                <th>{{ t('归档时间') }}</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="e in experiments" :key="e.id">
                 <td class="mono">{{ e.id }}</td>
-                <td class="ellipsis">{{ e.title || '（未命名实验）' }}</td>
+                <td class="ellipsis">{{ e.title || t('（未命名实验）') }}</td>
                 <td class="muted">{{ e.experiment_type || '—' }}</td>
                 <td>
                   <span class="tag">{{ e.owner_display_name || e.owner_username || '—' }}</span>
@@ -118,12 +120,12 @@ onMounted(load)
                 <td class="mono muted">{{ fmtTime(e.created_at) }}</td>
                 <td class="num">
                   <button class="btn btn-ghost view-btn" type="button" @click="openExperiment(e.id)">
-                    查看
+                    {{ t('查看') }}
                   </button>
                 </td>
               </tr>
               <tr v-if="!loading && experiments.length === 0">
-                <td colspan="6" class="empty">暂无归档实验</td>
+                <td colspan="6" class="empty">{{ t('暂无归档实验') }}</td>
               </tr>
             </tbody>
           </table>

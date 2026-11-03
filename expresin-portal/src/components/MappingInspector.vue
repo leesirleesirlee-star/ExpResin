@@ -148,11 +148,11 @@ function resolve(action, targetField) {
 </script>
 
 <template>
-  <aside class="map-inspector" aria-label="映射确认面板">
-    <PanelHead label="映射确认">
+  <aside class="map-inspector" :aria-label="$t('映射确认面板')">
+    <PanelHead :label="$t('映射确认')">
       <template #actions>
         <span class="badge" :class="total ? 'badge-warning' : 'badge-success'">
-          {{ total ? `${total} 项待处理` : '全部通过' }}
+          {{ total ? $t('{n} 项待处理', { n: total }) : $t('全部通过') }}
         </span>
       </template>
     </PanelHead>
@@ -165,28 +165,28 @@ function resolve(action, targetField) {
       <IssueList :groups="groups" :selected="selected" @select="$emit('select', $event)" />
 
       <p v-if="!total" class="empty muted">
-        没有需要人工处置的列。所有列均已映射且置信度合格。
+        {{ $t('没有需要人工处置的列。所有列均已映射且置信度合格。') }}
       </p>
 
       <!-- 人工确认区 -->
       <section class="block confirm-block">
-        <h3 class="caps group-title">人工确认</h3>
+        <h3 class="caps group-title">{{ $t('人工确认') }}</h3>
 
         <p v-if="!selected" class="empty muted">
-          在左侧识别结果或上方清单中点选一列，即可确认、改判或忽略它的映射。
+          {{ $t('在左侧识别结果或上方清单中点选一列，即可确认、改判或忽略它的映射。') }}
         </p>
 
         <template v-else>
           <div class="sel-head">
-            <span class="mono sel-col">{{ isBlockFailed ? '整块' : selected.col }}</span>
+            <span class="mono sel-col">{{ isBlockFailed ? $t('整块') : selected.col }}</span>
             <span class="sel-arrow">→</span>
             <span class="sel-target">
               {{
                 isBlockFailed
-                  ? '识别失败'
+                  ? $t('识别失败')
                   : isAnalyteRow
-                    ? `离子判定：${selected.analyte || '—'}`
-                    : selected.field || selected.target || '未映射'
+                    ? $t('离子判定：{value}', { value: selected.analyte || '—' })
+                    : $t(selected.field || selected.target || '未映射')
               }}
             </span>
           </div>
@@ -194,22 +194,21 @@ function resolve(action, targetField) {
           <TraceList :rows="selectedMeta" />
 
           <p v-if="review" class="review-done">
-            人工判定：{{ REVIEW_LABEL[review.status] || review.status }}
+            {{ $t('人工判定：') }}{{ $t(REVIEW_LABEL[review.status] || review.status) }}
             <span v-if="review.at" class="muted mono">（{{ review.at }}）</span>
           </p>
 
           <!-- 列块识别失败：没有列级处置入口，只引导重试，避免发出必然 404 的请求 -->
           <div v-if="isBlockFailed" class="actions">
             <p class="empty muted tiny">
-              该列块整体识别失败，没有可逐列处置的映射。请重新上传该文件或重试识别；
-              失败只会降级为待确认，原始数据不会被丢弃。
+              {{ $t('该列块整体识别失败，没有可逐列处置的映射。请重新上传该文件或重试识别；失败只会降级为待确认，原始数据不会被丢弃。') }}
             </p>
             <button
               class="btn btn-secondary act"
               type="button"
               @click="$emit('select', null)"
             >
-              知道了
+              {{ $t('知道了') }}
             </button>
           </div>
 
@@ -220,24 +219,24 @@ function resolve(action, targetField) {
               :disabled="!currentValue || resolving"
               @click="resolve('confirm')"
             >
-              {{ resolving ? '提交中…' : isAnalyteRow ? '确认离子判定' : '确认此映射' }}
+              {{ resolving ? $t('提交中…') : isAnalyteRow ? $t('确认离子判定') : $t('确认此映射') }}
             </button>
             <p v-if="isAnalyteRow" class="empty muted tiny">
-              离子判定是该列块的结论（整块测的是哪种离子），确认后会清除存疑标记。
+              {{ $t('离子判定是该列块的结论（整块测的是哪种离子），确认后会清除存疑标记。') }}
             </p>
 
             <div class="remap">
               <label class="caps remap-label" :for="`remap-${selected.block}-${selected.col}`">
-                {{ isAnalyteRow ? '改判为离子' : '改判为' }}
+                {{ isAnalyteRow ? $t('改判为离子') : $t('改判为') }}
               </label>
               <select
                 :id="`remap-${selected.block}-${selected.col}`"
                 v-model="targetDraft"
                 class="input remap-select"
               >
-                <option value="">{{ isAnalyteRow ? '选择离子…' : '选择标准字段…' }}</option>
+                <option value="">{{ isAnalyteRow ? $t('选择离子…') : $t('选择标准字段…') }}</option>
                 <option v-for="o in options" :key="o.key" :value="o.key">
-                  {{ o.label }}{{ o.unit ? `（${o.unit}）` : '' }}{{ isAnalyteRow ? '' : ` · ${o.key}` }}
+                  {{ $t(o.label) }}{{ o.unit ? `（${o.unit}）` : '' }}{{ isAnalyteRow ? '' : ` · ${o.key}` }}
                 </option>
               </select>
               <button
@@ -246,7 +245,7 @@ function resolve(action, targetField) {
                 :disabled="!targetDraft || targetDraft === currentValue || resolving"
                 @click="resolve('remap', targetDraft)"
               >
-                应用改判
+                {{ $t('应用改判') }}
               </button>
             </div>
 
@@ -257,7 +256,7 @@ function resolve(action, targetField) {
               :disabled="resolving"
               @click="resolve('ignore')"
             >
-              标记为非数据列
+              {{ $t('标记为非数据列') }}
             </button>
           </div>
         </template>
@@ -271,10 +270,10 @@ function resolve(action, targetField) {
         :disabled="resolving"
         @click="$emit('confirm')"
       >
-        确认并写入 Processed
+        {{ $t('确认并写入 Processed') }}
       </button>
       <p class="foot-hint muted">
-        人工判定会作为新版本追加保存，原始识别结果与 Raw 文件都不会被覆盖。
+        {{ $t('人工判定会作为新版本追加保存，原始识别结果与 Raw 文件都不会被覆盖。') }}
       </p>
     </div>
   </aside>

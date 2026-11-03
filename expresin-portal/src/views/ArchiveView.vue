@@ -3,7 +3,9 @@ import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { loadArchive, session } from '../data/session.js'
 import { experimentTypeLabel } from '../domain/experimentTypes.js'
+import { useI18n } from '../composables/useI18n.js'
 
+const { t } = useI18n()
 const keyword = ref('')
 const loading = ref(true)
 
@@ -18,7 +20,7 @@ async function ensureData() {
       const data = await res.json()
       session.archive = (data.experiments || []).map((e) => ({
         id: e.id,
-        title: `${e.sheet} 实验数据`,
+        title: t('{sheet} 实验数据', { sheet: e.sheet }),
         experiment_type: e.regions?.[0]?.kindLabel || '—',
         operator: '—',
         date_start: (data.generatedAt || '').slice(0, 10),
@@ -62,7 +64,9 @@ function targetOf(row) {
     <div class="wrap">
       <header class="head stagger-in" style="--stagger: 40ms">
         <div>
-          <h1 data-tip="归档规范文档，供复用与 Public API 调用" data-tip-align="start">实验档案</h1>
+          <h1 :data-tip="$t('归档规范文档，供复用与 Public API 调用')" data-tip-align="start">
+            {{ $t('实验档案') }}
+          </h1>
         </div>
         <div class="head-actions">
           <div class="search-wrap">
@@ -70,29 +74,29 @@ function targetOf(row) {
               v-model="keyword"
               class="input search"
               type="search"
-              placeholder="搜索实验编号或标题"
-              aria-label="搜索实验档案"
+              :placeholder="$t('搜索实验编号或标题')"
+              :aria-label="$t('搜索实验档案')"
             />
             <button
               v-if="keyword"
               class="search-clear"
               type="button"
-              aria-label="清空搜索"
+              :aria-label="$t('清空搜索')"
               @click="keyword = ''"
             >
               ×
             </button>
           </div>
-          <RouterLink to="/setup" class="btn btn-primary">新建实验</RouterLink>
+          <RouterLink to="/setup" class="btn btn-primary">{{ $t('新建实验') }}</RouterLink>
         </div>
       </header>
 
       <p v-if="isDemo" class="notice stagger-in" style="--stagger: 100ms">
-        后端服务未连接，以下为识别链路已跑通的示例档案（数据真实，尚未经人工确认入库）。
+        {{ $t('后端服务未连接，以下为识别链路已跑通的示例档案（数据真实，尚未经人工确认入库）。') }}
       </p>
 
       <p v-else-if="!loading && session.lastArchiveError" class="empty empty--error stagger-in" style="--stagger: 100ms">
-        档案加载失败：{{ session.lastArchiveError }}
+        {{ $t('档案加载失败：') }}{{ session.lastArchiveError }}
       </p>
 
       <ul v-if="loading" class="cards stagger-in" style="--stagger: 120ms" aria-hidden="true">
@@ -100,7 +104,7 @@ function targetOf(row) {
       </ul>
 
       <p v-else-if="!rows.length" class="empty muted stagger-in" style="--stagger: 120ms">
-        没有匹配的实验档案。先到「新建实验」录入一次实验的初始信息。
+        {{ $t('没有匹配的实验档案。先到「新建实验」录入一次实验的初始信息。') }}
       </p>
 
       <ul v-else class="cards">
@@ -114,21 +118,21 @@ function targetOf(row) {
             <div class="card-top">
               <span class="rid mono">{{ row.id }}</span>
               <span class="badge" :class="row.status === 'demo' ? 'badge-neutral' : 'badge-success'">
-                {{ row.status === 'demo' ? '示例' : '已归档' }}
+                {{ row.status === 'demo' ? $t('示例') : $t('已归档') }}
               </span>
             </div>
-            <h2>{{ row.title || '（未命名实验）' }}</h2>
+            <h2>{{ row.title || $t('（未命名实验）') }}</h2>
             <dl class="meta">
               <div>
-                <dt>类型</dt>
-                <dd>{{ experimentTypeLabel(row.experiment_type) }}</dd>
+                <dt>{{ $t('类型') }}</dt>
+                <dd>{{ $t(experimentTypeLabel(row.experiment_type)) }}</dd>
               </div>
               <div>
-                <dt>实验员</dt>
+                <dt>{{ $t('实验员') }}</dt>
                 <dd>{{ row.operator || '—' }}</dd>
               </div>
               <div>
-                <dt>日期</dt>
+                <dt>{{ $t('日期') }}</dt>
                 <dd>{{ row.date_start || '—' }}</dd>
               </div>
             </dl>

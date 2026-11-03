@@ -4,11 +4,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { auth, changePassword, login, register } from '../data/auth.js'
 import { useToast } from '../composables/useToast.js'
 import { useTheme } from '../composables/useTheme.js'
+import { useI18n } from '../composables/useI18n.js'
 
 const router = useRouter()
 const route = useRoute()
 const { show } = useToast()
 const { theme, toggleTheme } = useTheme()
+const { t } = useI18n()
 
 /* mode: login | register | change
    change 有两种触发：URL ?mode=change（守卫强制改密 / 头像菜单主动改密）
@@ -90,7 +92,7 @@ async function submitLogin() {
   if (pending.value) return
   error.value = ''
   if (!form.username.trim() || !form.password) {
-    error.value = '请输入用户名和密码'
+    error.value = t('请输入用户名和密码')
     return
   }
   pending.value = true
@@ -98,7 +100,7 @@ async function submitLogin() {
     const user = await login(form.username.trim(), form.password)
     afterAuth(user)
   } catch (e) {
-    error.value = e.message || '登录失败，请重试'
+    error.value = e.message || t('登录失败，请重试')
   } finally {
     pending.value = false
   }
@@ -108,16 +110,16 @@ async function submitRegister() {
   if (pending.value) return
   error.value = ''
   if (form.password !== form.confirm) {
-    error.value = '两次输入的密码不一致'
+    error.value = t('两次输入的密码不一致')
     return
   }
   pending.value = true
   try {
     const user = await register(form.username.trim(), form.password, form.displayName)
-    show(`欢迎，${user.display_name || user.username}`, { tone: 'success' })
+    show(t('欢迎，{name}', { name: user.display_name || user.username }), { tone: 'success' })
     afterAuth(user)
   } catch (e) {
-    error.value = e.message || '注册失败，请重试'
+    error.value = e.message || t('注册失败，请重试')
   } finally {
     pending.value = false
   }
@@ -127,20 +129,20 @@ async function submitChange() {
   if (pending.value) return
   error.value = ''
   if (!form.oldPassword || !form.newPassword) {
-    error.value = '请输入原密码和新密码'
+    error.value = t('请输入原密码和新密码')
     return
   }
   if (form.newPassword !== form.newConfirm) {
-    error.value = '两次输入的新密码不一致'
+    error.value = t('两次输入的新密码不一致')
     return
   }
   pending.value = true
   try {
     await changePassword(form.oldPassword, form.newPassword)
-    show('密码已更新', { tone: 'success' })
+    show(t('密码已更新'), { tone: 'success' })
     goHome()
   } catch (e) {
-    error.value = e.message || '修改失败，请重试'
+    error.value = e.message || t('修改失败，请重试')
   } finally {
     pending.value = false
   }
@@ -154,7 +156,7 @@ async function submitChange() {
       <button
         class="icon-btn theme-toggle"
         type="button"
-        :aria-label="theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'"
+        :aria-label="theme === 'dark' ? t('切换到浅色模式') : t('切换到深色模式')"
         @click="toggleTheme"
       >
         <svg v-if="theme === 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -166,13 +168,13 @@ async function submitChange() {
         </svg>
       </button>
 
-      <RouterLink to="/welcome" class="brand" aria-label="返回欢迎页">
+      <RouterLink to="/welcome" class="brand" :aria-label="t('返回欢迎页')">
         <img class="logo" src="/logo.png" alt="ExpResin" />
         <span class="brand-name">ExpResin</span>
       </RouterLink>
 
-      <p v-if="expired" class="notice notice--warn">登录已过期，请重新登录</p>
-      <p v-if="forced" class="notice notice--warn">首次登录请先修改初始密码</p>
+      <p v-if="expired" class="notice notice--warn">{{ t('登录已过期，请重新登录') }}</p>
+      <p v-if="forced" class="notice notice--warn">{{ t('首次登录请先修改初始密码') }}</p>
 
       <!-- 登录 / 注册 切换（改密模式下隐藏）；.tab-slider 滑动胶囊指示当前页 -->
       <div v-if="mode !== 'change'" class="tabs" role="tablist">
@@ -185,7 +187,7 @@ async function submitChange() {
           :aria-selected="mode === 'login'"
           @click="switchMode('login')"
         >
-          登录
+          {{ t('登录') }}
         </button>
         <button
           class="tab"
@@ -195,7 +197,7 @@ async function submitChange() {
           :aria-selected="mode === 'register'"
           @click="switchMode('register')"
         >
-          注册
+          {{ t('注册') }}
         </button>
       </div>
 
@@ -205,60 +207,60 @@ async function submitChange() {
           <!-- 登录 -->
           <form v-if="mode === 'login'" key="login" class="form" @submit.prevent="submitLogin">
         <label class="field">
-          <span class="label">用户名</span>
-          <input v-model="form.username" class="input" type="text" autocomplete="username" placeholder="字母、数字或 _ . -" />
+          <span class="label">{{ t('用户名') }}</span>
+          <input v-model="form.username" class="input" type="text" autocomplete="username" :placeholder="t('字母、数字或 _ . -')" />
         </label>
         <label class="field">
-          <span class="label">密码</span>
-          <input v-model="form.password" class="input" type="password" autocomplete="current-password" placeholder="请输入密码" />
+          <span class="label">{{ t('密码') }}</span>
+          <input v-model="form.password" class="input" type="password" autocomplete="current-password" :placeholder="t('请输入密码')" />
         </label>
         <p v-if="error" class="error" role="alert">{{ error }}</p>
         <button class="btn btn-primary btn-liquid submit" type="submit" :disabled="pending">
-          {{ pending ? '登录中…' : '登录' }}
+          {{ pending ? t('登录中…') : t('登录') }}
         </button>
       </form>
 
           <!-- 注册（开放注册，注册即登录） -->
           <form v-else-if="mode === 'register'" key="register" class="form" @submit.prevent="submitRegister">
         <label class="field">
-          <span class="label">用户名</span>
-          <input v-model="form.username" class="input" type="text" autocomplete="username" placeholder="3-32 位字母、数字或 _ . -" />
+          <span class="label">{{ t('用户名') }}</span>
+          <input v-model="form.username" class="input" type="text" autocomplete="username" :placeholder="t('3-32 位字母、数字或 _ . -')" />
         </label>
         <label class="field">
-          <span class="label">姓名（选填）</span>
-          <input v-model="form.displayName" class="input" type="text" autocomplete="name" placeholder="用于界面显示，如：张三" />
+          <span class="label">{{ t('姓名（选填）') }}</span>
+          <input v-model="form.displayName" class="input" type="text" autocomplete="name" :placeholder="t('用于界面显示，如：张三')" />
         </label>
         <label class="field">
-          <span class="label">密码</span>
-          <input v-model="form.password" class="input" type="password" autocomplete="new-password" placeholder="至少 6 位" />
+          <span class="label">{{ t('密码') }}</span>
+          <input v-model="form.password" class="input" type="password" autocomplete="new-password" :placeholder="t('至少 6 位')" />
         </label>
         <label class="field">
-          <span class="label">确认密码</span>
-          <input v-model="form.confirm" class="input" type="password" autocomplete="new-password" placeholder="再次输入密码" />
+          <span class="label">{{ t('确认密码') }}</span>
+          <input v-model="form.confirm" class="input" type="password" autocomplete="new-password" :placeholder="t('再次输入密码')" />
         </label>
         <p v-if="error" class="error" role="alert">{{ error }}</p>
         <button class="btn btn-primary btn-liquid submit" type="submit" :disabled="pending">
-          {{ pending ? '注册中…' : '注册并进入' }}
+          {{ pending ? t('注册中…') : t('注册并进入') }}
         </button>
       </form>
 
           <!-- 修改密码（强制或主动） -->
           <form v-else key="change" class="form" @submit.prevent="submitChange">
         <label class="field">
-          <span class="label">原密码</span>
-          <input v-model="form.oldPassword" class="input" type="password" autocomplete="current-password" placeholder="请输入当前密码" />
+          <span class="label">{{ t('原密码') }}</span>
+          <input v-model="form.oldPassword" class="input" type="password" autocomplete="current-password" :placeholder="t('请输入当前密码')" />
         </label>
         <label class="field">
-          <span class="label">新密码</span>
-          <input v-model="form.newPassword" class="input" type="password" autocomplete="new-password" placeholder="至少 6 位" />
+          <span class="label">{{ t('新密码') }}</span>
+          <input v-model="form.newPassword" class="input" type="password" autocomplete="new-password" :placeholder="t('至少 6 位')" />
         </label>
         <label class="field">
-          <span class="label">确认新密码</span>
-          <input v-model="form.newConfirm" class="input" type="password" autocomplete="new-password" placeholder="再次输入新密码" />
+          <span class="label">{{ t('确认新密码') }}</span>
+          <input v-model="form.newConfirm" class="input" type="password" autocomplete="new-password" :placeholder="t('再次输入新密码')" />
         </label>
         <p v-if="error" class="error" role="alert">{{ error }}</p>
         <button class="btn btn-primary btn-liquid submit" type="submit" :disabled="pending">
-          {{ pending ? '提交中…' : '确认修改' }}
+          {{ pending ? t('提交中…') : t('确认修改') }}
         </button>
           </form>
         </Transition>
