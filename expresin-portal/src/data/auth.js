@@ -51,7 +51,8 @@ export async function initAuth() {
     return
   }
   try {
-    const { user } = await api.me()
+    // 启动鉴权必须有界：后端进程挂起时不能把整个应用卡在挂载前。
+    const { user } = await api.me(8000)
     auth.user = user
     persist()
   } catch (e) {

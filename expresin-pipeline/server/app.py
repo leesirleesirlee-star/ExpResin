@@ -21,6 +21,7 @@ from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Upload
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
+from starlette.concurrency import run_in_threadpool
 
 ROOT = Path(__file__).resolve().parents[2]
 PIPELINE = ROOT / "expresin-pipeline"
@@ -67,6 +68,25 @@ KIND_LABELS = {
 CACHE_DIR = DATA_DIR / "cache"
 RAW_DIR.mkdir(parents=True, exist_ok=True)
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+try:
+    MAX_UPLOAD_MB = max(1, int(os.environ.get("EXPRESIN_MAX_UPLOAD_MB", "50")))
+except ValueError:
+    MAX_UPLOAD_MB = 50
+MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
+_UNSAFE_FILENAME = re.compile(r"[^0-9A-Za-z._\-\u4e00-\u9fff]+")
+
+
+def clean_upload_name(filename: str | None) -> tuple[str, str]:
+    """返回 (展示用安全文件名, 落盘用 ASCII 友好文件名)。
+
+    UploadFile.filename 来自客户端，可能带目录或 ..\\..\\ 片段；展示名只取 basename，
+    落盘名再收紧字符集，确保 dest 永远位于 RAW_DIR 内。
+    """
+    raw = str(filename or "").replace("\\", "/").split("/")[-1]
+    display = "".join(ch for ch in raw if ch >= " ").strip()[:200] or "upload"
+    safe = _UNSAFE_FILENAME.sub("_", display).strip(" ._-")[:120] or "upload"
+    return display, safe
 
 # 识别「规则层」版本号：任何会改变识别结果的规则改动都必须递增。
 # 缓存里存的是最终 payload（已含规则层结论），若不带版本校验，
@@ -764,29 +784,43 @@ async def upload(
 ) -> dict:
     _owned_session(sid, user)
 
-    data = await file.read()
-    sha = hashlib.sha256(data).hexdigest()
-    dest = RAW_DIR / f"{sid}__{file.filename}"
-    dest.write_bytes(data)
+    # 只读到上限 +1 字节即可判定超限，避免恶意/误选超大文件被整体读入内存。
+    data = await file.read(MAX_UPLOAD_BYTES + 1)
+    if not data:
+        raise HTTPException(status_code=400, detail="上传文件为空")
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail={
+                "message": f"文件超过 {MAX_UPLOAD_MB} MB 上限，请先拆分或压缩",
+                "retryable": False,
+            },
+        )
+
+    original_name, safe_name = clean_upload_name(file.filename)
+    sha = await run_in_threadpool(lambda: hashlib.sha256(data).hexdigest())
+    # 同一原始文件名、不同内容不能互相覆盖；sha 前缀保留多版本且便于追溯。
+    dest = RAW_DIR / f"{sid}__{sha[:12]}__{safe_name}"
+    await run_in_threadpool(dest.write_bytes, data)
 
     # Raw 层：只追加，不覆盖（同名文件保留多版本，以 sha 区分）
     store.add_asset(
         sid,
         "raw_file",
-        name=file.filename,
+        name=original_name,
         sha256=sha,
         payload={"uri": str(dest), "size": len(data)},
     )
     store.upsert_draft(
         sid,
         "04_RawData.raw_file",
-        file.filename,
+        original_name,
         status="confirmed",
         source_type="upload",
         source_ref=str(dest),
     )
 
-    recognized = {"source": {"file": file.filename, "sha256": sha}, "regions": []}
+    recognized = {"source": {"file": original_name, "sha256": sha}, "regions": []}
     if analyze and dest.suffix.lower() in (".xlsx", ".xls", ".xlsm"):
         cached_file = cache_path(sha, sheet)
         cached = None
@@ -806,7 +840,12 @@ async def upload(
             recognized["source"]["cached"] = True
         else:
             try:
-                recognized = analyze_workbook(dest, sheet)
+                # 解析与 LLM 映射是分钟级同步工作：放到线程池，避免阻塞事件循环，
+                # 否则一次上传期间 health/登录/其他会话请求都会被一起卡住。
+                recognized = await run_in_threadpool(analyze_workbook, dest, sheet)
+            except HTTPException:
+                # 工作表不存在等语义错误保持原状态码，不能再被包装成 503。
+                raise
             except Exception as exc:  # noqa: BLE001
                 # 把"模型不可用"变成可读、可重试的提示，而不是让前端只看到 500
                 raise HTTPException(
@@ -824,14 +863,14 @@ async def upload(
             except OSError:
                 pass
         # 对外只暴露用户原始文件名，内部存储名不进契约
-        recognized["source"]["file"] = file.filename
+        recognized["source"]["file"] = original_name
         recognized["source"]["stored_as"] = dest.name
         recognized["source"]["sha256"] = sha
-        store.add_asset(sid, "recognized_blocks", name=file.filename, payload=recognized)
+        store.add_asset(sid, "recognized_blocks", name=original_name, payload=recognized)
         store.add_message(
             sid,
             "assistant",
-            f"已解析《{file.filename}》，识别到 {len(recognized['regions'])} 个数据区。请在表单中逐列核对映射。",
+            f"已解析《{original_name}》，识别到 {len(recognized['regions'])} 个数据区。请在表单中逐列核对映射。",
         )
 
     store.touch_session(sid)
@@ -1019,6 +1058,28 @@ def review_recognized_column(
     return {"recognized": snapshot, "review": review}
 
 
+def _raw_file_path(session_id: str | None, raw_name: str | None) -> Path | None:
+    """定位会话最新的 Raw 文件，兼容新的 sha 前缀命名和旧版 <sid>__<name>。"""
+    asset = store.latest_asset(session_id, "raw_file") if session_id else None
+    uri = ((asset or {}).get("payload") or {}).get("uri")
+    candidates: list[Path] = []
+    if uri:
+        candidates.append(Path(uri))
+    if session_id and raw_name:
+        candidates.append(RAW_DIR / f"{session_id}__{raw_name}")
+
+    raw_root = RAW_DIR.resolve()
+    for candidate in candidates:
+        try:
+            resolved = candidate.resolve()
+            resolved.relative_to(raw_root)
+        except (OSError, ValueError):
+            continue
+        if resolved.is_file():
+            return resolved
+    return None
+
+
 def _publish_to_nas(
     experiment_id: str,
     session_id: str | None,
@@ -1027,14 +1088,10 @@ def _publish_to_nas(
 ) -> dict:
     """发布到 NAS 并把结果（manifest / skipped / error）落库。
 
-    raw 原始文件按上传落盘约定（data/raw/<session_id>__<文件名>）重建路径；
+    Raw 路径优先取会话资产 payload.uri（新版含 sha 前缀），并回退旧命名；
     发布失败返回 {"skipped"/"error": ...}，不抛出——归档本身不因 NAS 故障失败。
     """
-    raw_path = None
-    if session_id and raw_name:
-        candidate = RAW_DIR / f"{session_id}__{raw_name}"
-        if candidate.exists():
-            raw_path = candidate
+    raw_path = _raw_file_path(session_id, raw_name)
     try:
         result = get_nas_adapter().publish_experiment(
             experiment_id,

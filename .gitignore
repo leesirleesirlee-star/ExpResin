@@ -44,4 +44,5 @@ materials/guides/
 expresin-portal/public/data/analysis.json
 
 # dev server / pipeline runtime logs
+expresin-portal/.dev-logs/
 expresin-pipeline/.dev-logs/

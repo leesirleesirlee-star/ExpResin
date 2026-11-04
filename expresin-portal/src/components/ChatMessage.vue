@@ -49,8 +49,10 @@ function stopTimer() {
 }
 
 function typeNext() {
+  const start = characterIndex
   characterIndex = Math.min(characterIndex + chunkSize, characters.length)
-  displayed.value = characters.slice(0, characterIndex).join('')
+  // 增量追加，避免每个 tick 都重新拼接全部已显示字符（长回复会退化为 O(n²)）。
+  displayed.value += characters.slice(start, characterIndex).join('')
   emit('progress')
 
   if (characterIndex >= characters.length) {

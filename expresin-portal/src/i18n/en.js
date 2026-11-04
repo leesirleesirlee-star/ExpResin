@@ -432,6 +432,9 @@ export const en = {
   '还没有可用的识别结果，请先上传数据表格。':
     'No recognition results yet. Upload a data table first.',
   '上传文件': 'Upload file',
+  '文件为空，请重新选择。': 'The file is empty. Choose another file.',
+  '文件不能超过 {mb} MB，请先拆分或压缩后再上传。':
+    'Files must be {mb} MB or smaller. Split or compress the file before uploading.',
   '拖拽文件到此处，或点击选择':
     'Drag a file here, or click to choose',
   '支持 XLSX、CSV、TSV': 'Supports XLSX, CSV, and TSV',

@@ -29,17 +29,39 @@ DB_PATH = PIPELINE / "data" / "expresin.db"
 RAW_DIR = PIPELINE / "data" / "raw"
 
 
+def resolve_raw_file(store: Store, experiment: dict) -> tuple[Path | None, str | None]:
+    """优先使用 raw 资产 payload.uri（新版 sha 前缀命名），并兼容旧版路径。"""
+    session_id = experiment.get("session_id")
+    raw_name = experiment.get("raw_file")
+    raw_asset = store.latest_asset(session_id, "raw_file") if session_id else None
+    if raw_asset and raw_asset.get("name"):
+        raw_name = raw_asset["name"]
+
+    candidates: list[Path] = []
+    uri = ((raw_asset or {}).get("payload") or {}).get("uri")
+    if uri:
+        candidates.append(Path(uri))
+    if session_id and raw_name:
+        candidates.append(RAW_DIR / f"{session_id}__{raw_name}")
+
+    raw_root = RAW_DIR.resolve()
+    for candidate in candidates:
+        try:
+            resolved = candidate.resolve()
+            resolved.relative_to(raw_root)
+        except (OSError, ValueError):
+            continue
+        if resolved.is_file():
+            return resolved, raw_name
+    return None, raw_name
+
+
 def publish_one(store: Store, experiment_id: str) -> dict:
     experiment = store.get_experiment(experiment_id)
     if not experiment:
         return {"error": f"实验不存在：{experiment_id}"}
 
-    raw_name = experiment.get("raw_file")
-    raw_path = None
-    if raw_name:
-        candidate = RAW_DIR / f"{experiment.get('session_id')}__{raw_name}"
-        if candidate.exists():
-            raw_path = candidate
+    raw_path, raw_name = resolve_raw_file(store, experiment)
 
     return get_adapter().publish_experiment(
         experiment_id,

@@ -28,93 +28,122 @@ function notifyUnauthorized() {
   }
 }
 
-async function req(path, options = {}, timeoutMs = 0) {
+const DEFAULT_TIMEOUT_MS = 20000
+
+function timeoutError(timeoutMs) {
+  const err = new Error(t('请求超时：{seconds} 秒内未收到响应', { seconds: Math.round(timeoutMs / 1000) }))
+  err.status = 0
+  err.timeout = true
+  return err
+}
+
+function offlineError() {
+  // 浏览器把「后端 500 且响应缺少 CORS 头」同样表现为网络层失败，
+  // 因此这里不能断言服务没启动，必须保留另一种可能，否则会掩盖真实故障。
+  const err = new Error(t('无法连接后端服务（也可能是后端返回了未处理的错误，请查看后端日志）'))
+  err.status = 0
+  err.offline = true
+  return err
+}
+
+async function req(path, options = {}, timeoutMs = DEFAULT_TIMEOUT_MS) {
   const isForm = options.body instanceof FormData
+  const headers = { ...authHeaders(), ...(options.headers || {}) }
+  // 只有真正带 JSON 请求体时才声明 Content-Type；GET 和空 POST 不再携带该头。
+  if (!isForm && options.body != null && !headers['Content-Type'] && !headers['content-type']) {
+    headers['Content-Type'] = 'application/json'
+  }
+
   const controller = new AbortController()
   const timer = timeoutMs > 0 ? setTimeout(() => controller.abort(), timeoutMs) : null
-  let res
+
   try {
-    res = await fetch(`${BASE}${path}`, {
-      ...options,
-      signal: controller.signal,
-      headers: {
-        ...(isForm ? {} : { 'Content-Type': 'application/json' }),
-        ...authHeaders(),
-        ...(options.headers || {}),
-      },
-    })
-  } catch (e) {
-    // 超时与断连必须给出不同提示，否则用户无法判断该重试还是该启动服务
-    if (e.name === 'AbortError') {
-      const err = new Error(t('请求超时：{seconds} 秒内未收到响应', { seconds: Math.round(timeoutMs / 1000) }))
-      err.status = 0
-      err.timeout = true
+    let res
+    try {
+      res = await fetch(`${BASE}${path}`, {
+        ...options,
+        signal: controller.signal,
+        headers,
+      })
+    } catch (e) {
+      // 超时与断连必须给出不同提示，否则用户无法判断该重试还是该启动服务
+      if (e.name === 'AbortError') throw timeoutError(timeoutMs)
+      throw offlineError()
+    }
+
+    if (!res.ok) {
+      let detail = `HTTP ${res.status}`
+      let payload = null
+      try {
+        const body = await res.json()
+        payload = body
+        // 后端错误细节可能是字符串，也可能是结构化对象（如 confirm 409 的 {message, missing}）
+        if (typeof body.detail === 'string') detail = body.detail
+        else if (body.detail && typeof body.detail === 'object') detail = body.detail.message || detail
+        else if (typeof body.message === 'string') detail = body.message
+      } catch {
+        /* 保留默认信息 */
+      }
+      if (res.status === 401) notifyUnauthorized()
+      const err = new Error(detail)
+      err.status = res.status
+      err.payload = payload
       throw err
     }
-    // 浏览器把「后端 500 且响应缺少 CORS 头」同样表现为网络层失败，
-    // 因此这里不能断言服务没启动，必须保留另一种可能，否则会掩盖真实故障。
-    const err = new Error(t('无法连接后端服务（也可能是后端返回了未处理的错误，请查看后端日志）'))
-    err.status = 0
-    err.offline = true
-    throw err
+
+    // 计时器覆盖到响应体读取完成，避免“已连上但 body 永远不结束”时页面永久等待。
+    return await res.json()
+  } catch (e) {
+    if (e.name === 'AbortError') throw timeoutError(timeoutMs)
+    throw e
   } finally {
     if (timer) clearTimeout(timer)
   }
-  if (!res.ok) {
-    let detail = `HTTP ${res.status}`
-    let payload = null
-    try {
-      const body = await res.json()
-      payload = body
-      // 后端错误细节可能是字符串，也可能是结构化对象（如 confirm 409 的 {message, missing}）
-      if (typeof body.detail === 'string') detail = body.detail
-      else if (body.detail && typeof body.detail === 'object') detail = body.detail.message || detail
-      else if (typeof body.message === 'string') detail = body.message
-    } catch {
-      /* 保留默认信息 */
-    }
-    if (res.status === 401) notifyUnauthorized()
-    const err = new Error(detail)
-    err.status = res.status
-    err.payload = payload
-    throw err
-  }
-  return res.json()
 }
 
 /**
  * 文件下载专用请求：不走 req() 的 JSON 解析，返回 {blob, filename}。
  * 错误解析与 req() 保持一致（后端 detail 可能是字符串或结构化对象）。
  */
-async function download(path, fallbackName) {
-  let res
+async function download(path, fallbackName, timeoutMs = 120000) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+
   try {
-    res = await fetch(`${BASE}${path}`, { headers: authHeaders() })
-  } catch {
-    const err = new Error(t('无法连接后端服务（也可能是后端返回了未处理的错误，请查看后端日志）'))
-    err.status = 0
-    err.offline = true
-    throw err
-  }
-  if (!res.ok) {
-    let detail = `HTTP ${res.status}`
+    let res
     try {
-      const body = await res.json()
-      if (typeof body.detail === 'string') detail = body.detail
-      else if (body.detail && typeof body.detail === 'object') detail = body.detail.message || detail
-      else if (typeof body.message === 'string') detail = body.message
-    } catch {
-      /* 保留默认信息 */
+      res = await fetch(`${BASE}${path}`, { headers: authHeaders(), signal: controller.signal })
+    } catch (e) {
+      if (e.name === 'AbortError') throw timeoutError(timeoutMs)
+      throw offlineError()
     }
-    if (res.status === 401) notifyUnauthorized()
-    const err = new Error(detail)
-    err.status = res.status
-    throw err
+
+    if (!res.ok) {
+      let detail = `HTTP ${res.status}`
+      try {
+        const body = await res.json()
+        if (typeof body.detail === 'string') detail = body.detail
+        else if (body.detail && typeof body.detail === 'object') detail = body.detail.message || detail
+        else if (typeof body.message === 'string') detail = body.message
+      } catch {
+        /* 保留默认信息 */
+      }
+      if (res.status === 401) notifyUnauthorized()
+      const err = new Error(detail)
+      err.status = res.status
+      throw err
+    }
+
+    const blob = await res.blob()
+    const disp = res.headers.get('content-disposition') || ''
+    const match = /filename="([^"]+)"/.exec(disp)
+    return { blob, filename: (match && match[1]) || fallbackName }
+  } catch (e) {
+    if (e.name === 'AbortError') throw timeoutError(timeoutMs)
+    throw e
+  } finally {
+    clearTimeout(timer)
   }
-  const blob = await res.blob()
-  const disp = res.headers.get('content-disposition') || ''
-  const match = /filename="([^"]+)"/.exec(disp)
-  return { blob, filename: (match && match[1]) || fallbackName }
 }
 
 export const api = {
@@ -126,7 +155,7 @@ export const api = {
   register: (payload) => req('/auth/register', { method: 'POST', body: JSON.stringify(payload) }),
   login: (payload) => req('/auth/login', { method: 'POST', body: JSON.stringify(payload) }),
   logout: () => req('/auth/logout', { method: 'POST' }),
-  me: () => req('/auth/me'),
+  me: (timeoutMs) => req('/auth/me', {}, timeoutMs),
   changePassword: (payload) =>
     req('/auth/change-password', { method: 'POST', body: JSON.stringify(payload) }),
 
@@ -219,13 +248,14 @@ export const api = {
 
 /** 探测后端是否可用，用于决定「在线」还是「本地草稿」模式。 */
 export async function probeBackend(timeoutMs = 1500) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), timeoutMs)
     const res = await fetch(`${BASE}/api/health`, { signal: controller.signal })
-    clearTimeout(timer)
     return res.ok
   } catch {
     return false
+  } finally {
+    clearTimeout(timer)
   }
 }

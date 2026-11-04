@@ -34,6 +34,7 @@ const STEPS = [
   { id: 'archive', label: '归档' },
 ]
 
+const MAX_UPLOAD_MB = 50
 const fileInput = ref(null)
 const sheetName = ref('')
 const regions = ref([])
@@ -169,6 +170,16 @@ async function onPickFile(event) {
   const file = event.target.files?.[0]
   event.target.value = ''
   if (!file) return
+  if (!file.size) {
+    show(t('文件为空，请重新选择。'), { tone: 'warning' })
+    return
+  }
+  if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+    show(t('文件不能超过 {mb} MB，请先拆分或压缩后再上传。', { mb: MAX_UPLOAD_MB }), {
+      tone: 'warning',
+    })
+    return
+  }
 
   uploading.value = true
   startUploadClock()

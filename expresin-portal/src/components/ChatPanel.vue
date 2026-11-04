@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import PanelHead from './PanelHead.vue'
 import ChatMessage from './ChatMessage.vue'
 
@@ -24,10 +24,40 @@ function submit() {
   draft.value = ''
 }
 
-async function scrollToBottom() {
-  await nextTick()
+const AUTO_FOLLOW_PX = 48
+let followOutput = true
+let scrollFrame = 0
+let disposed = false
+
+function isNearBottom(el) {
+  return el.scrollHeight - el.scrollTop - el.clientHeight <= AUTO_FOLLOW_PX
+}
+
+function onThreadScroll() {
+  const el = scroller.value
+  if (el) followOutput = isNearBottom(el)
+}
+
+function applyScroll() {
+  scrollFrame = 0
+  if (disposed || !followOutput) return
   const el = scroller.value
   if (el) el.scrollTop = el.scrollHeight
+}
+
+/**
+ * 打字机每 16ms 触发一次 progress：用单帧合并滚动，避免每个字符都 nextTick + 强制布局。
+ * 用户主动向上滚动后停止自动跟随，避免阅读历史消息时被反复拽回底部。
+ */
+function scheduleScroll() {
+  if (disposed || !followOutput || scrollFrame) return
+  scrollFrame = window.requestAnimationFrame(applyScroll)
+}
+
+async function scrollToBottom({ force = false } = {}) {
+  if (force) followOutput = true
+  await nextTick()
+  scheduleScroll()
 }
 
 function shouldTypeMessage(message, index) {
@@ -35,9 +65,30 @@ function shouldTypeMessage(message, index) {
 }
 
 watch(
-  () => [props.messages.length, props.streaming],
-  scrollToBottom,
+  () => props.messages.length,
+  () => {
+    const last = props.messages[props.messages.length - 1]
+    // 自己发出的消息代表明确的“回到最新”意图；新收到的回复则尊重当前滚动位置。
+    void scrollToBottom({ force: last?.role === 'user' })
+  },
 )
+
+watch(
+  () => props.streaming,
+  (streaming) => {
+    if (streaming) void scrollToBottom({ force: true })
+  },
+)
+
+onMounted(() => {
+  void scrollToBottom({ force: true })
+})
+
+onBeforeUnmount(() => {
+  disposed = true
+  if (scrollFrame) window.cancelAnimationFrame(scrollFrame)
+  scrollFrame = 0
+})
 </script>
 
 <template>
@@ -48,13 +99,19 @@ watch(
       </template>
     </PanelHead>
 
-    <div ref="scroller" class="thread" role="log" aria-live="polite">
+    <div
+      ref="scroller"
+      class="thread"
+      role="log"
+      aria-live="polite"
+      @scroll.passive="onThreadScroll"
+    >
       <ChatMessage
         v-for="(m, i) in messages"
         :key="m.id ?? i"
         :message="m"
         :typewriter="shouldTypeMessage(m, i)"
-        @progress="scrollToBottom"
+        @progress="scheduleScroll"
       />
 
       <ChatMessage v-if="streaming" :message="{ role: 'jarvis' }" streaming />
