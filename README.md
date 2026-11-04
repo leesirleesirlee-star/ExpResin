@@ -17,11 +17,15 @@ stay on the machine that produced them (see
 | `expresin-pipeline/config/templates/` | Per-experiment-type metadata/fill JSON configs: batch, column and four electrochemical variants (single-cell, two-chamber, three-chamber, bipolar) |
 | `expresin-pipeline/config/record_templates/` | Record-table layouts; electrochemical variants use one block per chamber × ion with a row-level initial-concentration column |
 | `expresin-portal/` | Vue 3 + Vite frontend workbench: welcome/sign-in, full-height hover navigation, modular personal workspace, AI growth reports, experiment setup, recognition review, archive, admin console, API docs |
-| `docs/` | Living documents: `ExpResin-PRD.md`, `ExpResin-UI-Design-Spec-v1.0.md`, `ExpResin-UI-Upgrade-Plan-v2.0.md`, `ExpResin-Project-Roadmap-v2.0.md`, `design-changelog.md`, `research-opportunities.md`, `benchmark-v0.md`, `benchmark-hallucination-v0.md` |
+| `docs/` | Living documents, organized by purpose: |
+| `docs/product/` | Product scope and planning: `ExpResin-PRD.md`, `ExpResin-Project-Roadmap-v2.0.md` |
+| `docs/design/` | UI design: `ExpResin-UI-Design-Spec-v1.0.md`, `ExpResin-UI-Upgrade-Plan-v2.0.md`, `design-changelog.md` |
+| `docs/research/` | Research directions: `research-opportunities.md` |
+| `docs/evals/` | Benchmark baselines: `benchmark-v0.md`, `benchmark-hallucination-v0.md` |
 | `docs/session-logs/` | Per-session progress logs (append-only history) |
 | `materials/template-drafts/` | Original experiment template drafts from the advisor (transcribed into JSON configs under `expresin-pipeline/config/templates/`) |
 | `materials/record-templates/` | Generated blank + example-filled record workbooks, incl. the electrochemical branch variants; used as benchmark fixtures |
-| `outputs/` | Rendered research artifacts (benchmark reports, UI specimens) |
+| `outputs/` | Rendered research artifacts (benchmark reports, UI specimens); superseded previews are kept under `outputs/archive/` |
 
 ## Data & Local Files (not published)
 
@@ -200,5 +204,5 @@ and is not part of the distribution.
 ## Status
 
 Active development. Design decisions are recorded in
-`docs/design-changelog.md`; per-session progress in `docs/session-logs/`.
+`docs/design/design-changelog.md`; per-session progress in `docs/session-logs/`.
 This README evolves with the project.
