@@ -106,17 +106,30 @@ fields = [
     {"field_path": "01_Metadata.experiment_type", "value": "column", "status": "pending"},
     {"field_path": "01_Metadata.date_start", "value": "2026-11-03", "status": "pending"},
 ]
-statements = []
-backend.store._conn.set_trace_callback(statements.append)
-response = client.patch(
-    f"/portal/assistant/sessions/{alice_sid}/drafts",
-    headers=alice,
-    json={"fields": fields},
-)
-backend.store._conn.set_trace_callback(None)
+# 连接改为每线程独立后，主线程上的 trace_callback 看不到 TestClient 工作线程；
+# 这里改为确认端点只调用一次批量保存，事务原子性由 smoke_store_concurrency 的
+# 触发器回滚测试覆盖。
+calls = []
+original_upsert_drafts = backend.store.upsert_drafts
+
+
+def counting_upsert_drafts(*args, **kwargs):
+    calls.append(1)
+    return original_upsert_drafts(*args, **kwargs)
+
+
+backend.store.upsert_drafts = counting_upsert_drafts
+try:
+    response = client.patch(
+        f"/portal/assistant/sessions/{alice_sid}/drafts",
+        headers=alice,
+        json={"fields": fields},
+    )
+finally:
+    backend.store.upsert_drafts = original_upsert_drafts
 check(response.status_code == 200, f"bulk draft save: {response.text}")
 check(response.json()["updated"] == 3, "bulk save count mismatch")
-check(sum(statement == "COMMIT" for statement in statements) == 1, "bulk save must commit once")
+check(len(calls) == 1, "bulk save must use one batch operation")
 
 response = client.get(f"/portal/assistant/sessions/{alice_sid}/form-state", headers=alice)
 values = {item["field_path"]: item["value"] for item in response.json()["fields"]}

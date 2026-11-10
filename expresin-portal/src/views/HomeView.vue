@@ -11,6 +11,7 @@ import {
 } from '../data/session.js'
 import { useToast } from '../composables/useToast.js'
 import { useI18n } from '../composables/useI18n.js'
+import CurveBuilder from '../components/CurveBuilder.vue'
 
 const router = useRouter()
 const { show } = useToast()
@@ -34,9 +35,9 @@ const modules = [
   },
   {
     id: 'curve',
-    label: '曲线生成',
-    desc: '标定与穿透曲线',
-    headline: '把识别后的实验数据转化为可分析的曲线。',
+    label: '穿透曲线',
+    desc: '柱实验 C/C₀ 与穿透点',
+    headline: '观察出口浓度随床体积的变化，定位穿透点与饱和点。',
     icon: 'M4 4v16h16M7 16l4-5 3 3 5-8M7 8h.01',
   },
 ]
@@ -295,13 +296,11 @@ onMounted(async () => {
             <span class="module-tab-label">{{ $t(module.label) }}</span>
             <span class="module-tab-desc">{{ $t(module.desc) }}</span>
           </span>
-          <span class="module-status" :class="{ 'is-ready': module.id !== 'curve' }">
-            {{ module.id === 'curve' ? $t('占位') : $t('可用') }}
-          </span>
+          <span class="module-status is-ready">{{ $t('可用') }}</span>
         </button>
       </div>
 
-      <section class="module-panel" :aria-busy="generating || starting || session.draftsLoading">
+      <section class="module-panel" :aria-busy="generating || starting || session.draftsLoading || session.archiveLoading">
         <header class="module-head">
           <div>
             <h2>{{ $t(currentModule.label) }}</h2>
@@ -578,15 +577,13 @@ onMounted(async () => {
               </section>
             </div>
 
-            <div v-else class="placeholder-state">
-              <span class="placeholder-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path :d="currentModule.icon" /></svg>
-              </span>
-              <span class="placeholder-tag">{{ $t('模块占位 · 尚未开放') }}</span>
-              <h3>{{ $t('曲线生成工作区') }}</h3>
-              <p>{{ $t('后续将在这里承接标定曲线、穿透曲线与图形导出。目前可在数据识别页查看已识别曲线。') }}</p>
-              <RouterLink to="/recognize" class="btn btn-ghost">{{ $t('前往数据识别') }}</RouterLink>
-            </div>
+            <CurveBuilder
+              v-else
+              :experiments="ownArchive"
+              :online="session.online"
+              :loading="session.archiveLoading"
+              :error="session.lastArchiveError"
+            />
           </div>
         </Transition>
       </section>
@@ -784,8 +781,7 @@ onMounted(async () => {
   transform: translateY(-3px);
 }
 
-.state-block,
-.placeholder-state {
+.state-block {
   display: flex;
   align-items: center;
   flex-direction: column;
@@ -794,29 +790,25 @@ onMounted(async () => {
   padding: var(--space-7) var(--space-5);
   text-align: center;
 }
-.state-block h3,
-.placeholder-state h3 {
+.state-block h3 {
   margin-top: var(--space-4);
   font: var(--text-lg);
   font-weight: 600;
 }
-.state-block p,
-.placeholder-state p {
+.state-block p {
   max-width: 520px;
   margin: var(--space-2) auto var(--space-4);
   color: var(--text-secondary);
   font: var(--text-sm);
   line-height: 1.75;
 }
-.state-block > .btn,
-.placeholder-state > .btn {
+.state-block > .btn {
   text-decoration: none;
 }
 .state-block--error {
   color: var(--error);
 }
-.state-icon,
-.placeholder-icon {
+.state-icon {
   display: grid;
   place-items: center;
   width: 48px;
@@ -826,19 +818,10 @@ onMounted(async () => {
   background: var(--bg-tertiary);
   color: var(--text-tertiary);
 }
-.state-icon svg,
-.placeholder-icon svg {
+.state-icon svg {
   width: 24px;
   height: 24px;
   stroke-width: 1.5;
-}
-.placeholder-tag {
-  margin-top: var(--space-4);
-  color: var(--text-tertiary);
-  font: var(--text-xs);
-}
-.placeholder-state h3 {
-  margin-top: var(--space-2);
 }
 
 .setup-workspace {

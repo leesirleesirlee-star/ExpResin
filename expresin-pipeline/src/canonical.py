@@ -59,6 +59,7 @@ CANONICAL_COLUMNS: list[str] = [
     "sample_number",
     "bed_volume",
     "volume_ml",
+    "time_min",
     "signal_area",
     "dilution_factor",
     "conc_ppm_reported",
@@ -84,6 +85,7 @@ _FIELD_TO_COLUMN: dict[str, str] = {
     "signal_area": "signal_area",
     "corrected_area": "signal_area",
     "concentration_ppm": "conc_ppm_reported",
+    "concentration_mg_l": "conc_ppm_reported",
     "concentration_mol": "conc_mol_reported",
 }
 
@@ -93,7 +95,11 @@ _META_KEYS: dict[str, list[str]] = {
     "equilibrium_concentration": ["equilibrium_concentration", "ce", "平衡浓度"],
     "solution_volume_ml": ["solution_volume", "volume_ml", "solution_volume_ml", "溶液体积"],
     "resin_mass_mg": ["resin_mass", "resin_mass_mg", "mass", "树脂质量"],
+    "flow_rate": ["flow_rate", "flow_rate_ml_min", "流速"],
+    "bed_volume": ["bed_volume", "bed_volume_ml", "床体积"],
 }
+
+_TIME_FIELDS = ("contact_time", "time", "run_time", "elapsed_time")
 
 _DILUTION_RE = re.compile(r"稀释\s*(\d+(?:\.\d+)?)\s*倍")
 
@@ -120,6 +126,28 @@ def _to_float(value: Any) -> float | None:
 def _read_column(ws, col_index: int, start_row: int, end_row: int) -> list[Any]:
     """按行区间读取整列原始值（不跳过空行，保证行号与 Excel 一致）。"""
     return [ws.cell(row=row, column=col_index).value for row in range(start_row, end_row + 1)]
+
+
+def _time_to_minutes(value: Any, unit: Any) -> float | None:
+    """把接触/运行时间换算为分钟；未知单位按分钟处理，不猜倍率。"""
+    number = _to_float(value)
+    if number is None:
+        return None
+    text = str(unit or "").strip().lower().replace(" ", "")
+    if text in {"h", "hr", "hrs", "hour", "hours"}:
+        return number * 60.0
+    if text in {"s", "sec", "secs", "second", "seconds"}:
+        return number / 60.0
+    return number
+
+
+def _time_column(block: dict) -> tuple[str | None, str]:
+    """返回样本块的时间字段和原始单位。"""
+    for field in _TIME_FIELDS:
+        for col in block.get("columns") or []:
+            if (col.get("field") or col.get("target")) == field:
+                return field, str(col.get("unit") or "")
+    return None, ""
 
 
 def _field_columns(block: dict) -> dict[str, str]:
@@ -461,13 +489,26 @@ def _build_samples(
             continue
         columns[field] = _read_column(ws, index, l1_region.data_start_row, l1_region.data_end_row)
 
+    time_field, time_unit = _time_column(block)
     area_series = columns.get("signal_area") or columns.get("corrected_area")
-    if area_series is None:
-        notes.append(f"样本块 {block.get('id')} 未识别到信号面积列，跳过浓度反算")
+    reported_field = next(
+        (field for field in ("concentration_ppm", "concentration_mg_l") if field in columns),
+        None,
+    )
+    reported_series = columns.get(reported_field) or []
+    if area_series is None and not any(_to_float(v) is not None for v in reported_series):
+        notes.append(f"样本块 {block.get('id')} 未识别到信号面积或报到浓度，跳过样品行")
         return {"rows": [], "verification": [], "calculations": []}
 
-    areas = [_to_float(v) for v in area_series]
-    reported_ppms = [_to_float(v) for v in (columns.get("concentration_ppm") or [])]
+    # 只有报到浓度、没有峰面积时，保留原始浓度；不要因为无法复算就丢掉整块样品。
+    areas = (
+        [_to_float(v) for v in area_series]
+        if area_series is not None
+        else [None] * len(reported_series)
+    )
+    reported_ppms = [_to_float(v) for v in reported_series]
+    if not any(area is not None for area in areas):
+        pool = []
     chosen, selection = _select_fit(areas, reported_ppms, pool)
     fit = chosen["fit"] if chosen else None
     calibration_block = chosen["block"] if chosen else None
@@ -511,6 +552,10 @@ def _build_samples(
     declared_ce = _pick_metadata(metadata, "equilibrium_concentration")
     volume_ml = _pick_metadata(metadata, "solution_volume_ml")
     resin_mg = _pick_metadata(metadata, "resin_mass_mg")
+    flow_rate = _pick_metadata(metadata, "flow_rate")
+    bed_volume_ml = _pick_metadata(metadata, "bed_volume")
+    derived_volume = False
+    derived_bed_volume = False
     mass, mass_reason = molar_mass(ion)
     if ion and mass is None:
         notes.append(f"样本块 {block.get('id')}：{mass_reason}")
@@ -524,9 +569,18 @@ def _build_samples(
             return _to_float(series[offset]) if offset < len(series) else None
 
         area = areas[offset]
-        reported_ppm = value_of("concentration_ppm")
+        reported_ppm = value_of(reported_field)
         reported_mol = value_of("concentration_mol")
         sample_no = value_of("sample_number")
+        time_min = _time_to_minutes(value_of(time_field), time_unit) if time_field else None
+        row_volume_ml = value_of("volume")
+        row_bed_volume = value_of("bed_volume")
+        if row_volume_ml is None and time_min is not None and flow_rate is not None:
+            row_volume_ml = time_min * flow_rate
+            derived_volume = True
+        if row_bed_volume is None and row_volume_ml is not None and bed_volume_ml:
+            row_bed_volume = row_volume_ml / bed_volume_ml
+            derived_bed_volume = True
 
         computed_ppm = None
         extrapolated = None
@@ -565,8 +619,9 @@ def _build_samples(
                 "analyte": block.get("analyte"),
                 "row_index": l1_region.data_start_row + offset,
                 "sample_number": sample_no,
-                "bed_volume": value_of("bed_volume"),
-                "volume_ml": value_of("volume"),
+                "bed_volume": round(row_bed_volume, 6) if row_bed_volume is not None else None,
+                "volume_ml": round(row_volume_ml, 6) if row_volume_ml is not None else None,
+                "time_min": round(time_min, 6) if time_min is not None else None,
                 "signal_area": area,
                 "dilution_factor": dilution,
                 "conc_ppm_reported": reported_ppm,
@@ -579,7 +634,13 @@ def _build_samples(
                 "removal_rate": round(removal, 6) if removal is not None else None,
                 "calibration_block": calibration_block,
                 "extrapolated": extrapolated,
-                "method": "calibration_back_calculation" if computed_ppm is not None else "insufficient_input",
+                "method": (
+                    "calibration_back_calculation"
+                    if computed_ppm is not None
+                    else "reported_concentration"
+                    if reported_ppm is not None
+                    else "insufficient_input"
+                ),
                 "confidence": block.get("confidence"),
                 "source": "raw",
             }
@@ -599,9 +660,19 @@ def _build_samples(
             )
 
     if fit is None:
-        notes.append(f"样本块 {block.get('id')} 无可用标定曲线，仅保留原始数值，未反算浓度")
+        if area_series is None:
+            notes.append(
+                f"样本块 {block.get('id')} 未识别到信号面积列，保留表内报到浓度，未做标定反算"
+            )
+        else:
+            notes.append(f"样本块 {block.get('id')} 无可用标定曲线，仅保留原始数值，未反算浓度")
     if any(row.get("extrapolated") for row in rows):
         notes.append(f"样本块 {block.get('id')} 存在超出标定范围的信号，已标注 extrapolated=True，请谨慎使用")
+    if derived_volume or derived_bed_volume:
+        notes.append(
+            f"样本块 {block.get('id')} 的流出体积/床体积由时间 × 流速推导，"
+            "推导值仅用于曲线横轴，原始记录仍以 time_min 为准"
+        )
 
     # 吸附容量：文件通常不显式给出平衡浓度，此时以最后一个有效样本浓度作为 Ce，
     # 并在结果里写明该假设来源，交由研究者确认（绝不伪装成原始记录）。

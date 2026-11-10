@@ -37,6 +37,8 @@ expresin-pipeline/data/raw/
 expresin-pipeline/data/cache/
 expresin-pipeline/data/nas_mirror/
 expresin-pipeline/data/*.db
+expresin-pipeline/data/*.db-shm
+expresin-pipeline/data/*.db-wal
 materials/data/
 materials/guides/
 

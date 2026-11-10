@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import threading
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -132,8 +133,11 @@ class Store:
     def __init__(self, db_path: str | Path) -> None:
         self.db_path = str(db_path)
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
-        self._conn.row_factory = sqlite3.Row
+        # 每个线程使用自己的 SQLite 连接。FastAPI 会把同步依赖/路由放进线程池，
+        # 共用同一个 check_same_thread=False 连接会在并发请求下触发
+        # "sqlite3.InterfaceError: bad parameter or other API misuse"。
+        self._local = threading.local()
+        self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.executescript(SCHEMA)
         self._migrate()
         # 依赖迁移列的索引必须在 _migrate 之后创建，兼容尚无 owner_user_id 的旧库。
@@ -142,6 +146,17 @@ class Store:
             " ON experiments (owner_user_id, created_at DESC)"
         )
         self._conn.commit()
+
+    @property
+    def _conn(self) -> sqlite3.Connection:
+        conn = getattr(self._local, "conn", None)
+        if conn is None:
+            conn = sqlite3.connect(self.db_path, timeout=30, check_same_thread=True)
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA busy_timeout=30000")
+            conn.execute("PRAGMA synchronous=NORMAL")
+            self._local.conn = conn
+        return conn
 
     def _migrate(self) -> None:
         """轻量迁移：为既有库补列（CREATE TABLE IF NOT EXISTS 不会给老表加新列）。"""

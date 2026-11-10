@@ -169,10 +169,13 @@ export const en = {
   '先建立实验草稿，再进入完整录入；未完成的记录随时续接。':
     'Create a draft first, then complete the full record. Resume at any time.',
   '曲线生成': 'Curve Builder',
+  '穿透曲线': 'Breakthrough curve',
+  '柱实验 C/C₀ 与穿透点': 'Column C/C₀ and breakthrough points',
+  '观察出口浓度随床体积的变化，定位穿透点与饱和点。':
+    'Track effluent concentration against bed volumes and locate breakthrough and saturation.',
   '标定与穿透曲线': 'Calibration and breakthrough curves',
   '把识别后的实验数据转化为可分析的曲线。':
     'Turn recognized experiment data into analyzable curves.',
-  '占位': 'Soon',
   '可用': 'Ready',
   '查看实验档案': 'View Experiment Archive',
   '正在读取实验档案': 'Loading experiment archive',
@@ -349,8 +352,6 @@ export const en = {
   '行 ·': 'Row ·',
   '记录依据': 'Evidence',
   '按实验时间排列': 'Ordered by experiment date',
-  '曲线生成工作区': 'Curve Builder Workspace',
-  '模块占位 · 尚未开放': 'Module placeholder · Coming soon',
   '没有低置信度或单位异常的字段。':
     'No low-confidence fields or unit issues.',
   '还需补全': 'Still required',
@@ -523,8 +524,6 @@ export const en = {
   '）。上方各列块表格只描述「列映射」， 此处才是数据值本身。':
     '). The block tables above describe column mappings; this table contains the values.',
   '含原始数据': 'Includes raw data',
-  '后续将在这里承接标定曲线、穿透曲线与图形导出。目前可在数据识别页查看已识别曲线。':
-    'Calibration, breakthrough curves, and chart exports will be available here. Recognized curves are currently available in Data Recognition.',
   '该档案尚无 NAS 发布记录（可能早于 NAS 落库功能归档），可点击右上按钮补发。':
     'This archive has no NAS publication record (it may predate NAS publishing). Use the top-right action to publish it.',
   '说明列含义，或提问识别结果':
@@ -581,6 +580,93 @@ export const en = {
   '稀释': 'Dilution',
   '修正信号': 'Corrected signal',
   '计算浓度': 'Calculated concentration',
+
+  // Curve builder
+  '未命名实验': 'Untitled experiment',
+  '全部数据': 'All data',
+  '未分组': 'Ungrouped',
+  '行号': 'Row index',
+  '床体积 (BV)': 'Bed volume (BV)',
+  '体积 (mL)': 'Volume (mL)',
+  '报告浓度 (ppm)': 'Reported concentration (ppm)',
+  '计算浓度 (ppm)': 'Calculated concentration (ppm)',
+  '计算浓度 (mg/L)': 'Calculated concentration (mg/L)',
+  '计算浓度 (mol/L)': 'Calculated concentration (mol/L)',
+  '稀释后浓度 (mol/L)': 'Diluted concentration (mol/L)',
+  '去除率': 'Removal rate',
+  '偏差 (ppm)': 'Deviation (ppm)',
+  '电流密度 (A/m²)': 'Current density (A/m²)',
+  '电荷量 (C)': 'Charge passed (C)',
+  '能耗 (kWh)': 'Energy consumption (kWh)',
+  '时间 (min)': 'Time (min)',
+  '时间 (h)': 'Time (h)',
+  '样品编号': 'Sample number',
+  '横轴': 'X axis',
+  '纵轴': 'Y axis',
+  '曲线分组': 'Group curves by',
+  '不分组': 'Do not group',
+  '按分析物': 'Analyte',
+  '按数据区': 'Data block',
+  '按区域': 'Region',
+  '刷新数据': 'Refresh data',
+  '确认当前账号可用于曲线分析的数据范围。':
+    'Confirm which of your experiment records can be used for curves.',
+  '曲线生成需要读取本人归档的规范长表，连接后端后再试。':
+    'Curve building reads canonical tables from your own archives. Connect the backend and try again.',
+  '先归档一次实验，再生成曲线': 'Archive an experiment before building curves',
+  '曲线只读取本人已归档的规范长表，不会用示例数据伪造结果。':
+    'Curves use only your own archived canonical tables; demo data is never substituted.',
+  '正在读取规范数据…': 'Loading canonical data…',
+  '规范数据读取失败': 'Failed to load canonical data',
+  '该实验还没有可绘制的规范长表。完成归档并生成规范数据后再试。':
+    'This experiment has no canonical table to plot yet. Archive it and generate canonical data first.',
+  '当前实验没有可绘制的数值列。': 'This experiment has no numeric columns to plot.',
+  '{n} 个数据点': '{n} data points',
+  '{n} 条曲线': '{n} curves',
+  '导出 SVG': 'Export SVG',
+  '导出 PNG': 'Export PNG',
+  '导出曲线 CSV': 'Export curve CSV',
+  '当前横轴和纵轴没有可绘制的数值。':
+    'The selected axes have no numeric values to plot.',
+  '请选择两个不同的数值列。': 'Choose two different numeric columns.',
+  '图表数据': 'Chart data',
+  '数据点': 'data points',
+  '图例': 'Legend',
+  '最多显示 {n} 组曲线': 'Showing up to {n} curve groups',
+  '查看该实验的规范档案': "View this experiment's canonical record",
+  '曲线': 'Curve',
+  '曲线导出失败，请稍后重试': 'Curve export failed. Try again later.',
+  '流出体积 (mL)': 'Effluent volume (mL)',
+  'C/C₀（出口/入口）': 'C/C₀ (effluent/influent)',
+  '出口浓度 C (mg/L)': 'Effluent concentration C (mg/L)',
+  '入口浓度 C₀ (mg/L)': 'Influent concentration C₀ (mg/L)',
+  '入口浓度 C₀': 'Influent concentration C₀',
+  '未找到，可手动填写': 'Not found; enter manually',
+  '穿透点阈值': 'Breakthrough threshold',
+  '该实验只有标定行，没有样品测量行，无法绘制穿透曲线。':
+    'This experiment only has calibration rows, so a breakthrough curve cannot be drawn.',
+  '样品行缺少床体积 (BV)、流出体积 (mL) 或时间列，无法绘制穿透曲线。':
+    'Sample rows lack a bed-volume (BV), effluent-volume (mL), or time column.',
+  '{n} 个样品点': '{n} sample points',
+  '已排除 {n} 个标定行': 'Excluded {n} calibration rows',
+  '填写 C₀ 后才能计算 C/C₀ 和穿透点。':
+    'Enter C₀ to calculate C/C₀ and breakthrough points.',
+  '缺少入口浓度 C₀，请填写 C₀ 或切换为出口浓度。':
+    'C₀ is missing. Enter C₀ or switch to effluent concentration.',
+  '样品行没有可用的出口浓度或横轴数值。':
+    'Sample rows have no usable effluent concentration or x-axis value.',
+  '穿透点摘要': 'Breakthrough summary',
+  '穿透点': 'Breakthrough point',
+  '饱和点': 'Saturation point',
+  '最高 C/C₀': 'Peak C/C₀',
+  '未达到': 'Not reached',
+  '穿透点和饱和点按相邻样品线性插值；饱和点固定为 C/C₀ ≥ 95%。':
+    'Breakthrough and saturation points use linear interpolation between adjacent samples; saturation is fixed at C/C₀ ≥ 95%.',
+  '标定行已排除。': 'Calibration rows are excluded.',
+  '来自实验元数据': 'From experiment metadata',
+  '来自规范表容量计算': 'From canonical capacity calculation',
+  '未找到': 'Not found',
+  '全部样品': 'All samples',
 
   // Dynamic UI state and messages
   '正在创建草稿…': 'Creating draft…',

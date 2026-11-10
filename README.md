@@ -75,19 +75,28 @@ directories are needed to build or start the stack.
   a manifest (sizes, sha256) to a NAS share — local directory/mapped drive or
   direct SMB via `smbprotocol`; failures degrade to `skipped`/`error` without
   blocking the archive, and the archive detail page offers one-click republish.
-- **Modular workspace & AI growth reports**: the home workbench keeps one clear
-  **Start experiment** action and hosts compact modules instead of duplicating
-  large navigation cards. **Growth summary** and **experiment creation** are
-  implemented; the curve-generation module remains explicitly marked as a
-  placeholder. Experiment creation supports quick title/type/date setup, real
-  backend sessions, the current user's six latest drafts, resume links and
-  450 ms debounced bulk auto-save (one SQLite transaction per batch). The growth
-  report reads up to 20 archived experiments belonging to the signed-in user,
-  combines deterministic archive statistics with AI-generated overall analysis,
-  per-experiment growth observations, actionable improvement goals and data-gap
-  notes, and supports copy/Markdown export. Ownership is enforced again on the
-  server for every experiment; even an admin report contains only the admin's own
-  archives. Empty, loading, failure and completed states are all shown honestly.
+- **Modular workspace, AI growth reports & breakthrough curves**: the home
+  workbench keeps one clear **Start experiment** action and hosts compact modules
+  instead of duplicating large navigation cards. **Growth summary**, **experiment
+  creation** and **breakthrough curves** are implemented. Experiment creation supports quick
+  title/type/date setup, real backend sessions, the current user's six latest
+  drafts, resume links and 450 ms debounced bulk auto-save (one SQLite transaction
+  per batch). The growth report reads up to 20 archived experiments belonging to
+  the signed-in user, combines deterministic archive statistics with AI-generated
+  overall analysis, per-experiment growth observations, actionable improvement
+  goals and data-gap notes, and supports copy/Markdown export. Ownership is
+  enforced again on the server for every experiment; even an admin report contains
+  only the admin's own archives. Empty, loading, failure and completed states are
+  all shown honestly.
+- **Breakthrough curve builder**: reads the signed-in user's archived
+  `canonical_table_v1`, keeps only `sample_measurement` rows (calibration standards
+  are excluded), resolves the influent concentration C₀ from experiment metadata
+  or canonical capacity calculations, and plots C/C₀ against bed volume (BV),
+  effluent volume (mL) or a time column when the canonical rows provide one. It
+  marks the 5%/10% breakthrough threshold and the 95%
+  saturation threshold with linear interpolation between adjacent samples, shows
+  per-series metrics, and exports SVG, 2× PNG or CSV. Experiments without usable
+  sample rows get an explicit state; demo data is never substituted.
 - **Portal UI**: warm, token-driven design system
   (`expresin-portal/src/styles/tokens.css`). The four primary destinations live in
   a full-height left navigation drawer opened from the ExpResin brand; it overlays
@@ -114,7 +123,9 @@ python -m uvicorn app:app --app-dir server --port 8000
 ```
 
 The server creates `data/raw/`, `data/cache/` and `data/expresin.db` on first
-use; they are local-only and git-ignored.
+use; they are local-only and git-ignored. SQLite runs in WAL mode with one
+connection per FastAPI worker thread and a 30-second busy timeout, so concurrent
+auth, session and archive requests do not share a single unsafe connection.
 
 On first start the server also seeds an `admin` account
 (`EXPRESIN_ADMIN_PASSWORD`, default `admin123`) that must change its password
@@ -136,7 +147,10 @@ Open http://localhost:5173/ — you land on the welcome page; register an
 account or sign in as `admin`, then pick any archived experiment for
 **Export Template Excel** and **Export CSV**. On the home workbench, open
 **成长总结** and choose **生成成长报告** to analyze your own archived experiments;
-an optional focus can steer the improvement goals.
+an optional focus can steer the improvement goals. Open **穿透曲线**, pick a
+column experiment with sample rows, confirm the influent concentration C₀, choose
+BV or effluent volume and the 5%/10% breakthrough threshold, then export SVG, PNG
+or CSV. The chart reports breakthrough and saturation points per analyte group.
 
 ## API Overview
 
@@ -176,23 +190,33 @@ build:
 ```bash
 python expresin-pipeline/scripts/smoke_growth_report.py
 python expresin-pipeline/scripts/smoke_session_drafts.py
-python -m compileall -q expresin-pipeline/server/app.py expresin-pipeline/server/services.py
+python expresin-pipeline/scripts/smoke_store_concurrency.py
+python expresin-pipeline/scripts/smoke_canonical_breakthrough.py
+python -m compileall -q expresin-pipeline/server/app.py expresin-pipeline/server/services.py expresin-pipeline/server/store.py
 cd expresin-portal
+npm run test:curve
 npm run build
 ```
 
-Both smoke suites use temporary SQLite databases under the git-ignored
+All smoke suites use temporary SQLite databases under the git-ignored
 `.deepworks/tmp/` directory, so they never touch the real archive. The growth
 suite also uses a fake structured LLM response and incurs no model charges. Its
 17 checks cover registration, empty archives, authentication, deterministic
 statistics, focus forwarding, cross-user isolation, admin self-scope, malformed
 model output (502) and unavailable AI configuration (503). The 33 draft/chat checks
 cover local conversation intent, contextual guidance, bounded chat timeouts,
-empty-extraction replies, bulk persistence,
-single-transaction commits, list summaries, cross-user
-isolation, confirmed-session locking, query indexes and legacy migration order.
-The current suites pass, as does the frontend build. Real model latency and
-report quality still require a configured live-model check.
+empty-extraction replies, bulk persistence, one batch save per request, list
+summaries, cross-user isolation, confirmed-session locking, query indexes and
+legacy migration order. The concurrency suite runs 8 threads × 40 rounds of auth,
+session, draft and message access against one Store, then forces a second-row
+failure to prove a bulk upsert rolls back atomically. The canonical breakthrough
+suite adds 14 checks for time retention, reported-only concentration rows and
+derived BV/mL from flow rate. The frontend breakthrough suite adds 36 deterministic
+checks for C₀ extraction, unit conversion, calibration-row exclusion,
+computed/reported concentration fallback, C/C₀ ratios, linear threshold
+interpolation, saturation reporting and scale ticks. The current suites pass, as
+does the frontend build. Real model latency and report quality still require a
+configured live-model check.
 
 ## License
 
